@@ -12,7 +12,7 @@ struct LineAndBarChart: View {
     // Chart + overlay for selection. Uses index-based X axis.
     var body: some View {
         CombinedChartView()
-            .frame(maxWidth: .infinity, maxHeight: 300)
+            .frame(maxWidth: .infinity)
     }
 }
 
@@ -350,9 +350,7 @@ private struct ChartContainer: View {
     }
 
     var body: some View {
-        let monthIndices = Array(visibleData.indices)
-        let monthValues = monthIndices.map { Double($0) + 0.5 }
-        let xDomainEnd = Double(max(visibleData.count, 1))
+        let monthValues = visibleData.map(\.month)
 
         Chart {
             if selectedTab == .totalTrend {
@@ -362,17 +360,14 @@ private struct ChartContainer: View {
             }
             sharedMarks
         }
-        .chartXScale(domain: 0 ... xDomainEnd)
+        .chartXScale(domain: monthValues)
         .chartXAxis {
             AxisMarks(values: monthValues) { value in
                 AxisTick()
                 AxisValueLabel(centered: true) {
-                    if let raw = value.as(Double.self) {
-                        let index = Int((raw + 0.5).rounded())
-                        if visibleData.indices.contains(index) {
-                            Text(visibleData[index].month)
-                                .font(.caption2)
-                        }
+                    if let month = value.as(String.self) {
+                        Text(month)
+                            .font(.caption2)
                     }
                 }
             }
@@ -391,22 +386,61 @@ private struct ChartContainer: View {
         .chartOverlay { proxy in
             GeometryReader { geometry in
                 let plotRect = geometry[proxy.plotAreaFrame]
-                Color.clear
-                    .contentShape(Rectangle())
-                    .simultaneousGesture(
-                        SpatialTapGesture()
-                            .onEnded { value in
-                                let localX = value.location.x - plotRect.minX
-                                let clampedX = min(max(localX, 0), plotRect.width)
-                                if let xValue = proxy.value(atX: clampedX, as: Double.self) {
-                                    let index = Int((xValue - 0.5).rounded())
-                                    let count = max(visibleData.count, 1)
-                                    let clampedIndex = min(max(index, 0), count - 1)
-                                    selectedIndex = clampedIndex
-                                    onSelectIndex(clampedIndex)
+                ZStack(alignment: .topLeading) {
+                    if let selectedIndex, visibleData.indices.contains(selectedIndex) {
+                        let selectedMonth = visibleData[selectedIndex].month
+                        if let xPos = proxy.position(forX: selectedMonth) {
+                            Group {
+                                if selectedTab == .totalTrend {
+                                    Path { path in
+                                        path.move(to: CGPoint(x: xPos, y: plotRect.minY))
+                                        path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
+                                    }
+                                    .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                                    .foregroundStyle(.gray)
+                                } else {
+                                    let step: CGFloat = {
+                                        if selectedIndex + 1 < visibleData.count,
+                                           let nextX = proxy.position(forX: visibleData[selectedIndex + 1].month) {
+                                            return nextX - xPos
+                                        }
+                                        if selectedIndex - 1 >= 0,
+                                           let prevX = proxy.position(forX: visibleData[selectedIndex - 1].month) {
+                                            return xPos - prevX
+                                        }
+                                        return 40
+                                    }()
+                                    let width = max(step * 0.9, 24)
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.12))
+                                        .frame(width: width, height: plotRect.height)
+                                        .position(x: xPos, y: plotRect.midY)
                                 }
                             }
-                    )
+                            .mask(
+                                Rectangle()
+                                    .frame(width: plotRect.width, height: plotRect.height)
+                                    .position(x: plotRect.midX, y: plotRect.midY)
+                            )
+                        }
+                    }
+
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .simultaneousGesture(
+                            SpatialTapGesture()
+                                .onEnded { value in
+                                    let localX = value.location.x - plotRect.minX
+                                    let clampedX = min(max(localX, 0), plotRect.width)
+                                    if let month = proxy.value(atX: clampedX, as: String.self) {
+                                        if let index = visibleData.firstIndex(where: { $0.month == month }) {
+                                            selectedIndex = index
+                                            onSelectIndex(index)
+                                        }
+                                    }
+                                }
+                        )
+                }
             }
         }
     }
@@ -423,7 +457,7 @@ private struct ChartContainer: View {
             segmentBar(index: index, start: item.savingK + item.invstmentK + item.otherLiquidAssetK, value: item.otherNonLiquidAssetK + item.selfUsedPropertyK, gap: gap, color: totalTrendPalette[4])
 
             LineMark(
-                x: .value("Month", Double(index) + 0.5),
+                x: .value("Month", item.month),
                 y: .value("Total", item.positiveTotalK)
             )
             .foregroundStyle(Color(red: 0.16, green: 0.30, blue: 0.38))
@@ -434,16 +468,6 @@ private struct ChartContainer: View {
     // Breakdown: colored stacked bars by category.
     @ChartContentBuilder
     private var breakdownMarks: some ChartContent {
-        if let selectedIndex, visibleData.indices.contains(selectedIndex) {
-            RectangleMark(
-                xStart: .value("Selection Start", Double(selectedIndex) + 0.05),
-                xEnd: .value("Selection End", Double(selectedIndex) + 0.95),
-                yStart: .value("Min", yAxisDisplayDomain.lowerBound),
-                yEnd: .value("Max", yAxisDisplayDomain.upperBound)
-            )
-            .foregroundStyle(Color.gray.opacity(0.12))
-        }
-
         ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
             let gap = 0.4
             segmentBar(index: index, start: 0.0, value: item.liabilitiesK, gap: gap, color: breakdownPalette[0])
@@ -454,23 +478,15 @@ private struct ChartContainer: View {
         }
     }
 
-    // Marks shared by both modes (zero line + selection).
+    // Marks shared by both modes (zero line + selection dot).
     @ChartContentBuilder
     private var sharedMarks: some ChartContent {
         RuleMark(y: .value("Zero", 0))
             .foregroundStyle(.black)
 
         if selectedTab == .totalTrend, let selectedIndex, visibleData.indices.contains(selectedIndex) {
-            RuleMark(
-                x: .value("Selected Month", Double(selectedIndex) + 0.5),
-                yStart: .value("Min", yAxisDisplayDomain.lowerBound),
-                yEnd: .value("Max", yAxisDisplayDomain.upperBound)
-            )
-            .foregroundStyle(.gray)
-            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-
             PointMark(
-                x: .value("Selected Month", Double(selectedIndex) + 0.5),
+                x: .value("Selected Month", visibleData[selectedIndex].month),
                 y: .value("Selected Value", visibleData[selectedIndex].positiveTotalK)
             )
             .foregroundStyle(Color(red: 0.10, green: 0.50, blue: 0.66))
@@ -478,10 +494,10 @@ private struct ChartContainer: View {
         }
 
         if showDebugOverlay {
-            ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, _ in
-                RuleMark(x: .value("Debug X", Double(index) + 0.5))
-                    .foregroundStyle(Color.red.opacity(0.35))
-                    .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [2, 3]))
+            ForEach(visibleData, id: \.id) { item in
+                RuleMark(x: .value("Debug X", item.month))
+                    .foregroundStyle(Color.red.opacity(0.6))
+                    .lineStyle(StrokeStyle(lineWidth: 1.0, dash: [2, 3]))
             }
         }
     }
@@ -490,7 +506,7 @@ private struct ChartContainer: View {
     private func segmentBar(index: Int, start: Double, value: Double, gap: Double, color: Color) -> some ChartContent {
         let bounds = adjustedSegmentBounds(start: start, value: value, gap: gap)
         return BarMark(
-            x: .value("Month", Double(index) + 0.5),
+            x: .value("Month", visibleData[index].month),
             yStart: .value("Value", bounds.low),
             yEnd: .value("Value", bounds.high),
             width: 40
