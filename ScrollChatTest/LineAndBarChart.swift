@@ -247,15 +247,17 @@ struct CombinedChartView: View {
         let plotHeight = plotArea?.height ?? 320
 
         return GeometryReader { geometry in
-            let width = geometry.size.width
+            let maxLabelWidth: CGFloat = 44
             ZStack(alignment: .topLeading) {
                 ForEach(yAxisTickValues, id: \.self) { value in
                     if let yPos = tickPositions[value] {
                         Text(yAxisLabel(for: value))
                             .font(.caption2)
                             .foregroundStyle(.gray)
-                            .border(.red, width: 1)
-                            .position(x: width - 2, y: yPos)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: maxLabelWidth, alignment: .trailing)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .position(x: 0, y: yPos)
                     }
                 }
             }
@@ -275,14 +277,21 @@ struct CombinedChartView: View {
         GeometryReader { geometry in
             let visibleCount: CGFloat = 4
             let yAxisWidth: CGFloat = 40
-            let spacing: CGFloat = 8
-            let viewportWidth = max(geometry.size.width - yAxisWidth - spacing, 1)
+            let viewportWidth = max(geometry.size.width - yAxisWidth, 1)
             let unitWidth = viewportWidth / visibleCount
             let chartWidth = max(viewportWidth, unitWidth * CGFloat(visibleData.count))
 
-            HStack(alignment: .top, spacing: spacing) {
-                yAxisLabels(plotArea: plotAreaInfo, tickPositions: yTickPositions)
-                    .frame(width: yAxisWidth)
+            HStack(alignment: .top, spacing: 0) {
+                HStack(alignment: .top, spacing: 8) {
+                    yAxisLabels(plotArea: plotAreaInfo, tickPositions: yTickPositions)
+
+                    if let plotAreaInfo {
+                        Rectangle()
+                            .fill(.black)
+                            .frame(width: 1, height: plotAreaInfo.height)
+                            .offset(y: plotAreaInfo.minY)
+                    }
+                }
 
                 ScrollViewReader { proxy in
                     ScrollView(.horizontal, showsIndicators: false) {
