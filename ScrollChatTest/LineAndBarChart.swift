@@ -92,6 +92,8 @@ struct CombinedChartView: View {
     @State private var showDebugOverlay: Bool = false
 
     @State private var selectedYearIndex: Int = 0
+    @State private var plotAreaInfo: PlotAreaInfo? = nil
+    @State private var yTickPositions: [Double: CGFloat] = [:]
     private let years: [YearData] = Self.makeYearsData()
 
     // Demo data (replace with API payload later).
@@ -205,6 +207,11 @@ struct CombinedChartView: View {
         amount == 0 ? "0" : "\(Int(amount))K"
     }
 
+    private struct PlotAreaInfo: Equatable {
+        let minY: CGFloat
+        let height: CGFloat
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             tabPicker
@@ -233,19 +240,28 @@ struct CombinedChartView: View {
         }
     }
 
-    // Fixed Y-axis labels so they don't scroll with the chart.
-    private var yAxisLabels: some View {
-        VStack(spacing: 0) {
-            ForEach(yAxisTickValues.reversed(), id: \.self) { value in
-                Text(yAxisLabel(for: value))
-                    .font(.caption2)
-                    .foregroundStyle(.gray)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                Spacer()
+    // Fixed Y-axis labels aligned to the chart's plot area.
+    // Each label is centered on its corresponding grid line.
+    private func yAxisLabels(plotArea: PlotAreaInfo?, tickPositions: [Double: CGFloat]) -> some View {
+        let topPadding = plotArea?.minY ?? 12
+        let plotHeight = plotArea?.height ?? 320
+
+        return GeometryReader { geometry in
+            let width = geometry.size.width
+            ZStack(alignment: .topLeading) {
+                ForEach(yAxisTickValues, id: \.self) { value in
+                    if let yPos = tickPositions[value] {
+                        Text(yAxisLabel(for: value))
+                            .font(.caption2)
+                            .foregroundStyle(.gray)
+                            .border(.red, width: 1)
+                            .position(x: width - 2, y: yPos)
+                    }
+                }
             }
         }
-        .padding(.top, 12)
-        .padding(.bottom, 12)
+        .frame(height: plotHeight)
+        .padding(.top, topPadding)
     }
 
     private var debugToggle: some View {
@@ -264,8 +280,8 @@ struct CombinedChartView: View {
             let unitWidth = viewportWidth / visibleCount
             let chartWidth = max(viewportWidth, unitWidth * CGFloat(visibleData.count))
 
-            HStack(spacing: spacing) {
-                yAxisLabels
+            HStack(alignment: .top, spacing: spacing) {
+                yAxisLabels(plotArea: plotAreaInfo, tickPositions: yTickPositions)
                     .frame(width: yAxisWidth)
 
                 ScrollViewReader { proxy in
@@ -279,7 +295,18 @@ struct CombinedChartView: View {
                                 totalTrendPalette: totalTrendPalette,
                                 breakdownPalette: breakdownPalette,
                                 showDebugOverlay: showDebugOverlay,
-                                onSelectIndex: { selectedIndex = $0 }
+                                onSelectIndex: { selectedIndex = $0 },
+                                onPlotAreaChange: { plotRect in
+                                    let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
+                                    if plotAreaInfo != info {
+                                        plotAreaInfo = info
+                                    }
+                                },
+                                onYAxisTickPositions: { positions in
+                                    if yTickPositions != positions {
+                                        yTickPositions = positions
+                                    }
+                                }
                             )
                             .frame(width: chartWidth, height: 420)
 
@@ -343,6 +370,8 @@ private struct ChartContainer: View {
     let breakdownPalette: [Color]
     let showDebugOverlay: Bool
     let onSelectIndex: (Int) -> Void
+    let onPlotAreaChange: (CGRect) -> Void
+    let onYAxisTickPositions: ([Double: CGFloat]) -> Void
     @State private var selectedIndex: Int? = nil
 
     private func yAxisLabel(for amount: Double) -> String {
@@ -379,13 +408,33 @@ private struct ChartContainer: View {
             }
         }
         .chartYScale(domain: yAxisDisplayDomain)
+        // Removed top padding to align plot area with fixed Y labels and overlays.
         .chartPlotStyle { plot in
-            plot.padding(Edge.Set.top, 20)
+            plot
         }
         // Tap in plot area to select the nearest month index.
         .chartOverlay { proxy in
             GeometryReader { geometry in
                 let plotRect = geometry[proxy.plotAreaFrame]
+                if plotRect.width > 0, plotRect.height > 0 {
+                    let currentRect = plotRect
+                    Color.clear
+                        .onAppear { onPlotAreaChange(currentRect) }
+                        .onChange(of: currentRect) { onPlotAreaChange($0) }
+                }
+                if plotRect.width > 0, plotRect.height > 0 {
+                    let positions: [Double: CGFloat] = Dictionary(
+                        uniqueKeysWithValues: yAxisTickValues.compactMap { value in
+                            if let yPos = proxy.position(forY: value) {
+                                return (value, yPos - plotRect.minY)
+                            }
+                            return nil
+                        }
+                    )
+                    Color.clear
+                        .onAppear { onYAxisTickPositions(positions) }
+                        .onChange(of: positions) { onYAxisTickPositions($0) }
+                }
                 ZStack(alignment: .topLeading) {
                     if let selectedIndex, visibleData.indices.contains(selectedIndex) {
                         let selectedMonth = visibleData[selectedIndex].month
