@@ -45,7 +45,7 @@ struct ContentView: View {
                         onPointTap: { context in
                             print(
                                 "Tapped point:",
-                                "groupID=\(context.groupID)",
+                                "groupID=\(context.point.id.groupID)",
                                 "xKey=\(context.point.xKey)",
                                 "index=\(context.index)")
                         })))

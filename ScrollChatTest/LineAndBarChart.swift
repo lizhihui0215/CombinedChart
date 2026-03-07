@@ -407,7 +407,6 @@ extension CombinedChartView {
         struct SelectionContext {
             let point: ChartPoint
             let index: Int
-            let groupID: String
         }
     }
 
@@ -744,8 +743,7 @@ extension CombinedChartView {
         customization.callbacks.onPointTap?(
             .init(
                 point: point,
-                index: index,
-                groupID: point.id.groupID))
+                index: index))
     }
 
     private func selectPage(_ page: Int) {
@@ -1509,7 +1507,7 @@ private struct LineAndBarChartPreviewHost: View {
                         onPointTap: { context in
                             print(
                                 "Tapped point:",
-                                "groupID=\(context.groupID)",
+                                "groupID=\(context.point.id.groupID)",
                                 "xKey=\(context.point.xKey)",
                                 "index=\(context.index)")
                         })))
