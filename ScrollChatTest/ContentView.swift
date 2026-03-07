@@ -39,7 +39,16 @@ struct ContentView: View {
                 groups: groups,
                 tabs: tabs,
                 selectedTab: $selectedTab,
-                showDebugOverlay: $showDebugOverlay)
+                showDebugOverlay: $showDebugOverlay,
+                customization: .init(
+                    callbacks: .init(
+                        onPointTap: { context in
+                            print(
+                                "Tapped point:",
+                                "groupID=\(context.groupID)",
+                                "xKey=\(context.point.xKey)",
+                                "index=\(context.index)")
+                        })))
         }
         .padding()
     }

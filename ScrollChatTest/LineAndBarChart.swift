@@ -265,10 +265,9 @@ extension ChartConfig.ChartAxisConfig {
 
 struct CombinedChartView: View {
     private let config: ChartConfig
-    private let onSelect: ((ChartPoint) -> Void)?
     private let groups: [ChartGroup]
     private let tabs: [ChartTab]
-    private let viewSlots: ViewSlots
+    private let customization: Customization
     @Binding private var selectedTab: ChartTab
     @Binding private var showDebugOverlay: Bool
 
@@ -278,15 +277,13 @@ struct CombinedChartView: View {
         tabs: [ChartTab] = ChartTab.defaults,
         selectedTab: Binding<ChartTab> = .constant(.totalTrend),
         showDebugOverlay: Binding<Bool> = .constant(false),
-        viewSlots: ViewSlots = .default,
-        onSelect: ((ChartPoint) -> Void)? = nil) {
+        customization: Customization = .default) {
         self.config = config
         self.groups = groups
         self.tabs = tabs
-        self.viewSlots = viewSlots
+        self.customization = customization
         _selectedTab = selectedTab
         _showDebugOverlay = showDebugOverlay
-        self.onSelect = onSelect
     }
 
     // UI state.
@@ -310,71 +307,108 @@ extension CombinedChartView {
         }
     }
 
-    struct ViewSlots {
-        let emptyState: AnyView
-        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
-        let pager: ((PagerContext) -> AnyView)?
-
-        static var `default`: ViewSlots {
-            .init(
-                emptyState: AnyView(DefaultEmptyStateView()),
-                selectionOverlay: nil,
-                pager: nil)
+    struct Customization {
+        struct PagerItem: Identifiable, Hashable {
+            let id: String
+            let displayTitle: String
+            let page: Int
         }
 
-        static func emptyState(
-            @ViewBuilder _ content: () -> some View) -> ViewSlots {
-            .init(
-                emptyState: AnyView(content()),
-                selectionOverlay: nil,
-                pager: nil)
+        struct Slots {
+            let emptyState: AnyView
+            let selectionOverlay: ((Customization.SelectionOverlayContext) -> AnyView)?
+            let pager: ((Customization.PagerContext) -> AnyView)?
+
+            static var `default`: Slots {
+                .init(
+                    emptyState: AnyView(DefaultEmptyStateView()),
+                    selectionOverlay: nil,
+                    pager: nil)
+            }
+
+            static func emptyState(
+                @ViewBuilder _ content: () -> some View) -> Slots {
+                .init(
+                    emptyState: AnyView(content()),
+                    selectionOverlay: nil,
+                    pager: nil)
+            }
+
+            static func custom(
+                @ViewBuilder emptyState: () -> some View,
+                @ViewBuilder selectionOverlay: @escaping (Customization.SelectionOverlayContext) -> some View)
+                -> Slots {
+                .init(
+                    emptyState: AnyView(emptyState()),
+                    selectionOverlay: { context in
+                        AnyView(selectionOverlay(context))
+                    },
+                    pager: nil)
+            }
+
+            static func custom(
+                @ViewBuilder emptyState: () -> some View,
+                @ViewBuilder selectionOverlay: @escaping (Customization.SelectionOverlayContext) -> some View,
+                @ViewBuilder pager: @escaping (Customization.PagerContext) -> some View) -> Slots {
+                .init(
+                    emptyState: AnyView(emptyState()),
+                    selectionOverlay: { context in
+                        AnyView(selectionOverlay(context))
+                    },
+                    pager: { context in
+                        AnyView(pager(context))
+                    })
+            }
         }
 
-        static func custom(
-            @ViewBuilder emptyState: () -> some View,
-            @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View) -> ViewSlots {
-            .init(
-                emptyState: AnyView(emptyState()),
-                selectionOverlay: { context in
-                    AnyView(selectionOverlay(context))
-                },
-                pager: nil)
+        struct Callbacks {
+            let onPointTap: ((Customization.SelectionContext) -> Void)?
+
+            static let `default` = Callbacks()
+
+            init(onPointTap: ((Customization.SelectionContext) -> Void)? = nil) {
+                self.onPointTap = onPointTap
+            }
         }
 
-        static func custom(
-            @ViewBuilder emptyState: () -> some View,
-            @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View,
-            @ViewBuilder pager: @escaping (PagerContext) -> some View) -> ViewSlots {
-            .init(
-                emptyState: AnyView(emptyState()),
-                selectionOverlay: { context in
-                    AnyView(selectionOverlay(context))
-                },
-                pager: { context in
-                    AnyView(pager(context))
-                })
+        let slots: Slots
+        let callbacks: Callbacks
+
+        static let `default` = Customization()
+
+        init(
+            slots: Slots = .default,
+            callbacks: Callbacks = .default) {
+            self.slots = slots
+            self.callbacks = callbacks
         }
-    }
 
-    struct SelectionOverlayContext {
-        let point: ChartPoint
-        let index: Int
-        let value: Double
-        let xPosition: CGFloat
-        let plotRect: CGRect
-        let indicatorStyle: ChartPresentationMode.SelectionIndicatorStyle
-        let highlightWidth: CGFloat
-    }
+        struct SelectionOverlayContext {
+            let point: ChartPoint
+            let index: Int
+            let value: Double
+            let xPosition: CGFloat
+            let plotRect: CGRect
+            let indicatorStyle: ChartPresentationMode.SelectionIndicatorStyle
+            let highlightWidth: CGFloat
+        }
 
-    struct PagerContext {
-        let ranges: [YearPageRange]
-        let highlightedTitle: String?
-        let scrollPage: Int
-        let maxScrollPage: Int
-        let displayStyle: ChartConfig.ChartPagerConfig.DisplayStyle
-        let onSelectPreviousPage: () -> Void
-        let onSelectRange: (YearPageRange) -> Void
-        let onSelectNextPage: () -> Void
+        struct PagerContext {
+            let items: [PagerItem]
+            let highlightedTitle: String?
+            let scrollPage: Int
+            let maxScrollPage: Int
+            let displayStyle: ChartConfig.ChartPagerConfig.DisplayStyle
+            let onSelectPreviousPage: () -> Void
+            let onSelectItem: (PagerItem) -> Void
+            let onSelectNextPage: () -> Void
+        }
+
+        struct SelectionContext {
+            let point: ChartPoint
+            let index: Int
+            let groupID: String
+        }
     }
 
     struct ChartPresentationMode: Hashable {
@@ -563,30 +597,29 @@ extension CombinedChartView {
 extension CombinedChartView {
     @ViewBuilder
     private var pagerView: some View {
-        let context = PagerContext(
-            ranges: yearPageRanges,
+        let context = Customization.PagerContext(
+            items: pagerItems,
             highlightedTitle: (fullyVisibleYearRange ?? currentYearRange)?.displayTitle,
             scrollPage: scrollPage,
             maxScrollPage: maxScrollPage,
             displayStyle: config.pager.displayStyle,
             onSelectPreviousPage: { selectPage(scrollPage - 1) },
-            onSelectRange: { range in
-                scrollPage = range.startPage
-                updateSelection(to: range.startMonthIndex)
+            onSelectItem: { item in
+                selectPage(item.page)
             },
             onSelectNextPage: { selectPage(scrollPage + 1) })
 
-        if let pager = viewSlots.pager {
+        if let pager = customization.slots.pager {
             pager(context)
         } else {
             CombinedChartPager(
-                ranges: context.ranges,
+                items: context.items,
                 highlightedTitle: context.highlightedTitle,
                 scrollPage: context.scrollPage,
                 maxScrollPage: context.maxScrollPage,
                 displayStyle: context.displayStyle,
                 onSelectPreviousPage: context.onSelectPreviousPage,
-                onSelectRange: context.onSelectRange,
+                onSelectItem: context.onSelectItem,
                 onSelectNextPage: context.onSelectNextPage)
         }
     }
@@ -625,6 +658,15 @@ extension CombinedChartView {
 
     private var currentYearRange: YearPageRange? {
         yearPageRanges.first { $0.contains(page: scrollPage) } ?? yearPageRanges.first
+    }
+
+    private var pagerItems: [Customization.PagerItem] {
+        yearPageRanges.map { range in
+            .init(
+                id: range.id,
+                displayTitle: range.displayTitle,
+                page: range.startPage)
+        }
     }
 
     private var visibleMonthRange: ClosedRange<Int>? {
@@ -698,7 +740,12 @@ extension CombinedChartView {
     private func updateSelection(to index: Int?) {
         selectedIndex = index
         guard let index, data.indices.contains(index) else { return }
-        onSelect?(data[index].source)
+        let point = data[index].source
+        customization.callbacks.onPointTap?(
+            .init(
+                point: point,
+                index: index,
+                groupID: point.id.groupID))
     }
 
     private func selectPage(_ page: Int) {
@@ -727,12 +774,12 @@ extension CombinedChartView {
                         yAxisDisplayDomain: yAxisDisplayDomain,
                         maxScrollPage: maxScrollPage,
                         showDebugOverlay: showDebugOverlay,
-                        selectionOverlay: viewSlots.selectionOverlay,
+                        selectionOverlay: customization.slots.selectionOverlay,
                         yAxisLabel: yAxisLabel(for:),
                         onSelectIndex: updateSelection(to:),
                         scrollPage: scrollPage)
                 } else {
-                    viewSlots.emptyState
+                    customization.slots.emptyState
                 }
             }
 
@@ -790,7 +837,7 @@ private extension CombinedChartView {
         let yAxisDisplayDomain: ClosedRange<Double>
         let maxScrollPage: Int
         let showDebugOverlay: Bool
-        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
+        let selectionOverlay: ((Customization.SelectionOverlayContext) -> AnyView)?
         let yAxisLabel: (Double) -> String
         let onSelectIndex: (Int?) -> Void
         let scrollPage: Int
@@ -888,13 +935,13 @@ private extension CombinedChartView {
     }
 
     struct CombinedChartPager: View {
-        let ranges: [YearPageRange]
+        let items: [Customization.PagerItem]
         let highlightedTitle: String?
         let scrollPage: Int
         let maxScrollPage: Int
         let displayStyle: ChartConfig.ChartPagerConfig.DisplayStyle
         let onSelectPreviousPage: () -> Void
-        let onSelectRange: (YearPageRange) -> Void
+        let onSelectItem: (Customization.PagerItem) -> Void
         let onSelectNextPage: () -> Void
 
         var body: some View {
@@ -909,12 +956,12 @@ private extension CombinedChartView {
 
                 if displayStyle == .allYears {
                     HStack(spacing: 16) {
-                        ForEach(ranges) { range in
-                            Text(range.displayTitle)
-                                .font(.callout.weight(range.displayTitle == highlightedTitle ? .semibold : .regular))
-                                .foregroundStyle(range.displayTitle == highlightedTitle ? .primary : .secondary)
+                        ForEach(items) { item in
+                            Text(item.displayTitle)
+                                .font(.callout.weight(item.displayTitle == highlightedTitle ? .semibold : .regular))
+                                .foregroundStyle(item.displayTitle == highlightedTitle ? .primary : .secondary)
                                 .onTapGesture {
-                                    onSelectRange(range)
+                                    onSelectItem(item)
                                 }
                         }
                     }
@@ -975,7 +1022,7 @@ private extension CombinedChartView {
         let plotAreaHeight: CGFloat
         let config: ChartConfig
         let showDebugOverlay: Bool
-        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
+        let selectionOverlay: ((Customization.SelectionOverlayContext) -> AnyView)?
         let onSelectIndex: (Int) -> Void
         let onPlotAreaChange: (CGRect) -> Void
         let onYAxisTickPositions: ([Double: CGFloat]) -> Void
@@ -1456,7 +1503,16 @@ private struct LineAndBarChartPreviewHost: View {
                 groups: groups,
                 tabs: tabs,
                 selectedTab: $selectedTab,
-                showDebugOverlay: $showDebugOverlay)
+                showDebugOverlay: $showDebugOverlay,
+                customization: .init(
+                    callbacks: .init(
+                        onPointTap: { context in
+                            print(
+                                "Tapped point:",
+                                "groupID=\(context.groupID)",
+                                "xKey=\(context.point.xKey)",
+                                "index=\(context.index)")
+                        })))
         }
         .padding()
     }
