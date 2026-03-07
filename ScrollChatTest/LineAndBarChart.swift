@@ -9,34 +9,6 @@ import SwiftUI
 import Charts
 import UIKit
 
-struct ChartSeriesStyle: Identifiable {
-    let id: String
-    let label: String
-    let color: Color
-    let isNegative: Bool
-    let includeInLine: Bool
-}
-
-struct ChartBarConfig {
-    let series: [ChartSeriesStyle]
-    let totalTrendColor: Color
-    let useTotalTrendSingleColor: Bool
-    let segmentGap: CGFloat
-    let segmentGapColor: Color
-}
-
-struct ChartLineConfig {
-    let positiveLineColor: Color
-    let negativeLineColor: Color
-    let selectionLineColor: Color
-    let selectionFillColor: Color
-}
-
-struct ChartAxisConfig {
-    let xAxisLabel: (String) -> String
-    let yAxisLabel: (Double) -> String
-}
-
 struct ChartConfig {
     let bar: ChartBarConfig
     let line: ChartLineConfig
@@ -45,11 +17,11 @@ struct ChartConfig {
     static let `default` = ChartConfig(
         bar: ChartBarConfig(
             series: [
-                ChartSeriesStyle(id: "liabilities", label: "Liabilities", color: Color(red: 0.82, green: 0.35, blue: 0.42), isNegative: true, includeInLine: true),
-                ChartSeriesStyle(id: "saving", label: "Saving", color: Color(red: 0.20, green: 0.52, blue: 0.68), isNegative: false, includeInLine: true),
-                ChartSeriesStyle(id: "investment", label: "Investment", color: Color(red: 0.86, green: 0.43, blue: 0.16), isNegative: false, includeInLine: true),
-                ChartSeriesStyle(id: "otherLiquid", label: "Other Liquid", color: Color(red: 0.30, green: 0.67, blue: 0.14), isNegative: false, includeInLine: true),
-                ChartSeriesStyle(id: "otherNonLiquid", label: "Other Non-Liquid", color: Color(red: 0.08, green: 0.28, blue: 0.34), isNegative: false, includeInLine: true)
+                ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "liabilities", label: "Liabilities", color: Color(red: 0.82, green: 0.35, blue: 0.42), isNegative: true, includeInLine: true),
+                ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "saving", label: "Saving", color: Color(red: 0.20, green: 0.52, blue: 0.68), isNegative: false, includeInLine: true),
+                ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "investment", label: "Investment", color: Color(red: 0.86, green: 0.43, blue: 0.16), isNegative: false, includeInLine: true),
+                ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "otherLiquid", label: "Other Liquid", color: Color(red: 0.30, green: 0.67, blue: 0.14), isNegative: false, includeInLine: true),
+                ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "otherNonLiquid", label: "Other Non-Liquid", color: Color(red: 0.08, green: 0.28, blue: 0.34), isNegative: false, includeInLine: true)
             ],
             totalTrendColor: Color.gray.opacity(0.45),
             useTotalTrendSingleColor: false,
@@ -69,6 +41,38 @@ struct ChartConfig {
             }
         )
     )
+}
+
+extension ChartConfig {
+    struct ChartBarConfig {
+        let series: [ChartSeriesStyle]
+        let totalTrendColor: Color
+        let useTotalTrendSingleColor: Bool
+        let segmentGap: CGFloat
+        let segmentGapColor: Color
+    }
+
+    struct ChartLineConfig {
+        let positiveLineColor: Color
+        let negativeLineColor: Color
+        let selectionLineColor: Color
+        let selectionFillColor: Color
+    }
+
+    struct ChartAxisConfig {
+        let xAxisLabel: (String) -> String
+        let yAxisLabel: (Double) -> String
+    }
+}
+
+extension ChartConfig.ChartBarConfig {
+    struct ChartSeriesStyle: Identifiable {
+        let id: String
+        let label: String
+        let color: Color
+        let isNegative: Bool
+        let includeInLine: Bool
+    }
 }
 
 private struct ScrollOffsetKey: PreferenceKey {
@@ -232,7 +236,7 @@ struct CombinedChartView<Payload>: View {
         config.axis.yAxisLabel(amount)
     }
 
-    private func signedValue(for point: ChartPoint, series: ChartSeriesStyle) -> Double {
+    private func signedValue(for point: ChartPoint, series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
         let raw = point.values[series.id] ?? 0
         return series.isNegative ? -abs(raw) : raw
     }
@@ -487,7 +491,7 @@ private struct ChartContainer<Payload>: View {
     let onYAxisTickPositions: ([Double: CGFloat]) -> Void
     @State private var selectedIndex: Int? = nil
 
-    private func signedValue(for point: CombinedChartView<Payload>.ChartPoint, series: ChartSeriesStyle) -> Double {
+    private func signedValue(for point: CombinedChartView<Payload>.ChartPoint, series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
         let raw = point.values[series.id] ?? 0
         return series.isNegative ? -abs(raw) : raw
     }
@@ -771,4 +775,3 @@ private struct LineAndBarChartPreviewHost: View {
 #Preview {
     LineAndBarChartPreviewHost()
 }
-

@@ -103,26 +103,26 @@ enum ChartSampleData {
 
     static func makeConfig() -> ChartConfig {
         ChartConfig(
-            bar: ChartBarConfig(
+            bar: ChartConfig.ChartBarConfig(
                 series: [
-                    .init(id: "liabilities", label: "Liabilities", color: Color(red: 0.82, green: 0.35, blue: 0.42), isNegative: true, includeInLine: true),
-                    .init(id: "saving", label: "Saving", color: Color(red: 0.20, green: 0.52, blue: 0.68), isNegative: false, includeInLine: true),
-                    .init(id: "investment", label: "Investment", color: Color(red: 0.86, green: 0.43, blue: 0.16), isNegative: false, includeInLine: true),
-                    .init(id: "otherLiquid", label: "Other Liquid", color: Color(red: 0.30, green: 0.67, blue: 0.14), isNegative: false, includeInLine: true),
-                    .init(id: "otherNonLiquid", label: "Other Non-Liquid", color: Color(red: 0.08, green: 0.28, blue: 0.34), isNegative: false, includeInLine: true)
+                    ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "liabilities", label: "Liabilities", color: Color(red: 0.82, green: 0.35, blue: 0.42), isNegative: true, includeInLine: true),
+                    ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "saving", label: "Saving", color: Color(red: 0.20, green: 0.52, blue: 0.68), isNegative: false, includeInLine: true),
+                    ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "investment", label: "Investment", color: Color(red: 0.86, green: 0.43, blue: 0.16), isNegative: false, includeInLine: true),
+                    ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "otherLiquid", label: "Other Liquid", color: Color(red: 0.30, green: 0.67, blue: 0.14), isNegative: false, includeInLine: true),
+                    ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "otherNonLiquid", label: "Other Non-Liquid", color: Color(red: 0.08, green: 0.28, blue: 0.34), isNegative: false, includeInLine: true)
                 ],
                 totalTrendColor: Color.gray.opacity(0.45),
                 useTotalTrendSingleColor: true,
                 segmentGap: 2,
                 segmentGapColor: Color(uiColor: .systemBackground)
             ),
-            line: ChartLineConfig(
+            line: ChartConfig.ChartLineConfig(
                 positiveLineColor: .red,
                 negativeLineColor: .yellow,
                 selectionLineColor: Color.gray,
                 selectionFillColor: Color.gray.opacity(0.12)
             ),
-            axis: ChartAxisConfig(
+            axis: ChartConfig.ChartAxisConfig(
                 xAxisLabel: { $0 },
                 yAxisLabel: { value in
                     value == 0 ? "0" : "\(Int(value / 1_000))K"
