@@ -669,7 +669,7 @@ extension CombinedChartView {
 
     private var visibleMonthRange: ClosedRange<Int>? {
         guard unitWidth > 0, viewportWidth > 0, !data.isEmpty else { return nil }
-        let offset = max(0, -scrollOffsetX)
+        let offset = max(0, scrollOffsetX)
         let start = max(0, Int(floor(offset / unitWidth)))
         let visibleCount = max(1, Int(round(viewportWidth / unitWidth)))
         let end = min(data.count - 1, start + visibleCount - 1)
@@ -843,7 +843,7 @@ extension CombinedChartView {
         }
         .frame(height: config.chartHeight)
         .onChange(of: scrollOffsetX) { value in
-            let currentScrollOffset = max(0, -value)
+            let currentScrollOffset = max(0, value)
             guard unitWidth > 0 else { return }
             let monthIndex = min(
                 max(Int(floor(currentScrollOffset / unitWidth)), 0),
@@ -905,7 +905,6 @@ private extension CombinedChartView {
         let yAxisLabel: (Double) -> String
         let onSelectIndex: (Int?) -> Void
         @Binding var scrollRequest: Int?
-        @State private var dragStartMonthIndex: Int?
 
         private var maxStartMonthIndex: Int {
             max(0, data.count - config.monthsPerPage)
@@ -935,106 +934,52 @@ private extension CombinedChartView {
                     }
 
                     ScrollViewReader { proxy in
-                        GeometryReader { scrollGeometry in
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                ZStack(alignment: .topLeading) {
-                                    GeometryReader { proxy in
-                                        Color.clear
-                                            .preference(
-                                                key: ScrollOffsetKey.self,
-                                                value: proxy.frame(in: .global).minX - scrollGeometry.frame(in: .global)
-                                                    .minX)
-                                    }
-                                    .frame(width: chartWidth, height: 1, alignment: .topLeading)
-
-                                    ChartContainer(
-                                        selectedTab: selectedTab,
-                                        selectedIndex: $selectedIndex,
-                                        visibleData: data,
-                                        yAxisTickValues: yAxisTickValues,
-                                        yAxisDisplayDomain: yAxisDisplayDomain,
-                                        plotAreaHeight: plotAreaInfo?.height ?? 0,
-                                        config: config,
-                                        showDebugOverlay: showDebugOverlay,
-                                        selectionOverlay: selectionOverlay,
-                                        onSelectIndex: onSelectIndex,
-                                        onPlotAreaChange: { plotRect in
-                                            let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
-                                            if plotAreaInfo != info {
-                                                plotAreaInfo = info
-                                            }
-                                        },
-                                        onYAxisTickPositions: { positions in
-                                            if yTickPositions != positions {
-                                                yTickPositions = positions
-                                            }
-                                        })
-                                        .frame(width: chartWidth)
-                                        .frame(maxHeight: .infinity)
-
-                                    HStack(spacing: 0) {
-                                        ForEach(Array(data.indices), id: \.self) { monthIndex in
-                                            Color.clear
-                                                .frame(
-                                                    width: computedUnitWidth,
-                                                    height: 1)
-                                                .id(monthIndex)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            ZStack(alignment: .topLeading) {
+                                ChartContainer(
+                                    selectedTab: selectedTab,
+                                    selectedIndex: $selectedIndex,
+                                    visibleData: data,
+                                    yAxisTickValues: yAxisTickValues,
+                                    yAxisDisplayDomain: yAxisDisplayDomain,
+                                    plotAreaHeight: plotAreaInfo?.height ?? 0,
+                                    config: config,
+                                    showDebugOverlay: showDebugOverlay,
+                                    selectionOverlay: selectionOverlay,
+                                    onSelectIndex: onSelectIndex,
+                                    onPlotAreaChange: { plotRect in
+                                        let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
+                                        if plotAreaInfo != info {
+                                            plotAreaInfo = info
                                         }
+                                    },
+                                    onYAxisTickPositions: { positions in
+                                        if yTickPositions != positions {
+                                            yTickPositions = positions
+                                        }
+                                    })
+                                    .frame(width: chartWidth)
+                                    .frame(maxHeight: .infinity)
+
+                                HStack(spacing: 0) {
+                                    ForEach(Array(data.indices), id: \.self) { monthIndex in
+                                        Color.clear
+                                            .frame(
+                                                width: computedUnitWidth,
+                                                height: 1)
+                                            .id(monthIndex)
                                     }
                                 }
                             }
-                            .onPreferenceChange(ScrollOffsetKey.self) { value in
-                                scrollOffsetX = value
-                            }
-                            .onChange(of: scrollRequest) { monthIndex in
-                                guard let monthIndex else { return }
-                                print("[ScrollRequest]", "monthIndex=\(monthIndex)")
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                    proxy.scrollTo(monthIndex, anchor: .leading)
-                                }
-                            }
+                            .background(ScrollViewOffsetObserver(offsetX: $scrollOffsetX))
                         }
                         .frame(width: computedViewportWidth)
-                        .simultaneousGesture(
-                            DragGesture()
-                                .onChanged { value in
-                                    if dragStartMonthIndex == nil {
-                                        dragStartMonthIndex = visibleStartMonthIndex
-                                    }
-                                    let baseMonthIndex = dragStartMonthIndex ?? visibleStartMonthIndex
-                                    let monthDelta = Int(round(-value.translation.width / computedUnitWidth))
-                                    let derivedMonthIndex = min(
-                                        max(baseMonthIndex + monthDelta, 0),
-                                        maxStartMonthIndex)
-                                    print(
-                                        "[ScrollView Drag]",
-                                        "translation=\(value.translation)",
-                                        "location=\(value.location)",
-                                        "baseMonthIndex=\(baseMonthIndex)",
-                                        "derivedMonthIndex=\(derivedMonthIndex)")
-                                    if visibleStartMonthIndex != derivedMonthIndex {
-                                        visibleStartMonthIndex = derivedMonthIndex
-                                    }
-                                }
-                                .onEnded { value in
-                                    let baseMonthIndex = dragStartMonthIndex ?? visibleStartMonthIndex
-                                    let monthDelta = Int(round(-value.translation.width / computedUnitWidth))
-                                    let derivedMonthIndex = min(
-                                        max(baseMonthIndex + monthDelta, 0),
-                                        maxStartMonthIndex)
-                                    print(
-                                        "[ScrollView Drag End]",
-                                        "translation=\(value.translation)",
-                                        "predictedEndTranslation=\(value.predictedEndTranslation)",
-                                        "baseMonthIndex=\(baseMonthIndex)",
-                                        "derivedMonthIndex=\(derivedMonthIndex)")
-                                    visibleStartMonthIndex = derivedMonthIndex
-                                    dragStartMonthIndex = nil
-                                })
-                        .onChange(of: visibleStartMonthIndex) { monthIndex in
-                            print(
-                                "[ScrollView Visible Month]",
-                                "monthIndex=\(monthIndex)")
+                        .onChange(of: scrollRequest) { monthIndex in
+                            guard let monthIndex else { return }
+                            print("[ScrollRequest]", "monthIndex=\(monthIndex)")
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                proxy.scrollTo(monthIndex, anchor: .leading)
+                            }
                         }
                     }
                 }
@@ -1113,13 +1058,82 @@ private extension CombinedChartView {
         let pointInfoByKey: [String: ChartConfig.ChartAxisConfig.AxisPointInfo]
     }
 
-    private struct ScrollOffsetKey: PreferenceKey {
-        static var defaultValue: CGFloat {
-            0
+    private struct ScrollViewOffsetObserver: UIViewRepresentable {
+        @Binding var offsetX: CGFloat
+
+        func makeCoordinator() -> Coordinator {
+            Coordinator(offsetX: $offsetX)
         }
 
-        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-            value = nextValue()
+        func makeUIView(context: Context) -> ObserverView {
+            let view = ObserverView()
+            view.onResolveScrollView = { scrollView in
+                context.coordinator.attach(to: scrollView)
+            }
+            return view
+        }
+
+        func updateUIView(_ uiView: ObserverView, context: Context) {
+            uiView.onResolveScrollView = { scrollView in
+                context.coordinator.attach(to: scrollView)
+            }
+            context.coordinator.offsetX = $offsetX
+            DispatchQueue.main.async {
+                uiView.resolveScrollViewIfNeeded()
+            }
+        }
+
+        final class Coordinator {
+            var offsetX: Binding<CGFloat>
+            private weak var scrollView: UIScrollView?
+            private var observation: NSKeyValueObservation?
+
+            init(offsetX: Binding<CGFloat>) {
+                self.offsetX = offsetX
+            }
+
+            func attach(to scrollView: UIScrollView?) {
+                guard let scrollView, self.scrollView !== scrollView else { return }
+                observation = nil
+                self.scrollView = scrollView
+                scrollView.bounces = false
+                scrollView.alwaysBounceHorizontal = false
+                observation = scrollView.observe(\.contentOffset, options: [
+                    .initial,
+                    .new
+                ]) { [weak self] scrollView, _ in
+                    guard let self else { return }
+                    DispatchQueue.main.async {
+                        self.offsetX.wrappedValue = max(0, scrollView.contentOffset.x)
+                    }
+                }
+            }
+        }
+
+        final class ObserverView: UIView {
+            var onResolveScrollView: ((UIScrollView?) -> Void)?
+
+            override func didMoveToWindow() {
+                super.didMoveToWindow()
+                resolveScrollViewIfNeeded()
+            }
+
+            func resolveScrollViewIfNeeded() {
+                DispatchQueue.main.async {
+                    self.onResolveScrollView?(self.enclosingScrollView())
+                }
+            }
+
+            private func enclosingScrollView() -> UIScrollView? {
+                var candidate = superview
+                while let current = candidate {
+                    if let scrollView = current as? UIScrollView {
+                        return scrollView
+                    }
+                    candidate = current.superview
+                }
+                return nil
+            }
         }
     }
 
