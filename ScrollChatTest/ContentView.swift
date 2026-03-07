@@ -13,7 +13,7 @@ struct ContentView: View {
     private let config = ChartSampleData.makeConfig()
 
     var body: some View {
-        LineAndBarChart<String>(
+        CombinedChartView<String>(
             config: config,
             groups: groups
         )

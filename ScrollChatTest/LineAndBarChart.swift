@@ -78,28 +78,6 @@ private struct ScrollOffsetKey: PreferenceKey {
     }
 }
 
-struct LineAndBarChart<Payload>: View {
-    // Chart + overlay for selection. Uses index-based X axis.
-    let config: ChartConfig
-    let groups: [CombinedChartView<Payload>.ChartGroup]
-    let onSelect: ((CombinedChartView<Payload>.ChartPoint) -> Void)?
-
-    init(
-        config: ChartConfig = .default,
-        groups: [CombinedChartView<Payload>.ChartGroup],
-        onSelect: ((CombinedChartView<Payload>.ChartPoint) -> Void)? = nil
-    ) {
-        self.config = config
-        self.groups = groups
-        self.onSelect = onSelect
-    }
-
-    var body: some View {
-        CombinedChartView(config: config, groups: groups, onSelect: onSelect)
-            .frame(maxWidth: .infinity)
-    }
-}
-
 struct CombinedChartView<Payload>: View {
     // Two display modes for the same dataset.
     enum ChartTab: String, CaseIterable, Identifiable {
@@ -784,7 +762,7 @@ private struct LineAndBarChartPreviewHost: View {
     private let config = ChartSampleData.makeConfig()
 
     var body: some View {
-        LineAndBarChart<String>(
+        CombinedChartView<String>(
             config: config,
             groups: groups
         )
