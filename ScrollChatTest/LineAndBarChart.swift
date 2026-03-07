@@ -291,8 +291,8 @@ struct CombinedChartView: View {
 
     // UI state.
     @State private var selectedIndex: Int? = 0
-    @State private var scrollPage: Int = 0
-    @State private var scrollRequestID: Int = 0
+    @State private var visibleStartMonthIndex: Int = 0
+    @State private var scrollRequest: Int?
     @State private var scrollOffsetX: CGFloat = 0
     @State private var unitWidth: CGFloat = 0
     @State private var viewportWidth: CGFloat = 0
@@ -314,7 +314,7 @@ extension CombinedChartView {
     struct PagerEntry: Identifiable, Hashable {
         let id: String
         let displayTitle: String
-        let page: Int
+        let startMonthIndex: Int
     }
 
     struct ViewSlots {
@@ -384,7 +384,7 @@ extension CombinedChartView {
 
     struct PagerContext {
         let entries: [PagerEntry]
-        let highlightedEntryID: PagerEntry.ID?
+        let highlightedEntry: PagerEntry?
         let canSelectPreviousPage: Bool
         let canSelectNextPage: Bool
         let onSelectPreviousPage: () -> Void
@@ -585,26 +585,19 @@ extension CombinedChartView {
     private var pagerView: some View {
         let context = PagerContext(
             entries: pagerEntries,
-            highlightedEntryID: highlightedPagerEntryID,
-            canSelectPreviousPage: currentPage > 0,
-            canSelectNextPage: currentPage < maxScrollPage,
+            highlightedEntry: highlightedPagerEntry,
+            canSelectPreviousPage: visibleStartMonthIndex > 0,
+            canSelectNextPage: visibleStartMonthIndex < maxStartMonthIndex,
             onSelectPreviousPage: { selectPreviousPage() },
             onSelectEntry: { entry in
-                selectPage(entry.page)
+                selectMonthWindow(startingAt: entry.startMonthIndex)
             },
             onSelectNextPage: { selectNextPage() })
 
         if let pager = viewSlots.pager {
             pager(context)
         } else {
-            CombinedChartPager(
-                entries: context.entries,
-                highlightedEntryID: context.highlightedEntryID,
-                canSelectPreviousPage: context.canSelectPreviousPage,
-                canSelectNextPage: context.canSelectNextPage,
-                onSelectPreviousPage: context.onSelectPreviousPage,
-                onSelectEntry: context.onSelectEntry,
-                onSelectNextPage: context.onSelectNextPage)
+            CombinedChartPager(context: context)
         }
     }
 
@@ -649,7 +642,10 @@ extension CombinedChartView {
     }
 
     private var currentYearRange: YearPageRange? {
-        yearPageRanges.first { $0.contains(page: currentPage) } ?? yearPageRanges.first
+        yearPageRanges.first {
+            $0.startMonthIndex <= visibleStartMonthIndex &&
+                $0.endMonthIndex >= visibleStartMonthIndex
+        } ?? yearPageRanges.first
     }
 
     private var currentYearRangeIndex: Int? {
@@ -657,17 +653,9 @@ extension CombinedChartView {
         return yearPageRanges.firstIndex { $0.id == currentYearRange.id }
     }
 
-    private var highlightedPagerEntryID: PagerEntry.ID? {
-        (fullyVisibleYearRange ?? currentYearRange)?.id
-    }
-
-    private var currentPage: Int {
-        guard unitWidth > 0 else { return scrollPage }
-        let pageWidth = unitWidth * CGFloat(config.monthsPerPage)
-        guard pageWidth > 0 else { return scrollPage }
-        let offset = max(0, -scrollOffsetX)
-        let derivedPage = Int(round(offset / pageWidth))
-        return clampedPageIndex(for: derivedPage)
+    private var highlightedPagerEntry: PagerEntry? {
+        guard let highlightedRange = fullyVisibleYearRange ?? currentYearRange else { return nil }
+        return pagerEntries.first { $0.id == highlightedRange.id }
     }
 
     private var pagerEntries: [PagerEntry] {
@@ -675,7 +663,7 @@ extension CombinedChartView {
             .init(
                 id: range.id,
                 displayTitle: range.displayTitle,
-                page: range.startPage)
+                startMonthIndex: range.startMonthIndex)
         }
     }
 
@@ -697,14 +685,17 @@ extension CombinedChartView {
     }
 
     /// Number of 4-month pages for arrow navigation.
-    private var maxScrollPage: Int {
-        max(
-            0,
-            Int(ceil(Double(max(data.count - config.monthsPerPage, 0)) / Double(config.monthsPerPage))))
+    private var maxStartMonthIndex: Int {
+        max(0, data.count - config.monthsPerPage)
     }
 
     private var hasData: Bool {
         !data.isEmpty
+    }
+
+    private var visibleStartMonthLabel: String? {
+        guard data.indices.contains(visibleStartMonthIndex) else { return nil }
+        return data[visibleStartMonthIndex].xLabel
     }
 
     /// Dynamic Y range to fit all visible bars/line.
@@ -747,9 +738,9 @@ extension CombinedChartView {
                 visiblePoints: axisPointInfos))
     }
 
-    private func updateSelection(to index: Int?) {
+    private func updateSelection(to index: Int?, emitsPointTap: Bool = true) {
         selectedIndex = index
-        guard let index, data.indices.contains(index) else { return }
+        guard emitsPointTap, let index, data.indices.contains(index) else { return }
         let point = data[index].source
         onPointTap?(
             .init(
@@ -757,54 +748,77 @@ extension CombinedChartView {
                 index: index))
     }
 
-    private func selectPage(_ page: Int) {
-        let clampedPage = clampedPageIndex(for: page)
-        scrollPage = clampedPage
-        scrollRequestID += 1
-        updateSelection(to: selectionIndex(forPage: clampedPage))
+    private func selectMonthWindow(startingAt monthIndex: Int) {
+        let clampedMonthIndex = clampedStartMonthIndex(for: monthIndex)
+        print(
+            "[Select Month Window]",
+            "requested=\(monthIndex)",
+            "clamped=\(clampedMonthIndex)",
+            "visibleStartMonthIndex(before)=\(visibleStartMonthIndex)")
+        visibleStartMonthIndex = clampedMonthIndex
+        scrollRequest = clampedMonthIndex
     }
 
     private func selectPreviousPage() {
         switch config.pager.arrowScrollMode {
         case .byPage:
-            selectPage(currentPage - 1)
+            print(
+                "[Pager Prev]",
+                "visibleStartMonthIndex=\(visibleStartMonthIndex)",
+                "target=\(visibleStartMonthIndex - config.monthsPerPage)")
+            selectMonthWindow(startingAt: visibleStartMonthIndex - config.monthsPerPage)
         case .byEntry:
             guard let currentYearRangeIndex else { return }
             let previousIndex = max(0, currentYearRangeIndex - 1)
-            selectPage(yearPageRanges[previousIndex].startPage)
+            print(
+                "[Pager Prev Entry]",
+                "currentYearRangeIndex=\(currentYearRangeIndex)",
+                "targetStartMonthIndex=\(yearPageRanges[previousIndex].startMonthIndex)")
+            selectMonthWindow(startingAt: yearPageRanges[previousIndex].startMonthIndex)
         }
     }
 
     private func selectNextPage() {
         switch config.pager.arrowScrollMode {
         case .byPage:
-            selectPage(currentPage + 1)
+            print(
+                "[Pager Next]",
+                "visibleStartMonthIndex=\(visibleStartMonthIndex)",
+                "target=\(visibleStartMonthIndex + config.monthsPerPage)")
+            selectMonthWindow(startingAt: visibleStartMonthIndex + config.monthsPerPage)
         case .byEntry:
             guard let currentYearRangeIndex else { return }
             let nextIndex = min(yearPageRanges.count - 1, currentYearRangeIndex + 1)
-            selectPage(yearPageRanges[nextIndex].startPage)
+            print(
+                "[Pager Next Entry]",
+                "currentYearRangeIndex=\(String(describing: currentYearRangeIndex))",
+                "targetStartMonthIndex=\(yearPageRanges[nextIndex].startMonthIndex)")
+            selectMonthWindow(startingAt: yearPageRanges[nextIndex].startMonthIndex)
         }
     }
 
-    private func clampedPageIndex(for page: Int) -> Int {
-        min(max(page, 0), maxScrollPage)
-    }
-
-    private func selectionIndex(forPage page: Int) -> Int? {
-        guard !data.isEmpty else { return nil }
-        return min(data.count - 1, page * config.monthsPerPage)
+    private func clampedStartMonthIndex(for monthIndex: Int) -> Int {
+        min(max(monthIndex, 0), maxStartMonthIndex)
     }
 }
 
 extension CombinedChartView {
     var body: some View {
         VStack(spacing: 12) {
+            if showDebugOverlay, let visibleStartMonthLabel {
+                Text("Visible start month: \(visibleStartMonthIndex) (\(visibleStartMonthLabel))")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             Group {
                 if hasData {
                     CombinedChartSection(
                         config: config,
                         selectedTab: selectedTab,
                         selectedIndex: $selectedIndex,
+                        visibleStartMonthIndex: $visibleStartMonthIndex,
                         scrollOffsetX: $scrollOffsetX,
                         unitWidth: $unitWidth,
                         viewportWidth: $viewportWidth,
@@ -813,13 +827,11 @@ extension CombinedChartView {
                         data: data,
                         yAxisTickValues: yAxisTickValues,
                         yAxisDisplayDomain: yAxisDisplayDomain,
-                        maxScrollPage: maxScrollPage,
                         showDebugOverlay: showDebugOverlay,
                         selectionOverlay: viewSlots.selectionOverlay,
                         yAxisLabel: yAxisLabel(for:),
-                        onSelectIndex: updateSelection(to:),
-                        scrollPage: scrollPage,
-                        scrollRequestID: scrollRequestID)
+                        onSelectIndex: { updateSelection(to: $0) },
+                        scrollRequest: $scrollRequest)
                 } else {
                     viewSlots.emptyState
                 }
@@ -830,6 +842,16 @@ extension CombinedChartView {
             }
         }
         .frame(height: config.chartHeight)
+        .onChange(of: scrollOffsetX) { value in
+            let currentScrollOffset = max(0, -value)
+            guard unitWidth > 0 else { return }
+            let monthIndex = min(
+                max(Int(floor(currentScrollOffset / unitWidth)), 0),
+                max(0, data.count - config.monthsPerPage))
+            if visibleStartMonthIndex != monthIndex {
+                visibleStartMonthIndex = monthIndex
+            }
+        }
     }
 }
 
@@ -869,6 +891,7 @@ private extension CombinedChartView {
         let config: ChartConfig
         let selectedTab: ChartTab
         @Binding var selectedIndex: Int?
+        @Binding var visibleStartMonthIndex: Int
         @Binding var scrollOffsetX: CGFloat
         @Binding var unitWidth: CGFloat
         @Binding var viewportWidth: CGFloat
@@ -877,13 +900,16 @@ private extension CombinedChartView {
         let data: [ChartDataPoint]
         let yAxisTickValues: [Double]
         let yAxisDisplayDomain: ClosedRange<Double>
-        let maxScrollPage: Int
         let showDebugOverlay: Bool
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
         let yAxisLabel: (Double) -> String
         let onSelectIndex: (Int?) -> Void
-        let scrollPage: Int
-        let scrollRequestID: Int
+        @Binding var scrollRequest: Int?
+        @State private var dragStartMonthIndex: Int?
+
+        private var maxStartMonthIndex: Int {
+            max(0, data.count - config.monthsPerPage)
+        }
 
         var body: some View {
             GeometryReader { geometry in
@@ -909,59 +935,106 @@ private extension CombinedChartView {
                     }
 
                     ScrollViewReader { proxy in
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            ZStack(alignment: .topLeading) {
-                                GeometryReader { proxy in
-                                    Color.clear
-                                        .preference(
-                                            key: ScrollOffsetKey.self,
-                                            value: proxy.frame(in: .named("ChartScroll")).minX)
-                                }
-                                .frame(width: chartWidth, height: 1, alignment: .topLeading)
-
-                                ChartContainer(
-                                    selectedTab: selectedTab,
-                                    selectedIndex: $selectedIndex,
-                                    visibleData: data,
-                                    yAxisTickValues: yAxisTickValues,
-                                    yAxisDisplayDomain: yAxisDisplayDomain,
-                                    plotAreaHeight: plotAreaInfo?.height ?? 0,
-                                    config: config,
-                                    showDebugOverlay: showDebugOverlay,
-                                    selectionOverlay: selectionOverlay,
-                                    onSelectIndex: onSelectIndex,
-                                    onPlotAreaChange: { plotRect in
-                                        let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
-                                        if plotAreaInfo != info {
-                                            plotAreaInfo = info
-                                        }
-                                    },
-                                    onYAxisTickPositions: { positions in
-                                        if yTickPositions != positions {
-                                            yTickPositions = positions
-                                        }
-                                    })
-                                    .frame(width: chartWidth)
-                                    .frame(maxHeight: .infinity)
-
-                                HStack(spacing: 0) {
-                                    ForEach(0...maxScrollPage, id: \.self) { page in
+                        GeometryReader { scrollGeometry in
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                ZStack(alignment: .topLeading) {
+                                    GeometryReader { proxy in
                                         Color.clear
-                                            .frame(
-                                                width: computedUnitWidth * CGFloat(config.monthsPerPage),
-                                                height: 1)
-                                            .id(page)
+                                            .preference(
+                                                key: ScrollOffsetKey.self,
+                                                value: proxy.frame(in: .global).minX - scrollGeometry.frame(in: .global)
+                                                    .minX)
                                     }
+                                    .frame(width: chartWidth, height: 1, alignment: .topLeading)
+
+                                    ChartContainer(
+                                        selectedTab: selectedTab,
+                                        selectedIndex: $selectedIndex,
+                                        visibleData: data,
+                                        yAxisTickValues: yAxisTickValues,
+                                        yAxisDisplayDomain: yAxisDisplayDomain,
+                                        plotAreaHeight: plotAreaInfo?.height ?? 0,
+                                        config: config,
+                                        showDebugOverlay: showDebugOverlay,
+                                        selectionOverlay: selectionOverlay,
+                                        onSelectIndex: onSelectIndex,
+                                        onPlotAreaChange: { plotRect in
+                                            let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
+                                            if plotAreaInfo != info {
+                                                plotAreaInfo = info
+                                            }
+                                        },
+                                        onYAxisTickPositions: { positions in
+                                            if yTickPositions != positions {
+                                                yTickPositions = positions
+                                            }
+                                        })
+                                        .frame(width: chartWidth)
+                                        .frame(maxHeight: .infinity)
+
+                                    HStack(spacing: 0) {
+                                        ForEach(Array(data.indices), id: \.self) { monthIndex in
+                                            Color.clear
+                                                .frame(
+                                                    width: computedUnitWidth,
+                                                    height: 1)
+                                                .id(monthIndex)
+                                        }
+                                    }
+                                }
+                            }
+                            .onPreferenceChange(ScrollOffsetKey.self) { value in
+                                scrollOffsetX = value
+                            }
+                            .onChange(of: scrollRequest) { monthIndex in
+                                guard let monthIndex else { return }
+                                print("[ScrollRequest]", "monthIndex=\(monthIndex)")
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    proxy.scrollTo(monthIndex, anchor: .leading)
                                 }
                             }
                         }
                         .frame(width: computedViewportWidth)
-                        .coordinateSpace(name: "ChartScroll")
-                        .onPreferenceChange(ScrollOffsetKey.self) { scrollOffsetX = $0 }
-                        .onChange(of: scrollRequestID) { _ in
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                proxy.scrollTo(scrollPage, anchor: .leading)
-                            }
+                        .simultaneousGesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    if dragStartMonthIndex == nil {
+                                        dragStartMonthIndex = visibleStartMonthIndex
+                                    }
+                                    let baseMonthIndex = dragStartMonthIndex ?? visibleStartMonthIndex
+                                    let monthDelta = Int(round(-value.translation.width / computedUnitWidth))
+                                    let derivedMonthIndex = min(
+                                        max(baseMonthIndex + monthDelta, 0),
+                                        maxStartMonthIndex)
+                                    print(
+                                        "[ScrollView Drag]",
+                                        "translation=\(value.translation)",
+                                        "location=\(value.location)",
+                                        "baseMonthIndex=\(baseMonthIndex)",
+                                        "derivedMonthIndex=\(derivedMonthIndex)")
+                                    if visibleStartMonthIndex != derivedMonthIndex {
+                                        visibleStartMonthIndex = derivedMonthIndex
+                                    }
+                                }
+                                .onEnded { value in
+                                    let baseMonthIndex = dragStartMonthIndex ?? visibleStartMonthIndex
+                                    let monthDelta = Int(round(-value.translation.width / computedUnitWidth))
+                                    let derivedMonthIndex = min(
+                                        max(baseMonthIndex + monthDelta, 0),
+                                        maxStartMonthIndex)
+                                    print(
+                                        "[ScrollView Drag End]",
+                                        "translation=\(value.translation)",
+                                        "predictedEndTranslation=\(value.predictedEndTranslation)",
+                                        "baseMonthIndex=\(baseMonthIndex)",
+                                        "derivedMonthIndex=\(derivedMonthIndex)")
+                                    visibleStartMonthIndex = derivedMonthIndex
+                                    dragStartMonthIndex = nil
+                                })
+                        .onChange(of: visibleStartMonthIndex) { monthIndex in
+                            print(
+                                "[ScrollView Visible Month]",
+                                "monthIndex=\(monthIndex)")
                         }
                     }
                 }
@@ -978,25 +1051,19 @@ private extension CombinedChartView {
     }
 
     struct CombinedChartPager: View {
-        let entries: [PagerEntry]
-        let highlightedEntryID: PagerEntry.ID?
-        let canSelectPreviousPage: Bool
-        let canSelectNextPage: Bool
-        let onSelectPreviousPage: () -> Void
-        let onSelectEntry: (PagerEntry) -> Void
-        let onSelectNextPage: () -> Void
+        let context: PagerContext
 
         private var highlightedEntryTitle: String? {
-            entries.first { $0.id == highlightedEntryID }?.displayTitle
+            context.highlightedEntry?.displayTitle
         }
 
         var body: some View {
             HStack(spacing: 12) {
-                Button(action: onSelectPreviousPage) {
+                Button(action: context.onSelectPreviousPage) {
                     Image(systemName: "chevron.left")
                 }
-                .foregroundStyle(canSelectPreviousPage ? .primary : .secondary)
-                .disabled(!canSelectPreviousPage)
+                .foregroundStyle(context.canSelectPreviousPage ? .primary : .secondary)
+                .disabled(!context.canSelectPreviousPage)
 
                 Spacer()
 
@@ -1005,11 +1072,11 @@ private extension CombinedChartView {
 
                 Spacer()
 
-                Button(action: onSelectNextPage) {
+                Button(action: context.onSelectNextPage) {
                     Image(systemName: "chevron.right")
                 }
-                .foregroundStyle(canSelectNextPage ? .primary : .secondary)
-                .disabled(!canSelectNextPage)
+                .foregroundStyle(context.canSelectNextPage ? .primary : .secondary)
+                .disabled(!context.canSelectNextPage)
             }
             .padding(.horizontal, 8)
         }
@@ -1293,23 +1360,8 @@ private extension CombinedChartView.ChartContainer {
             indicatorFrame: indicatorFrame)
     }
 
-    @ViewBuilder
     func tapSelectionOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
-        if !visibleData.isEmpty {
-            Color.clear
-                .contentShape(Rectangle())
-                .simultaneousGesture(
-                    SpatialTapGesture()
-                        .onEnded { value in
-                            let localX = value.location.x - plotRect.minX
-                            let clampedX = min(max(localX, 0), plotRect.width)
-                            if let key = proxy.value(atX: clampedX, as: String.self),
-                               let index = visibleData.firstIndex(where: { $0.xKey == key }) {
-                                selectedIndex = index
-                                onSelectIndex(index)
-                            }
-                        })
-        }
+        EmptyView()
     }
 
     func yAxisTickPositions(plotRect: CGRect, proxy: ChartProxy) -> [Double: CGFloat] {
