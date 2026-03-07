@@ -6,43 +6,72 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		26E3FC552F5CE7CB004D2007 /* LineAndBarChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FC4D2F5CE7CB004D2007 /* LineAndBarChart.swift */; };
+		A1000000000000000000000D /* CombinedChartFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* CombinedChartFramework.framework */; };
+		A1000000000000000000000F /* CombinedChartFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* CombinedChartFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		26785B902F3F0AC900541A34 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 26785B7A2F3F0AC900541A34 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 26785B812F3F0AC900541A34;
-			remoteInfo = ScrollChatTest;
+			remoteInfo = CombinedChartSample;
 		};
 		26785B9A2F3F0AC900541A34 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 26785B7A2F3F0AC900541A34 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 26785B812F3F0AC900541A34;
-			remoteInfo = ScrollChatTest;
+			remoteInfo = CombinedChartSample;
+		};
+		A1000000000000000000000B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 26785B7A2F3F0AC900541A34 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000006;
+			remoteInfo = CombinedChartFramework;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		26785B822F3F0AC900541A34 /* ScrollChatTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ScrollChatTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		26785B8F2F3F0AC900541A34 /* ScrollChatTestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScrollChatTestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		26785B992F3F0AC900541A34 /* ScrollChatTestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScrollChatTestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		26785B822F3F0AC900541A34 /* CombinedChartSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CombinedChartSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		26785B8F2F3F0AC900541A34 /* CombinedChartSampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CombinedChartSampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		26785B992F3F0AC900541A34 /* CombinedChartSampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CombinedChartSampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		26E3FC4D2F5CE7CB004D2007 /* LineAndBarChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineAndBarChart.swift; sourceTree = "<group>"; };
+		A10000000000000000000001 /* CombinedChartFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CombinedChartFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		A1000000000000000000000E /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				A1000000000000000000000F /* CombinedChartFramework.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		26785B842F3F0AC900541A34 /* ScrollChatTest */ = {
+		26785B842F3F0AC900541A34 /* CombinedChartSample */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ScrollChatTest;
+			path = CombinedChartSample;
 			sourceTree = "<group>";
 		};
-		26785B922F3F0AC900541A34 /* ScrollChatTestTests */ = {
+		26785B922F3F0AC900541A34 /* CombinedChartSampleTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ScrollChatTestTests;
+			path = CombinedChartSampleTests;
 			sourceTree = "<group>";
 		};
-		26785B9C2F3F0AC900541A34 /* ScrollChatTestUITests */ = {
+		26785B9C2F3F0AC900541A34 /* CombinedChartSampleUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ScrollChatTestUITests;
+			path = CombinedChartSampleUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -52,6 +81,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1000000000000000000000D /* CombinedChartFramework.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -69,58 +99,77 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		26785B792F3F0AC900541A34 = {
 			isa = PBXGroup;
 			children = (
-				26785B842F3F0AC900541A34 /* ScrollChatTest */,
-				26785B922F3F0AC900541A34 /* ScrollChatTestTests */,
-				26785B9C2F3F0AC900541A34 /* ScrollChatTestUITests */,
+				26785B842F3F0AC900541A34 /* CombinedChartSample */,
+				26785B922F3F0AC900541A34 /* CombinedChartSampleTests */,
+				26785B9C2F3F0AC900541A34 /* CombinedChartSampleUITests */,
 				26785B832F3F0AC900541A34 /* Products */,
+				26E3FC5D2F5CE90C004D2007 /* CombinedChartFramework */,
+				A10000000000000000000001 /* CombinedChartFramework.framework */,
 			);
 			sourceTree = "<group>";
 		};
 		26785B832F3F0AC900541A34 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				26785B822F3F0AC900541A34 /* ScrollChatTest.app */,
-				26785B8F2F3F0AC900541A34 /* ScrollChatTestTests.xctest */,
-				26785B992F3F0AC900541A34 /* ScrollChatTestUITests.xctest */,
+				26785B822F3F0AC900541A34 /* CombinedChartSample.app */,
+				26785B8F2F3F0AC900541A34 /* CombinedChartSampleTests.xctest */,
+				26785B992F3F0AC900541A34 /* CombinedChartSampleUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		26E3FC5D2F5CE90C004D2007 /* CombinedChartFramework */ = {
+			isa = PBXGroup;
+			children = (
+				26E3FC4D2F5CE7CB004D2007 /* LineAndBarChart.swift */,
+			);
+			path = CombinedChartFramework;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		26785B812F3F0AC900541A34 /* ScrollChatTest */ = {
+		26785B812F3F0AC900541A34 /* CombinedChartSample */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 26785BA32F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "ScrollChatTest" */;
+			buildConfigurationList = 26785BA32F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "CombinedChartSample" */;
 			buildPhases = (
 				26785B7E2F3F0AC900541A34 /* Sources */,
 				26785B7F2F3F0AC900541A34 /* Frameworks */,
+				A1000000000000000000000E /* Embed Frameworks */,
 				26785B802F3F0AC900541A34 /* Resources */,
 				262939732F5C3C1900708CA7 /* ShellScript */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A1000000000000000000000C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				26785B842F3F0AC900541A34 /* ScrollChatTest */,
+				26785B842F3F0AC900541A34 /* CombinedChartSample */,
 			);
-			name = ScrollChatTest;
+			name = CombinedChartSample;
 			packageProductDependencies = (
 			);
-			productName = ScrollChatTest;
-			productReference = 26785B822F3F0AC900541A34 /* ScrollChatTest.app */;
+			productName = CombinedChartSample;
+			productReference = 26785B822F3F0AC900541A34 /* CombinedChartSample.app */;
 			productType = "com.apple.product-type.application";
 		};
-		26785B8E2F3F0AC900541A34 /* ScrollChatTestTests */ = {
+		26785B8E2F3F0AC900541A34 /* CombinedChartSampleTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 26785BA62F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "ScrollChatTestTests" */;
+			buildConfigurationList = 26785BA62F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "CombinedChartSampleTests" */;
 			buildPhases = (
 				26785B8B2F3F0AC900541A34 /* Sources */,
 				26785B8C2F3F0AC900541A34 /* Frameworks */,
@@ -132,18 +181,18 @@
 				26785B912F3F0AC900541A34 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				26785B922F3F0AC900541A34 /* ScrollChatTestTests */,
+				26785B922F3F0AC900541A34 /* CombinedChartSampleTests */,
 			);
-			name = ScrollChatTestTests;
+			name = CombinedChartSampleTests;
 			packageProductDependencies = (
 			);
-			productName = ScrollChatTestTests;
-			productReference = 26785B8F2F3F0AC900541A34 /* ScrollChatTestTests.xctest */;
+			productName = CombinedChartSampleTests;
+			productReference = 26785B8F2F3F0AC900541A34 /* CombinedChartSampleTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		26785B982F3F0AC900541A34 /* ScrollChatTestUITests */ = {
+		26785B982F3F0AC900541A34 /* CombinedChartSampleUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 26785BA92F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "ScrollChatTestUITests" */;
+			buildConfigurationList = 26785BA92F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "CombinedChartSampleUITests" */;
 			buildPhases = (
 				26785B952F3F0AC900541A34 /* Sources */,
 				26785B962F3F0AC900541A34 /* Frameworks */,
@@ -155,14 +204,33 @@
 				26785B9B2F3F0AC900541A34 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				26785B9C2F3F0AC900541A34 /* ScrollChatTestUITests */,
+				26785B9C2F3F0AC900541A34 /* CombinedChartSampleUITests */,
 			);
-			name = ScrollChatTestUITests;
+			name = CombinedChartSampleUITests;
 			packageProductDependencies = (
 			);
-			productName = ScrollChatTestUITests;
-			productReference = 26785B992F3F0AC900541A34 /* ScrollChatTestUITests.xctest */;
+			productName = CombinedChartSampleUITests;
+			productReference = 26785B992F3F0AC900541A34 /* CombinedChartSampleUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		A10000000000000000000006 /* CombinedChartFramework */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000007 /* Build configuration list for PBXNativeTarget "CombinedChartFramework" */;
+			buildPhases = (
+				A10000000000000000000004 /* Sources */,
+				A10000000000000000000003 /* Frameworks */,
+				A10000000000000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CombinedChartFramework;
+			packageProductDependencies = (
+			);
+			productName = CombinedChartFramework;
+			productReference = A10000000000000000000001 /* CombinedChartFramework.framework */;
+			productType = "com.apple.product-type.framework";
 		};
 /* End PBXNativeTarget section */
 
@@ -187,7 +255,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 26785B7D2F3F0AC900541A34 /* Build configuration list for PBXProject "ScrollChatTest" */;
+			buildConfigurationList = 26785B7D2F3F0AC900541A34 /* Build configuration list for PBXProject "CombinedChartSample" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -201,9 +269,10 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				26785B812F3F0AC900541A34 /* ScrollChatTest */,
-				26785B8E2F3F0AC900541A34 /* ScrollChatTestTests */,
-				26785B982F3F0AC900541A34 /* ScrollChatTestUITests */,
+				26785B812F3F0AC900541A34 /* CombinedChartSample */,
+				A10000000000000000000006 /* CombinedChartFramework */,
+				26785B8E2F3F0AC900541A34 /* CombinedChartSampleTests */,
+				26785B982F3F0AC900541A34 /* CombinedChartSampleUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -224,6 +293,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		26785B972F3F0AC900541A34 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000005 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -274,18 +350,31 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				26E3FC552F5CE7CB004D2007 /* LineAndBarChart.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
 		26785B912F3F0AC900541A34 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 26785B812F3F0AC900541A34 /* ScrollChatTest */;
+			target = 26785B812F3F0AC900541A34 /* CombinedChartSample */;
 			targetProxy = 26785B902F3F0AC900541A34 /* PBXContainerItemProxy */;
 		};
 		26785B9B2F3F0AC900541A34 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 26785B812F3F0AC900541A34 /* ScrollChatTest */;
+			target = 26785B812F3F0AC900541A34 /* CombinedChartSample */;
 			targetProxy = 26785B9A2F3F0AC900541A34 /* PBXContainerItemProxy */;
+		};
+		A1000000000000000000000C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000006 /* CombinedChartFramework */;
+			targetProxy = A1000000000000000000000B /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -433,7 +522,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.ScrollChatTest;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartSample;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -467,7 +556,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.ScrollChatTest;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartSample;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -489,7 +578,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.ScrollChatTestTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartSampleTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -497,7 +586,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScrollChatTest.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ScrollChatTest";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CombinedChartSample.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CombinedChartSample";
 			};
 			name = Debug;
 		};
@@ -511,7 +600,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.ScrollChatTestTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartSampleTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -519,7 +608,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScrollChatTest.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ScrollChatTest";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CombinedChartSample.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CombinedChartSample";
 			};
 			name = Release;
 		};
@@ -531,7 +620,7 @@
 				DEVELOPMENT_TEAM = 3P8C7H426Z;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.ScrollChatTestUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartSampleUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -539,7 +628,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ScrollChatTest;
+				TEST_TARGET_NAME = CombinedChartSample;
 			};
 			name = Debug;
 		};
@@ -551,7 +640,7 @@
 				DEVELOPMENT_TEAM = 3P8C7H426Z;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.ScrollChatTestUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartSampleUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -559,14 +648,56 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ScrollChatTest;
+				TEST_TARGET_NAME = CombinedChartSample;
+			};
+			name = Release;
+		};
+		A10000000000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = 3P8C7H426Z;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartFramework;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = NO;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A10000000000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = 3P8C7H426Z;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartFramework;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = NO;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		26785B7D2F3F0AC900541A34 /* Build configuration list for PBXProject "ScrollChatTest" */ = {
+		26785B7D2F3F0AC900541A34 /* Build configuration list for PBXProject "CombinedChartSample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				26785BA12F3F0AC900541A34 /* Debug */,
@@ -575,7 +706,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		26785BA32F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "ScrollChatTest" */ = {
+		26785BA32F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "CombinedChartSample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				26785BA42F3F0AC900541A34 /* Debug */,
@@ -584,7 +715,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		26785BA62F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "ScrollChatTestTests" */ = {
+		26785BA62F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "CombinedChartSampleTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				26785BA72F3F0AC900541A34 /* Debug */,
@@ -593,11 +724,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		26785BA92F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "ScrollChatTestUITests" */ = {
+		26785BA92F3F0AC900541A34 /* Build configuration list for PBXNativeTarget "CombinedChartSampleUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				26785BAA2F3F0AC900541A34 /* Debug */,
 				26785BAB2F3F0AC900541A34 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000007 /* Build configuration list for PBXNativeTarget "CombinedChartFramework" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000008 /* Debug */,
+				A10000000000000000000009 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,5 +1,5 @@
 //
-//  ScrollChatTestUITestsLaunchTests.swift
+//  CombinedChartSampleUITestsLaunchTests.swift
 //  ScrollChatTestUITests
 //
 //  Created by Bernard on 2026/2/13.
@@ -7,7 +7,7 @@
 
 import XCTest
 
-final class ScrollChatTestUITestsLaunchTests: XCTestCase {
+final class CombinedChartSampleUITestsLaunchTests: XCTestCase {
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true
     }

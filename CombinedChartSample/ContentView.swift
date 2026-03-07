@@ -5,6 +5,7 @@
 //  Created by Bernard on 2026/2/13.
 //
 
+import CombinedChartFramework
 import SwiftUI
 import UIKit
 

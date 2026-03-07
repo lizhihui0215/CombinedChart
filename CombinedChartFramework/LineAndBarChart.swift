@@ -9,27 +9,27 @@ import Charts
 import SwiftUI
 
 // swiftlint:disable file_length
-enum ChartSeriesKey: String, CaseIterable, Hashable, Identifiable {
+public enum ChartSeriesKey: String, CaseIterable, Hashable, Identifiable {
     case liabilities
     case saving
     case investment
     case otherLiquid
     case otherNonLiquid
 
-    var id: Self {
+    public var id: Self {
         self
     }
 }
 
-struct ChartConfig {
-    let monthsPerPage: Int
-    let chartHeight: CGFloat
-    let bar: ChartBarConfig
-    let line: ChartLineConfig
-    let axis: ChartAxisConfig
-    let pager: ChartPagerConfig
+public struct ChartConfig {
+    public let monthsPerPage: Int
+    public let chartHeight: CGFloat
+    public let bar: ChartBarConfig
+    public let line: ChartLineConfig
+    public let axis: ChartAxisConfig
+    public let pager: ChartPagerConfig
 
-    static let `default` = ChartConfig(
+    public static let `default` = ChartConfig(
         monthsPerPage: 4,
         chartHeight: 420,
         bar: ChartBarConfig(
@@ -90,54 +90,105 @@ struct ChartConfig {
             zeroLineWidth: 1,
             yAxisWidth: 40),
         pager: ChartPagerConfig())
+    public init(
+        monthsPerPage: Int,
+        chartHeight: CGFloat,
+        bar: ChartBarConfig,
+        line: ChartLineConfig,
+        axis: ChartAxisConfig,
+        pager: ChartPagerConfig) {
+        self.monthsPerPage = monthsPerPage
+        self.chartHeight = chartHeight
+        self.bar = bar
+        self.line = line
+        self.axis = axis
+        self.pager = pager
+    }
 }
 
-extension ChartConfig {
+public extension ChartConfig {
     struct ChartBarConfig {
-        enum TrendBarColorStyle {
+        public enum TrendBarColorStyle {
             case seriesColor
             case unified(Color)
         }
 
-        let series: [ChartSeriesStyle]
-        let trendBarColorStyle: TrendBarColorStyle
-        let segmentGap: CGFloat
-        let segmentGapColor: Color
-        let barWidth: CGFloat
+        public let series: [ChartSeriesStyle]
+        public let trendBarColorStyle: TrendBarColorStyle
+        public let segmentGap: CGFloat
+        public let segmentGapColor: Color
+        public let barWidth: CGFloat
+
+        public init(
+            series: [ChartSeriesStyle],
+            trendBarColorStyle: TrendBarColorStyle,
+            segmentGap: CGFloat,
+            segmentGapColor: Color,
+            barWidth: CGFloat) {
+            self.series = series
+            self.trendBarColorStyle = trendBarColorStyle
+            self.segmentGap = segmentGap
+            self.segmentGapColor = segmentGapColor
+            self.barWidth = barWidth
+        }
     }
 
     struct ChartLineConfig {
-        let positiveLineColor: Color
-        let negativeLineColor: Color
-        let lineWidth: CGFloat
-        let selection: SelectionConfig
+        public let positiveLineColor: Color
+        public let negativeLineColor: Color
+        public let lineWidth: CGFloat
+        public let selection: SelectionConfig
+
+        public init(
+            positiveLineColor: Color,
+            negativeLineColor: Color,
+            lineWidth: CGFloat,
+            selection: SelectionConfig) {
+            self.positiveLineColor = positiveLineColor
+            self.negativeLineColor = negativeLineColor
+            self.lineWidth = lineWidth
+            self.selection = selection
+        }
     }
 
     struct ChartAxisConfig {
-        let xAxisLabel: (XAxisLabelContext) -> String
-        let yAxisLabel: (YAxisLabelContext) -> String
-        let zeroLineColor: Color
-        let zeroLineWidth: CGFloat
-        let yAxisWidth: CGFloat
+        public let xAxisLabel: (XAxisLabelContext) -> String
+        public let yAxisLabel: (YAxisLabelContext) -> String
+        public let zeroLineColor: Color
+        public let zeroLineWidth: CGFloat
+        public let yAxisWidth: CGFloat
+
+        public init(
+            xAxisLabel: @escaping (XAxisLabelContext) -> String,
+            yAxisLabel: @escaping (YAxisLabelContext) -> String,
+            zeroLineColor: Color,
+            zeroLineWidth: CGFloat,
+            yAxisWidth: CGFloat) {
+            self.xAxisLabel = xAxisLabel
+            self.yAxisLabel = yAxisLabel
+            self.zeroLineColor = zeroLineColor
+            self.zeroLineWidth = zeroLineWidth
+            self.yAxisWidth = yAxisWidth
+        }
     }
 
     struct ChartPagerConfig {
-        enum ArrowScrollMode {
+        public enum ArrowScrollMode {
             case byPage
             case byEntry
         }
 
-        enum DragScrollMode {
+        public enum DragScrollMode {
             case byPage
             case freeSnapping
             case free
         }
 
-        let isVisible: Bool
-        let arrowScrollMode: ArrowScrollMode
-        let dragScrollMode: DragScrollMode
+        public let isVisible: Bool
+        public let arrowScrollMode: ArrowScrollMode
+        public let dragScrollMode: DragScrollMode
 
-        init(
+        public init(
             isVisible: Bool = true,
             arrowScrollMode: ArrowScrollMode = .byPage,
             dragScrollMode: DragScrollMode = .freeSnapping) {
@@ -148,37 +199,49 @@ extension ChartConfig {
     }
 }
 
-extension ChartConfig.ChartBarConfig {
+public extension ChartConfig.ChartBarConfig {
     var trendLineSeries: [ChartSeriesStyle] {
         series.filter(\.contributesToTrendLine)
     }
 
     struct ChartSeriesStyle: Identifiable {
-        struct Appearance {
-            let label: String
-            let color: Color
+        public struct Appearance {
+            public let label: String
+            public let color: Color
+
+            public init(label: String, color: Color) {
+                self.label = label
+                self.color = color
+            }
         }
 
-        struct ValueBehavior {
-            enum TrendLineInclusion {
+        public struct ValueBehavior {
+            public enum TrendLineInclusion {
                 case included
                 case excluded
             }
 
-            enum Sign {
+            public enum Sign {
                 case positive
                 case negative
             }
 
-            enum ValuePolarity {
+            public enum ValuePolarity {
                 case preserveSign
                 case forcedSign(Sign)
             }
 
-            let valuePolarity: ValuePolarity
-            let trendLineInclusion: TrendLineInclusion
+            public let valuePolarity: ValuePolarity
+            public let trendLineInclusion: TrendLineInclusion
 
-            func signedValue(for rawValue: Double) -> Double {
+            public init(
+                valuePolarity: ValuePolarity,
+                trendLineInclusion: TrendLineInclusion) {
+                self.valuePolarity = valuePolarity
+                self.trendLineInclusion = trendLineInclusion
+            }
+
+            public func signedValue(for rawValue: Double) -> Double {
                 switch valuePolarity {
                 case .preserveSign:
                     rawValue
@@ -189,16 +252,16 @@ extension ChartConfig.ChartBarConfig {
                 }
             }
 
-            var contributesToTrendLine: Bool {
+            public var contributesToTrendLine: Bool {
                 trendLineInclusion == .included
             }
         }
 
-        let id: ChartSeriesKey
-        let appearance: Appearance
-        let valueBehavior: ValueBehavior
+        public let id: ChartSeriesKey
+        public let appearance: Appearance
+        public let valueBehavior: ValueBehavior
 
-        init(
+        public init(
             id: ChartSeriesKey,
             label: String,
             color: Color,
@@ -211,38 +274,49 @@ extension ChartConfig.ChartBarConfig {
                 trendLineInclusion: trendLineInclusion)
         }
 
-        var label: String {
+        public var label: String {
             appearance.label
         }
 
-        var color: Color {
+        public var color: Color {
             appearance.color
         }
 
-        var valuePolarity: ValueBehavior.ValuePolarity {
+        public var valuePolarity: ValueBehavior.ValuePolarity {
             valueBehavior.valuePolarity
         }
 
-        var trendLineInclusion: ValueBehavior.TrendLineInclusion {
+        public var trendLineInclusion: ValueBehavior.TrendLineInclusion {
             valueBehavior.trendLineInclusion
         }
 
-        func signedValue(for rawValue: Double) -> Double {
+        public func signedValue(for rawValue: Double) -> Double {
             valueBehavior.signedValue(for: rawValue)
         }
 
-        var contributesToTrendLine: Bool {
+        public var contributesToTrendLine: Bool {
             valueBehavior.contributesToTrendLine
         }
     }
 }
 
-extension ChartConfig.ChartLineConfig {
+public extension ChartConfig.ChartLineConfig {
     struct SelectionConfig {
-        let pointSize: CGFloat
-        let selectionLineColorStrategy: LineColorStrategy
-        let fillColor: Color
-        let minimumSelectionWidth: CGFloat
+        public let pointSize: CGFloat
+        public let selectionLineColorStrategy: LineColorStrategy
+        public let fillColor: Color
+        public let minimumSelectionWidth: CGFloat
+
+        public init(
+            pointSize: CGFloat,
+            selectionLineColorStrategy: LineColorStrategy,
+            fillColor: Color,
+            minimumSelectionWidth: CGFloat) {
+            self.pointSize = pointSize
+            self.selectionLineColorStrategy = selectionLineColorStrategy
+            self.fillColor = fillColor
+            self.minimumSelectionWidth = minimumSelectionWidth
+        }
     }
 
     enum LineColorStrategy {
@@ -251,27 +325,50 @@ extension ChartConfig.ChartLineConfig {
     }
 }
 
-extension ChartConfig.ChartAxisConfig {
+public extension ChartConfig.ChartAxisConfig {
     struct AxisPointInfo: Identifiable {
-        let id: String
-        let index: Int
-        let xKey: String
-        let xLabel: String
-        let values: [ChartSeriesKey: Double]
+        public let id: String
+        public let index: Int
+        public let xKey: String
+        public let xLabel: String
+        public let values: [ChartSeriesKey: Double]
+
+        public init(
+            id: String,
+            index: Int,
+            xKey: String,
+            xLabel: String,
+            values: [ChartSeriesKey: Double]) {
+            self.id = id
+            self.index = index
+            self.xKey = xKey
+            self.xLabel = xLabel
+            self.values = values
+        }
     }
 
     struct XAxisLabelContext {
-        let point: AxisPointInfo
-        let visiblePoints: [AxisPointInfo]
+        public let point: AxisPointInfo
+        public let visiblePoints: [AxisPointInfo]
+
+        public init(point: AxisPointInfo, visiblePoints: [AxisPointInfo]) {
+            self.point = point
+            self.visiblePoints = visiblePoints
+        }
     }
 
     struct YAxisLabelContext {
-        let value: Double
-        let visiblePoints: [AxisPointInfo]
+        public let value: Double
+        public let visiblePoints: [AxisPointInfo]
+
+        public init(value: Double, visiblePoints: [AxisPointInfo]) {
+            self.value = value
+            self.visiblePoints = visiblePoints
+        }
     }
 }
 
-struct CombinedChartView: View {
+public struct CombinedChartView: View {
     private let config: ChartConfig
     private let groups: [ChartGroup]
     private let tabs: [ChartTab]
@@ -280,7 +377,7 @@ struct CombinedChartView: View {
     @Binding private var selectedTab: ChartTab
     @Binding private var showDebugOverlay: Bool
 
-    init(
+    public init(
         config: ChartConfig = .default,
         groups: [ChartGroup],
         tabs: [ChartTab] = ChartTab.defaults,
@@ -308,9 +405,11 @@ struct CombinedChartView: View {
     @State private var yTickPositions: [Double: CGFloat] = [:]
 }
 
-extension CombinedChartView {
-    private struct DefaultEmptyStateView: View {
-        var body: some View {
+public extension CombinedChartView {
+    struct DefaultEmptyStateView: View {
+        public init() {}
+
+        public var body: some View {
             Text("No data")
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -319,21 +418,27 @@ extension CombinedChartView {
     }
 
     struct PagerEntry: Identifiable, Hashable {
-        let id: String
-        let displayTitle: String
-        let startMonthIndex: Int
+        public let id: String
+        public let displayTitle: String
+        public let startMonthIndex: Int
+
+        public init(id: String, displayTitle: String, startMonthIndex: Int) {
+            self.id = id
+            self.displayTitle = displayTitle
+            self.startMonthIndex = startMonthIndex
+        }
     }
 
     struct ViewSlots {
-        let emptyState: AnyView
-        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
-        let pager: ((PagerContext) -> AnyView)?
+        public let emptyState: AnyView
+        public let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
+        public let pager: ((PagerContext) -> AnyView)?
 
-        static var `default`: ViewSlots {
+        public static var `default`: ViewSlots {
             .init()
         }
 
-        init(
+        public init(
             emptyState: AnyView = AnyView(DefaultEmptyStateView()),
             selectionOverlay: ((SelectionOverlayContext) -> AnyView)? = nil,
             pager: ((PagerContext) -> AnyView)? = nil) {
@@ -342,7 +447,7 @@ extension CombinedChartView {
             self.pager = pager
         }
 
-        init(
+        public init(
             @ViewBuilder emptyState: () -> some View,
             selectionOverlay: ((SelectionOverlayContext) -> AnyView)? = nil,
             pager: ((PagerContext) -> AnyView)? = nil) {
@@ -352,7 +457,7 @@ extension CombinedChartView {
                 pager: pager)
         }
 
-        init(
+        public init(
             @ViewBuilder emptyState: () -> some View = { DefaultEmptyStateView() },
             @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View,
             @ViewBuilder pager: @escaping (PagerContext) -> some View) {
@@ -362,7 +467,7 @@ extension CombinedChartView {
                 pager: { context in AnyView(pager(context)) })
         }
 
-        init(
+        public init(
             @ViewBuilder emptyState: () -> some View = { DefaultEmptyStateView() },
             @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View) {
             self.init(
@@ -371,7 +476,7 @@ extension CombinedChartView {
                 pager: nil)
         }
 
-        init(
+        public init(
             @ViewBuilder emptyState: () -> some View = { DefaultEmptyStateView() },
             @ViewBuilder pager: @escaping (PagerContext) -> some View) {
             self.init(
@@ -382,45 +487,56 @@ extension CombinedChartView {
     }
 
     struct SelectionOverlayContext {
-        let point: ChartPoint
-        let value: Double
-        let plotFrame: CGRect
-        let indicatorFrame: CGRect
-        let indicatorStyle: ChartPresentationMode.SelectionIndicatorStyle
+        public let point: ChartPoint
+        public let value: Double
+        public let plotFrame: CGRect
+        public let indicatorFrame: CGRect
+        public let indicatorStyle: ChartPresentationMode.SelectionIndicatorStyle
     }
 
     struct PagerContext {
-        let entries: [PagerEntry]
-        let highlightedEntry: PagerEntry?
-        let canSelectPreviousPage: Bool
-        let canSelectNextPage: Bool
-        let onSelectPreviousPage: () -> Void
-        let onSelectEntry: (PagerEntry) -> Void
-        let onSelectNextPage: () -> Void
+        public let entries: [PagerEntry]
+        public let highlightedEntry: PagerEntry?
+        public let canSelectPreviousPage: Bool
+        public let canSelectNextPage: Bool
+        public let onSelectPreviousPage: () -> Void
+        public let onSelectEntry: (PagerEntry) -> Void
+        public let onSelectNextPage: () -> Void
     }
 
     struct SelectionContext {
-        let point: ChartPoint
-        let index: Int
+        public let point: ChartPoint
+        public let index: Int
     }
 
     struct ChartPresentationMode: Hashable {
-        enum BarColorStyle: Hashable {
+        public enum BarColorStyle: Hashable {
             case seriesColors
             case unifiedTrendColor
         }
 
-        enum SelectionIndicatorStyle: Hashable {
+        public enum SelectionIndicatorStyle: Hashable {
             case line
             case band
         }
 
-        let barColorStyle: BarColorStyle
-        let showsTrendLine: Bool
-        let selectionIndicatorStyle: SelectionIndicatorStyle
-        let showsSelectedPoint: Bool
+        public let barColorStyle: BarColorStyle
+        public let showsTrendLine: Bool
+        public let selectionIndicatorStyle: SelectionIndicatorStyle
+        public let showsSelectedPoint: Bool
 
-        static var totalTrend: ChartPresentationMode {
+        public init(
+            barColorStyle: BarColorStyle,
+            showsTrendLine: Bool,
+            selectionIndicatorStyle: SelectionIndicatorStyle,
+            showsSelectedPoint: Bool) {
+            self.barColorStyle = barColorStyle
+            self.showsTrendLine = showsTrendLine
+            self.selectionIndicatorStyle = selectionIndicatorStyle
+            self.showsSelectedPoint = showsSelectedPoint
+        }
+
+        public static var totalTrend: ChartPresentationMode {
             .init(
                 barColorStyle: .unifiedTrendColor,
                 showsTrendLine: true,
@@ -428,7 +544,7 @@ extension CombinedChartView {
                 showsSelectedPoint: true)
         }
 
-        static var breakdown: ChartPresentationMode {
+        public static var breakdown: ChartPresentationMode {
             .init(
                 barColorStyle: .seriesColors,
                 showsTrendLine: false,
@@ -439,25 +555,31 @@ extension CombinedChartView {
 
     /// Display mode descriptor for the same dataset.
     struct ChartTab: Identifiable, Hashable {
-        let id: String
-        let title: String
-        let mode: ChartPresentationMode
+        public let id: String
+        public let title: String
+        public let mode: ChartPresentationMode
 
-        static var totalTrend: ChartTab {
+        public init(id: String, title: String, mode: ChartPresentationMode) {
+            self.id = id
+            self.title = title
+            self.mode = mode
+        }
+
+        public static var totalTrend: ChartTab {
             ChartTab(
                 id: "totalTrend",
                 title: "Total Trend",
                 mode: .totalTrend)
         }
 
-        static var breakdown: ChartTab {
+        public static var breakdown: ChartTab {
             ChartTab(
                 id: "breakdown",
                 title: "Breakdown",
                 mode: .breakdown)
         }
 
-        static var defaults: [ChartTab] {
+        public static var defaults: [ChartTab] {
             [
                 .totalTrend,
                 .breakdown
@@ -466,25 +588,48 @@ extension CombinedChartView {
     }
 
     struct ChartPointID: Hashable {
-        let groupID: String
-        let xKey: String
+        public let groupID: String
+        public let xKey: String
+
+        public init(groupID: String, xKey: String) {
+            self.groupID = groupID
+            self.xKey = xKey
+        }
     }
 
     struct ChartPoint: Identifiable {
-        let id: ChartPointID
-        let xKey: String
-        let xLabel: String
-        let values: [ChartSeriesKey: Double]
+        public let id: ChartPointID
+        public let xKey: String
+        public let xLabel: String
+        public let values: [ChartSeriesKey: Double]
+
+        public init(
+            id: ChartPointID,
+            xKey: String,
+            xLabel: String,
+            values: [ChartSeriesKey: Double]) {
+            self.id = id
+            self.xKey = xKey
+            self.xLabel = xLabel
+            self.values = values
+        }
     }
 
     struct ChartGroup: Identifiable {
-        let id: String
-        let displayTitle: String
-        let groupOrder: Int
-        let points: [ChartPoint]
+        public let id: String
+        public let displayTitle: String
+        public let groupOrder: Int
+        public let points: [ChartPoint]
+
+        public init(id: String, displayTitle: String, groupOrder: Int, points: [ChartPoint]) {
+            self.id = id
+            self.displayTitle = displayTitle
+            self.groupOrder = groupOrder
+            self.points = points
+        }
     }
 
-    struct ChartDataPoint: Identifiable {
+    internal struct ChartDataPoint: Identifiable {
         let source: ChartPoint
 
         var id: ChartPointID {
@@ -544,7 +689,7 @@ extension CombinedChartView {
         }
     }
 
-    struct ChartDataGroup: Identifiable {
+    internal struct ChartDataGroup: Identifiable {
         let source: ChartGroup
 
         var id: String {
@@ -564,7 +709,7 @@ extension CombinedChartView {
         }
     }
 
-    struct YearPageRange: Identifiable {
+    internal struct YearPageRange: Identifiable {
         var id: String {
             displayTitle
         }
@@ -581,7 +726,7 @@ extension CombinedChartView {
         }
     }
 
-    struct PlotAreaInfo: Equatable {
+    internal struct PlotAreaInfo: Equatable {
         let minY: CGFloat
         let height: CGFloat
     }
@@ -812,7 +957,7 @@ extension CombinedChartView {
     }
 }
 
-extension CombinedChartView {
+public extension CombinedChartView {
     var body: some View {
         VStack(spacing: 12) {
             if showDebugOverlay, let visibleStartMonthLabel {
@@ -1667,8 +1812,8 @@ private extension CombinedChartView.ChartContainer {
 }
 
 private struct LineAndBarChartPreviewHost: View {
-    private let groups = ChartSampleData.makeGroups(variance: 0.6)
-    private let config = ChartSampleData.makeConfig()
+    private let groups = CombinedChartPreviewData.groups
+    private let config = CombinedChartPreviewData.config
     private let tabs = CombinedChartView.ChartTab.defaults
     @State private var selectedTab: CombinedChartView.ChartTab = .totalTrend
     @State private var showDebugOverlay = false
@@ -1712,4 +1857,166 @@ private struct LineAndBarChartPreviewHost: View {
 
 #Preview {
     LineAndBarChartPreviewHost()
+}
+
+private enum CombinedChartPreviewData {
+    static let groups: [CombinedChartView.ChartGroup] = [
+        .init(
+            id: "2020",
+            displayTitle: "2020",
+            groupOrder: 2020,
+            points: [
+                makePoint(
+                    groupID: "2020",
+                    xKey: "2020-01",
+                    saving: 5000,
+                    investment: 10000,
+                    otherLiquid: 2000,
+                    otherNonLiquid: 3000,
+                    liabilities: 15000),
+                makePoint(
+                    groupID: "2020",
+                    xKey: "2020-02",
+                    saving: 5200,
+                    investment: 10400,
+                    otherLiquid: 2200,
+                    otherNonLiquid: 3200,
+                    liabilities: 14700),
+                makePoint(
+                    groupID: "2020",
+                    xKey: "2020-03",
+                    saving: 5100,
+                    investment: 10100,
+                    otherLiquid: 2100,
+                    otherNonLiquid: 3300,
+                    liabilities: 14900),
+                makePoint(
+                    groupID: "2020",
+                    xKey: "2020-04",
+                    saving: 5400,
+                    investment: 10800,
+                    otherLiquid: 2300,
+                    otherNonLiquid: 3500,
+                    liabilities: 15100)
+            ]),
+        .init(
+            id: "2021",
+            displayTitle: "2021",
+            groupOrder: 2021,
+            points: [
+                makePoint(
+                    groupID: "2021",
+                    xKey: "2021-01",
+                    saving: 6000,
+                    investment: 11400,
+                    otherLiquid: 2600,
+                    otherNonLiquid: 3700,
+                    liabilities: 16000),
+                makePoint(
+                    groupID: "2021",
+                    xKey: "2021-02",
+                    saving: 6200,
+                    investment: 11900,
+                    otherLiquid: 2700,
+                    otherNonLiquid: 3900,
+                    liabilities: 16200),
+                makePoint(
+                    groupID: "2021",
+                    xKey: "2021-03",
+                    saving: 6400,
+                    investment: 12300,
+                    otherLiquid: 2900,
+                    otherNonLiquid: 4100,
+                    liabilities: 16500),
+                makePoint(
+                    groupID: "2021",
+                    xKey: "2021-04",
+                    saving: 6500,
+                    investment: 12700,
+                    otherLiquid: 3000,
+                    otherNonLiquid: 4300,
+                    liabilities: 16700)
+            ])
+    ]
+
+    static let config = ChartConfig(
+        monthsPerPage: 4,
+        chartHeight: 420,
+        bar: .init(
+            series: [
+                .init(
+                    id: .liabilities,
+                    label: "Liabilities",
+                    color: Color(red: 0.82, green: 0.35, blue: 0.42),
+                    valuePolarity: .forcedSign(.negative),
+                    trendLineInclusion: .included),
+                .init(
+                    id: .saving,
+                    label: "Saving",
+                    color: Color(red: 0.20, green: 0.52, blue: 0.68),
+                    valuePolarity: .preserveSign,
+                    trendLineInclusion: .included),
+                .init(
+                    id: .investment,
+                    label: "Investment",
+                    color: Color(red: 0.86, green: 0.43, blue: 0.16),
+                    valuePolarity: .preserveSign,
+                    trendLineInclusion: .included),
+                .init(
+                    id: .otherLiquid,
+                    label: "Other Liquid",
+                    color: Color(red: 0.30, green: 0.67, blue: 0.14),
+                    valuePolarity: .preserveSign,
+                    trendLineInclusion: .included),
+                .init(
+                    id: .otherNonLiquid,
+                    label: "Other Non-Liquid",
+                    color: Color(red: 0.08, green: 0.28, blue: 0.34),
+                    valuePolarity: .preserveSign,
+                    trendLineInclusion: .included)
+            ],
+            trendBarColorStyle: .unified(Color.gray.opacity(0.45)),
+            segmentGap: 2,
+            segmentGapColor: Color(uiColor: .systemBackground),
+            barWidth: 40),
+        line: .init(
+            positiveLineColor: .red,
+            negativeLineColor: .yellow,
+            lineWidth: 1,
+            selection: .init(
+                pointSize: 20,
+                selectionLineColorStrategy: .fixedLine(.gray),
+                fillColor: Color.gray.opacity(0.12),
+                minimumSelectionWidth: 24)),
+        axis: .init(
+            xAxisLabel: { $0.point.xLabel },
+            yAxisLabel: { context in
+                let value = context.value
+                return value == 0 ? "0" : "\(Int(value / 1000))K"
+            },
+            zeroLineColor: .black,
+            zeroLineWidth: 1,
+            yAxisWidth: 40),
+        pager: .init(isVisible: true, dragScrollMode: .freeSnapping))
+
+    private static func makePoint(
+        groupID: String,
+        xKey: String,
+        saving: Double,
+        investment: Double,
+        otherLiquid: Double,
+        otherNonLiquid: Double,
+        liabilities: Double) -> CombinedChartView.ChartPoint {
+        .init(
+            id: .init(groupID: groupID, xKey: xKey),
+            xKey: xKey,
+            xLabel: xKey,
+            values: [
+                .saving: saving,
+                .investment: investment,
+                .otherLiquid: otherLiquid,
+                .otherNonLiquid: otherNonLiquid,
+                .liabilities: liabilities
+            ])
+    }
 }

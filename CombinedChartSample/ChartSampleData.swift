@@ -5,6 +5,7 @@
 //  Shared sample data/config for ContentView and Preview.
 //
 
+import CombinedChartFramework
 import SwiftUI
 import UIKit
 
