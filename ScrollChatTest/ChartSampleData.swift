@@ -150,9 +150,12 @@ enum ChartSampleData {
                     lineColorStrategy: .fixedLine(Color.gray),
                     fillColor: Color.gray.opacity(0.12))),
             axis: ChartConfig.ChartAxisConfig(
-                xAxisLabel: { $0 },
-                yAxisLabel: { value in
-                    value == 0 ? "0" : "\(Int(value / 1000))K"
+                xAxisLabel: { context in
+                    context.point.xLabel
+                },
+                yAxisLabel: { context in
+                    let value = context.value
+                    return value == 0 ? "0" : "\(Int(value / 1000))K"
                 },
                 zeroLineColor: .black,
                 zeroLineWidth: 1))
