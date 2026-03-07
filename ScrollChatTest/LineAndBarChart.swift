@@ -7,7 +7,6 @@
 
 import Charts
 import SwiftUI
-import UIKit
 
 // swiftlint:disable file_length
 enum ChartSeriesKey: String, CaseIterable, Hashable, Identifiable {
@@ -292,8 +291,6 @@ struct CombinedChartView: View {
     // UI state.
     @State private var selectedIndex: Int? = 0
     @State private var visibleStartMonthIndex: Int = 0
-    @State private var scrollRequest: Int?
-    @State private var scrollOffsetX: CGFloat = 0
     @State private var unitWidth: CGFloat = 0
     @State private var viewportWidth: CGFloat = 0
 
@@ -668,10 +665,9 @@ extension CombinedChartView {
     }
 
     private var visibleMonthRange: ClosedRange<Int>? {
-        guard unitWidth > 0, viewportWidth > 0, !data.isEmpty else { return nil }
-        let offset = max(0, -scrollOffsetX)
-        let start = max(0, Int(floor(offset / unitWidth)))
-        let visibleCount = max(1, Int(round(viewportWidth / unitWidth)))
+        guard !data.isEmpty else { return nil }
+        let start = min(max(visibleStartMonthIndex, 0), max(0, data.count - 1))
+        let visibleCount = max(1, config.monthsPerPage)
         let end = min(data.count - 1, start + visibleCount - 1)
         return start...end
     }
@@ -755,8 +751,9 @@ extension CombinedChartView {
             "requested=\(monthIndex)",
             "clamped=\(clampedMonthIndex)",
             "visibleStartMonthIndex(before)=\(visibleStartMonthIndex)")
-        visibleStartMonthIndex = clampedMonthIndex
-        scrollRequest = clampedMonthIndex
+        withAnimation(.easeInOut(duration: 0.25)) {
+            visibleStartMonthIndex = clampedMonthIndex
+        }
     }
 
     private func selectPreviousPage() {
@@ -819,7 +816,6 @@ extension CombinedChartView {
                         selectedTab: selectedTab,
                         selectedIndex: $selectedIndex,
                         visibleStartMonthIndex: $visibleStartMonthIndex,
-                        scrollOffsetX: $scrollOffsetX,
                         unitWidth: $unitWidth,
                         viewportWidth: $viewportWidth,
                         plotAreaInfo: $plotAreaInfo,
@@ -830,8 +826,7 @@ extension CombinedChartView {
                         showDebugOverlay: showDebugOverlay,
                         selectionOverlay: viewSlots.selectionOverlay,
                         yAxisLabel: yAxisLabel(for:),
-                        onSelectIndex: { updateSelection(to: $0) },
-                        scrollRequest: $scrollRequest)
+                        onSelectIndex: { updateSelection(to: $0) })
                 } else {
                     viewSlots.emptyState
                 }
@@ -842,16 +837,6 @@ extension CombinedChartView {
             }
         }
         .frame(height: config.chartHeight)
-        .onChange(of: scrollOffsetX) { value in
-            let currentScrollOffset = max(0, -value)
-            guard unitWidth > 0 else { return }
-            let monthIndex = min(
-                max(Int(floor(currentScrollOffset / unitWidth)), 0),
-                max(0, data.count - config.monthsPerPage))
-            if visibleStartMonthIndex != monthIndex {
-                visibleStartMonthIndex = monthIndex
-            }
-        }
     }
 }
 
@@ -892,7 +877,6 @@ private extension CombinedChartView {
         let selectedTab: ChartTab
         @Binding var selectedIndex: Int?
         @Binding var visibleStartMonthIndex: Int
-        @Binding var scrollOffsetX: CGFloat
         @Binding var unitWidth: CGFloat
         @Binding var viewportWidth: CGFloat
         @Binding var plotAreaInfo: PlotAreaInfo?
@@ -904,8 +888,7 @@ private extension CombinedChartView {
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
         let yAxisLabel: (Double) -> String
         let onSelectIndex: (Int?) -> Void
-        @Binding var scrollRequest: Int?
-        @State private var dragStartMonthIndex: Int?
+        @State private var dragOffsetX: CGFloat = 0
 
         private var maxStartMonthIndex: Int {
             max(0, data.count - config.monthsPerPage)
@@ -917,6 +900,7 @@ private extension CombinedChartView {
                 let computedViewportWidth = max(geometry.size.width - config.axis.yAxisWidth, 1)
                 let computedUnitWidth = computedViewportWidth / visibleCount
                 let chartWidth = max(computedViewportWidth, computedUnitWidth * CGFloat(data.count))
+                let contentOffsetX = -CGFloat(visibleStartMonthIndex) * computedUnitWidth + dragOffsetX
 
                 HStack(alignment: .top, spacing: 0) {
                     HStack(alignment: .top, spacing: 8) {
@@ -934,109 +918,51 @@ private extension CombinedChartView {
                         }
                     }
 
-                    ScrollViewReader { proxy in
-                        GeometryReader { scrollGeometry in
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                ZStack(alignment: .topLeading) {
-                                    GeometryReader { proxy in
-                                        Color.clear
-                                            .preference(
-                                                key: ScrollOffsetKey.self,
-                                                value: proxy.frame(in: .global).minX - scrollGeometry.frame(in: .global)
-                                                    .minX)
-                                    }
-                                    .frame(width: chartWidth, height: 1, alignment: .topLeading)
-
-                                    ChartContainer(
-                                        selectedTab: selectedTab,
-                                        selectedIndex: $selectedIndex,
-                                        visibleData: data,
-                                        yAxisTickValues: yAxisTickValues,
-                                        yAxisDisplayDomain: yAxisDisplayDomain,
-                                        plotAreaHeight: plotAreaInfo?.height ?? 0,
-                                        config: config,
-                                        showDebugOverlay: showDebugOverlay,
-                                        selectionOverlay: selectionOverlay,
-                                        onSelectIndex: onSelectIndex,
-                                        onPlotAreaChange: { plotRect in
-                                            let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
-                                            if plotAreaInfo != info {
-                                                plotAreaInfo = info
-                                            }
-                                        },
-                                        onYAxisTickPositions: { positions in
-                                            if yTickPositions != positions {
-                                                yTickPositions = positions
-                                            }
-                                        })
-                                        .frame(width: chartWidth)
-                                        .frame(maxHeight: .infinity)
-
-                                    HStack(spacing: 0) {
-                                        ForEach(Array(data.indices), id: \.self) { monthIndex in
-                                            Color.clear
-                                                .frame(
-                                                    width: computedUnitWidth,
-                                                    height: 1)
-                                                .id(monthIndex)
-                                        }
-                                    }
+                    ZStack(alignment: .topLeading) {
+                        ChartContainer(
+                            selectedTab: selectedTab,
+                            selectedIndex: $selectedIndex,
+                            visibleData: data,
+                            yAxisTickValues: yAxisTickValues,
+                            yAxisDisplayDomain: yAxisDisplayDomain,
+                            plotAreaHeight: plotAreaInfo?.height ?? 0,
+                            config: config,
+                            showDebugOverlay: showDebugOverlay,
+                            selectionOverlay: selectionOverlay,
+                            onSelectIndex: onSelectIndex,
+                            onPlotAreaChange: { plotRect in
+                                let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
+                                if plotAreaInfo != info {
+                                    plotAreaInfo = info
                                 }
-                            }
-                            .onPreferenceChange(ScrollOffsetKey.self) { value in
-                                scrollOffsetX = value
-                            }
-                            .onChange(of: scrollRequest) { monthIndex in
-                                guard let monthIndex else { return }
-                                print("[ScrollRequest]", "monthIndex=\(monthIndex)")
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                    proxy.scrollTo(monthIndex, anchor: .leading)
+                            },
+                            onYAxisTickPositions: { positions in
+                                if yTickPositions != positions {
+                                    yTickPositions = positions
                                 }
-                            }
-                        }
-                        .frame(width: computedViewportWidth)
-                        .simultaneousGesture(
-                            DragGesture()
-                                .onChanged { value in
-                                    if dragStartMonthIndex == nil {
-                                        dragStartMonthIndex = visibleStartMonthIndex
-                                    }
-                                    let baseMonthIndex = dragStartMonthIndex ?? visibleStartMonthIndex
-                                    let monthDelta = Int(round(-value.translation.width / computedUnitWidth))
-                                    let derivedMonthIndex = min(
-                                        max(baseMonthIndex + monthDelta, 0),
-                                        maxStartMonthIndex)
-                                    print(
-                                        "[ScrollView Drag]",
-                                        "translation=\(value.translation)",
-                                        "location=\(value.location)",
-                                        "baseMonthIndex=\(baseMonthIndex)",
-                                        "derivedMonthIndex=\(derivedMonthIndex)")
-                                    if visibleStartMonthIndex != derivedMonthIndex {
-                                        visibleStartMonthIndex = derivedMonthIndex
-                                    }
-                                }
-                                .onEnded { value in
-                                    let baseMonthIndex = dragStartMonthIndex ?? visibleStartMonthIndex
-                                    let monthDelta = Int(round(-value.translation.width / computedUnitWidth))
-                                    let derivedMonthIndex = min(
-                                        max(baseMonthIndex + monthDelta, 0),
-                                        maxStartMonthIndex)
-                                    print(
-                                        "[ScrollView Drag End]",
-                                        "translation=\(value.translation)",
-                                        "predictedEndTranslation=\(value.predictedEndTranslation)",
-                                        "baseMonthIndex=\(baseMonthIndex)",
-                                        "derivedMonthIndex=\(derivedMonthIndex)")
-                                    visibleStartMonthIndex = derivedMonthIndex
-                                    dragStartMonthIndex = nil
-                                })
-                        .onChange(of: visibleStartMonthIndex) { monthIndex in
-                            print(
-                                "[ScrollView Visible Month]",
-                                "monthIndex=\(monthIndex)")
-                        }
+                            })
+                            .frame(width: chartWidth)
+                            .frame(maxHeight: .infinity)
                     }
+                    .offset(x: contentOffsetX)
+                    .frame(width: computedViewportWidth, alignment: .leading)
+                    .clipped()
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                dragOffsetX = value.translation.width
+                            }
+                            .onEnded { value in
+                                let monthDelta = Int(round(-value.translation.width / computedUnitWidth))
+                                let targetMonthIndex = min(
+                                    max(visibleStartMonthIndex + monthDelta, 0),
+                                    maxStartMonthIndex)
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    visibleStartMonthIndex = targetMonthIndex
+                                    dragOffsetX = 0
+                                }
+                            })
                 }
                 .onAppear {
                     unitWidth = computedUnitWidth
@@ -1111,16 +1037,6 @@ private extension CombinedChartView {
         let monthValues: [String]
         let pointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo]
         let pointInfoByKey: [String: ChartConfig.ChartAxisConfig.AxisPointInfo]
-    }
-
-    private struct ScrollOffsetKey: PreferenceKey {
-        static var defaultValue: CGFloat {
-            0
-        }
-
-        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-            value = nextValue()
-        }
     }
 
     /// Encapsulates the Chart to keep SwiftUI type-checking fast.
