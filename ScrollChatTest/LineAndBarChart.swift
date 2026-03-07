@@ -215,6 +215,7 @@ struct CombinedChartView<Payload>: View {
     private let config: ChartConfig
     private let onSelect: ((ChartPoint) -> Void)?
     private let groups: [ChartGroup]
+    private let emptyState: AnyView
     @Binding private var selectedTab: ChartTab
     @Binding private var showDebugOverlay: Bool
 
@@ -226,6 +227,22 @@ struct CombinedChartView<Payload>: View {
         onSelect: ((ChartPoint) -> Void)? = nil) {
         self.config = config
         self.groups = groups
+        emptyState = AnyView(DefaultEmptyStateView())
+        _selectedTab = selectedTab
+        _showDebugOverlay = showDebugOverlay
+        self.onSelect = onSelect
+    }
+
+    init(
+        config: ChartConfig = .default,
+        groups: [ChartGroup],
+        selectedTab: Binding<ChartTab> = .constant(.totalTrend),
+        showDebugOverlay: Binding<Bool> = .constant(false),
+        onSelect: ((ChartPoint) -> Void)? = nil,
+        @ViewBuilder emptyState: () -> some View) {
+        self.config = config
+        self.groups = groups
+        self.emptyState = AnyView(emptyState())
         _selectedTab = selectedTab
         _showDebugOverlay = showDebugOverlay
         self.onSelect = onSelect
@@ -243,6 +260,15 @@ struct CombinedChartView<Payload>: View {
 }
 
 extension CombinedChartView {
+    private struct DefaultEmptyStateView: View {
+        var body: some View {
+            Text("No data")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
     /// Two display modes for the same dataset.
     enum ChartTab: String, CaseIterable, Identifiable {
         enum BarColorStyle {
@@ -497,14 +523,11 @@ extension CombinedChartView {
                         onSelectIndex: updateSelection(to:),
                         scrollPage: scrollPage)
                 } else {
-                    Text("No data")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    emptyState
                 }
             }
 
-            if config.pager.isVisible {
+            if hasData, config.pager.isVisible {
                 CombinedChartPager(
                     ranges: yearPageRanges,
                     highlightedTitle: (fullyVisibleYearRange ?? currentYearRange)?.title,
