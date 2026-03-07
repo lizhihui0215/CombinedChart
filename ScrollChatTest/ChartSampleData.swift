@@ -17,15 +17,40 @@ enum ChartSampleData {
 
     struct Group: Decodable {
         let id: String
-        let title: String
-        let sortKey: Int
+        let displayTitle: String
+        let order: Int
         let points: [Point]
+
+        enum CodingKeys: String, CodingKey {
+            case id
+            case displayTitle = "title"
+            case order = "sortKey"
+            case points
+        }
     }
 
     struct Point: Decodable {
         let xKey: String
         let xLabel: String
-        let values: [String: Double]
+        let values: [ChartSeriesKey: Double]
+
+        enum CodingKeys: String, CodingKey {
+            case xKey
+            case xLabel
+            case values
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            xKey = try container.decode(String.self, forKey: .xKey)
+            xLabel = try container.decode(String.self, forKey: .xLabel)
+
+            let rawValues = try container.decode([String: Double].self, forKey: .values)
+            values = rawValues.reduce(into: [:]) { partial, entry in
+                guard let key = ChartSeriesKey(rawValue: entry.key) else { return }
+                partial[key] = entry.value
+            }
+        }
     }
 
     static let json: String = """
@@ -73,7 +98,7 @@ enum ChartSampleData {
     }
     """
 
-    static func makeGroups(variance: Double = 0.5) -> [CombinedChartView<String>.ChartGroup] {
+    static func makeGroups(variance: Double = 0.5) -> [CombinedChartView.ChartGroup] {
         let decoder = JSONDecoder()
         guard let data = json.data(using: .utf8),
               let decoded = try? decoder.decode(Response.self, from: data)
@@ -84,16 +109,16 @@ enum ChartSampleData {
         let clampedVariance = max(0, min(variance, 0.9))
 
         return decoded.groups.map { group in
-            CombinedChartView<String>.ChartGroup(
+            CombinedChartView.ChartGroup(
                 id: group.id,
-                title: group.title,
-                sortKey: group.sortKey,
+                displayTitle: group.displayTitle,
+                order: group.order,
                 points: group.points.map { point in
                     let randomizedValues = point.values.mapValues { value in
                         let factor = Double.random(in: (1.0 - clampedVariance)...(1.0 + clampedVariance))
                         return max(0, value * factor)
                     }
-                    return CombinedChartView<String>.ChartPoint(
+                    return CombinedChartView.ChartPoint(
                         xKey: point.xKey,
                         xLabel: point.xLabel,
                         values: randomizedValues,
@@ -144,35 +169,36 @@ enum ChartSampleData {
     private static func makeBarSeries() -> [ChartConfig.ChartBarConfig.ChartSeriesStyle] {
         [
             makeSeriesStyle(
-                id: "liabilities",
+                id: ChartSeriesKey.liabilities,
                 label: "Liabilities",
                 color: Color(red: 0.82, green: 0.35, blue: 0.42),
                 valuePolarity: .forcedSign(.negative)),
             makeSeriesStyle(
-                id: "saving",
+                id: ChartSeriesKey.saving,
                 label: "Saving",
                 color: Color(red: 0.20, green: 0.52, blue: 0.68)),
             makeSeriesStyle(
-                id: "investment",
+                id: ChartSeriesKey.investment,
                 label: "Investment",
                 color: Color(red: 0.86, green: 0.43, blue: 0.16)),
             makeSeriesStyle(
-                id: "otherLiquid",
+                id: ChartSeriesKey.otherLiquid,
                 label: "Other Liquid",
                 color: Color(red: 0.30, green: 0.67, blue: 0.14)),
             makeSeriesStyle(
-                id: "otherNonLiquid",
+                id: ChartSeriesKey.otherNonLiquid,
                 label: "Other Non-Liquid",
                 color: Color(red: 0.08, green: 0.28, blue: 0.34))
         ]
     }
 
     private static func makeSeriesStyle(
-        id: String,
+        id: ChartSeriesKey,
         label: String,
         color: Color,
-        valuePolarity: ChartConfig.ChartBarConfig.ChartSeriesStyle.ValuePolarity = .preserveSign) -> ChartConfig
-        .ChartBarConfig.ChartSeriesStyle {
+        valuePolarity: ChartConfig.ChartBarConfig.ChartSeriesStyle.ValueBehavior
+            .ValuePolarity = .preserveSign) -> ChartConfig
+                .ChartBarConfig.ChartSeriesStyle {
         ChartConfig.ChartBarConfig.ChartSeriesStyle(
             id: id,
             label: label,

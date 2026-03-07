@@ -10,6 +10,18 @@ import SwiftUI
 import UIKit
 
 // swiftlint:disable file_length
+enum ChartSeriesKey: String, CaseIterable, Hashable, Identifiable {
+    case liabilities
+    case saving
+    case investment
+    case otherLiquid
+    case otherNonLiquid
+
+    var id: Self {
+        self
+    }
+}
+
 struct ChartConfig {
     let monthsPerPage: Int
     let chartHeight: CGFloat
@@ -24,31 +36,31 @@ struct ChartConfig {
         bar: ChartBarConfig(
             series: [
                 ChartConfig.ChartBarConfig.ChartSeriesStyle(
-                    id: "liabilities",
+                    id: .liabilities,
                     label: "Liabilities",
                     color: Color(red: 0.82, green: 0.35, blue: 0.42),
                     valuePolarity: .forcedSign(.negative),
                     trendLineInclusion: .included),
                 ChartConfig.ChartBarConfig.ChartSeriesStyle(
-                    id: "saving",
+                    id: .saving,
                     label: "Saving",
                     color: Color(red: 0.20, green: 0.52, blue: 0.68),
                     valuePolarity: .forcedSign(.positive),
                     trendLineInclusion: .included),
                 ChartConfig.ChartBarConfig.ChartSeriesStyle(
-                    id: "investment",
+                    id: .investment,
                     label: "Investment",
                     color: Color(red: 0.86, green: 0.43, blue: 0.16),
                     valuePolarity: .forcedSign(.positive),
                     trendLineInclusion: .included),
                 ChartConfig.ChartBarConfig.ChartSeriesStyle(
-                    id: "otherLiquid",
+                    id: .otherLiquid,
                     label: "Other Liquid",
                     color: Color(red: 0.30, green: 0.67, blue: 0.14),
                     valuePolarity: .forcedSign(.positive),
                     trendLineInclusion: .included),
                 ChartConfig.ChartBarConfig.ChartSeriesStyle(
-                    id: "otherNonLiquid",
+                    id: .otherNonLiquid,
                     label: "Other Non-Liquid",
                     color: Color(red: 0.08, green: 0.28, blue: 0.34),
                     valuePolarity: .forcedSign(.positive),
@@ -134,40 +146,85 @@ extension ChartConfig.ChartBarConfig {
     }
 
     struct ChartSeriesStyle: Identifiable {
-        enum TrendLineInclusion {
-            case included
-            case excluded
+        struct Appearance {
+            let label: String
+            let color: Color
         }
 
-        enum Sign {
-            case positive
-            case negative
-        }
+        struct ValueBehavior {
+            enum TrendLineInclusion {
+                case included
+                case excluded
+            }
 
-        enum ValuePolarity {
-            case preserveSign
-            case forcedSign(Sign)
-        }
+            enum Sign {
+                case positive
+                case negative
+            }
 
-        let id: String
-        let label: String
-        let color: Color
-        let valuePolarity: ValuePolarity
-        let trendLineInclusion: TrendLineInclusion
+            enum ValuePolarity {
+                case preserveSign
+                case forcedSign(Sign)
+            }
 
-        func signedValue(for rawValue: Double) -> Double {
-            switch valuePolarity {
-            case .preserveSign:
-                rawValue
-            case .forcedSign(.positive):
-                abs(rawValue)
-            case .forcedSign(.negative):
-                -abs(rawValue)
+            let valuePolarity: ValuePolarity
+            let trendLineInclusion: TrendLineInclusion
+
+            func signedValue(for rawValue: Double) -> Double {
+                switch valuePolarity {
+                case .preserveSign:
+                    rawValue
+                case .forcedSign(.positive):
+                    abs(rawValue)
+                case .forcedSign(.negative):
+                    -abs(rawValue)
+                }
+            }
+
+            var contributesToTrendLine: Bool {
+                trendLineInclusion == .included
             }
         }
 
+        let id: ChartSeriesKey
+        let appearance: Appearance
+        let valueBehavior: ValueBehavior
+
+        init(
+            id: ChartSeriesKey,
+            label: String,
+            color: Color,
+            valuePolarity: ValueBehavior.ValuePolarity,
+            trendLineInclusion: ValueBehavior.TrendLineInclusion) {
+            self.id = id
+            appearance = .init(label: label, color: color)
+            valueBehavior = .init(
+                valuePolarity: valuePolarity,
+                trendLineInclusion: trendLineInclusion)
+        }
+
+        var label: String {
+            appearance.label
+        }
+
+        var color: Color {
+            appearance.color
+        }
+
+        var valuePolarity: ValueBehavior.ValuePolarity {
+            valueBehavior.valuePolarity
+        }
+
+        var trendLineInclusion: ValueBehavior.TrendLineInclusion {
+            valueBehavior.trendLineInclusion
+        }
+
+        func signedValue(for rawValue: Double) -> Double {
+            valueBehavior.signedValue(for: rawValue)
+        }
+
         var contributesToTrendLine: Bool {
-            trendLineInclusion == .included
+            valueBehavior.contributesToTrendLine
         }
     }
 }
@@ -192,7 +249,7 @@ extension ChartConfig.ChartAxisConfig {
         let index: Int
         let xKey: String
         let xLabel: String
-        let values: [String: Double]
+        let values: [ChartSeriesKey: Double]
         let payload: Any
 
         func payload<T>(as type: T.Type = T.self) -> T? {
@@ -211,38 +268,27 @@ extension ChartConfig.ChartAxisConfig {
     }
 }
 
-struct CombinedChartView<Payload>: View {
+struct CombinedChartView: View {
     private let config: ChartConfig
     private let onSelect: ((ChartPoint) -> Void)?
     private let groups: [ChartGroup]
-    private let emptyState: AnyView
+    private let tabs: [ChartTab]
+    private let viewSlots: ViewSlots
     @Binding private var selectedTab: ChartTab
     @Binding private var showDebugOverlay: Bool
 
     init(
         config: ChartConfig = .default,
         groups: [ChartGroup],
+        tabs: [ChartTab] = ChartTab.defaults,
         selectedTab: Binding<ChartTab> = .constant(.totalTrend),
         showDebugOverlay: Binding<Bool> = .constant(false),
+        viewSlots: ViewSlots = .default,
         onSelect: ((ChartPoint) -> Void)? = nil) {
         self.config = config
         self.groups = groups
-        emptyState = AnyView(DefaultEmptyStateView())
-        _selectedTab = selectedTab
-        _showDebugOverlay = showDebugOverlay
-        self.onSelect = onSelect
-    }
-
-    init(
-        config: ChartConfig = .default,
-        groups: [ChartGroup],
-        selectedTab: Binding<ChartTab> = .constant(.totalTrend),
-        showDebugOverlay: Binding<Bool> = .constant(false),
-        onSelect: ((ChartPoint) -> Void)? = nil,
-        @ViewBuilder emptyState: () -> some View) {
-        self.config = config
-        self.groups = groups
-        self.emptyState = AnyView(emptyState())
+        self.tabs = tabs
+        self.viewSlots = viewSlots
         _selectedTab = selectedTab
         _showDebugOverlay = showDebugOverlay
         self.onSelect = onSelect
@@ -269,47 +315,131 @@ extension CombinedChartView {
         }
     }
 
-    /// Two display modes for the same dataset.
-    enum ChartTab: String, CaseIterable, Identifiable {
-        enum BarColorStyle {
+    struct ViewSlots {
+        let emptyState: AnyView
+        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
+        let pager: ((PagerContext) -> AnyView)?
+
+        static var `default`: ViewSlots {
+            .init(
+                emptyState: AnyView(DefaultEmptyStateView()),
+                selectionOverlay: nil,
+                pager: nil)
+        }
+
+        static func emptyState(
+            @ViewBuilder _ content: () -> some View) -> ViewSlots {
+            .init(
+                emptyState: AnyView(content()),
+                selectionOverlay: nil,
+                pager: nil)
+        }
+
+        static func custom(
+            @ViewBuilder emptyState: () -> some View,
+            @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View) -> ViewSlots {
+            .init(
+                emptyState: AnyView(emptyState()),
+                selectionOverlay: { context in
+                    AnyView(selectionOverlay(context))
+                },
+                pager: nil)
+        }
+
+        static func custom(
+            @ViewBuilder emptyState: () -> some View,
+            @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View,
+            @ViewBuilder pager: @escaping (PagerContext) -> some View) -> ViewSlots {
+            .init(
+                emptyState: AnyView(emptyState()),
+                selectionOverlay: { context in
+                    AnyView(selectionOverlay(context))
+                },
+                pager: { context in
+                    AnyView(pager(context))
+                })
+        }
+    }
+
+    struct SelectionOverlayContext {
+        let point: ChartPoint
+        let index: Int
+        let value: Double
+        let xPosition: CGFloat
+        let plotRect: CGRect
+        let indicatorStyle: ChartPresentationMode.SelectionIndicatorStyle
+        let highlightWidth: CGFloat
+    }
+
+    struct PagerContext {
+        let ranges: [YearPageRange]
+        let highlightedTitle: String?
+        let scrollPage: Int
+        let maxScrollPage: Int
+        let showAllYears: Bool
+        let onSelectPreviousPage: () -> Void
+        let onSelectRange: (YearPageRange) -> Void
+        let onSelectNextPage: () -> Void
+    }
+
+    struct ChartPresentationMode: Hashable {
+        enum BarColorStyle: Hashable {
             case seriesColors
             case unifiedTrendColor
         }
 
-        enum SelectionIndicatorStyle {
+        enum SelectionIndicatorStyle: Hashable {
             case line
             case band
         }
 
-        struct Behavior {
-            let barColorStyle: BarColorStyle
-            let showsTrendLine: Bool
-            let selectionIndicatorStyle: SelectionIndicatorStyle
-            let showsSelectedPoint: Bool
+        let barColorStyle: BarColorStyle
+        let showsTrendLine: Bool
+        let selectionIndicatorStyle: SelectionIndicatorStyle
+        let showsSelectedPoint: Bool
+
+        static var totalTrend: ChartPresentationMode {
+            .init(
+                barColorStyle: .unifiedTrendColor,
+                showsTrendLine: true,
+                selectionIndicatorStyle: .line,
+                showsSelectedPoint: true)
         }
 
-        case totalTrend = "Total Trend"
-        case breakdown = "Breakdown"
+        static var breakdown: ChartPresentationMode {
+            .init(
+                barColorStyle: .seriesColors,
+                showsTrendLine: false,
+                selectionIndicatorStyle: .band,
+                showsSelectedPoint: false)
+        }
+    }
 
-        var id: String {
-            rawValue
+    /// Display mode descriptor for the same dataset.
+    struct ChartTab: Identifiable, Hashable {
+        let id: String
+        let title: String
+        let mode: ChartPresentationMode
+
+        static var totalTrend: ChartTab {
+            ChartTab(
+                id: "totalTrend",
+                title: "Total Trend",
+                mode: .totalTrend)
         }
 
-        var behavior: Behavior {
-            switch self {
-            case .totalTrend:
-                Behavior(
-                    barColorStyle: .unifiedTrendColor,
-                    showsTrendLine: true,
-                    selectionIndicatorStyle: .line,
-                    showsSelectedPoint: true)
-            case .breakdown:
-                Behavior(
-                    barColorStyle: .seriesColors,
-                    showsTrendLine: false,
-                    selectionIndicatorStyle: .band,
-                    showsSelectedPoint: false)
-            }
+        static var breakdown: ChartTab {
+            ChartTab(
+                id: "breakdown",
+                title: "Breakdown",
+                mode: .breakdown)
+        }
+
+        static var defaults: [ChartTab] {
+            [
+                .totalTrend,
+                .breakdown
+            ]
         }
     }
 
@@ -317,8 +447,39 @@ extension CombinedChartView {
         let id = UUID()
         let xKey: String
         let xLabel: String
-        let values: [String: Double]
-        let payload: Payload
+        let values: [ChartSeriesKey: Double]
+        let payload: Any
+    }
+
+    struct ChartGroup: Identifiable {
+        let id: String
+        let displayTitle: String
+        let order: Int
+        let points: [ChartPoint]
+    }
+
+    struct ChartDataPoint: Identifiable {
+        let source: ChartPoint
+
+        var id: UUID {
+            source.id
+        }
+
+        var xKey: String {
+            source.xKey
+        }
+
+        var xLabel: String {
+            source.xLabel
+        }
+
+        var values: [ChartSeriesKey: Double] {
+            source.values
+        }
+
+        var payload: Any {
+            source.payload
+        }
 
         func signedValue(for series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
             let rawValue = values[series.id] ?? 0
@@ -346,22 +507,45 @@ extension CombinedChartView {
 
             return (negativeTotal, positiveTotal)
         }
+
+        func axisPointInfo(index: Int) -> ChartConfig.ChartAxisConfig.AxisPointInfo {
+            .init(
+                id: id.uuidString,
+                index: index,
+                xKey: xKey,
+                xLabel: xLabel,
+                values: values,
+                payload: payload)
+        }
     }
 
-    struct ChartGroup: Identifiable {
-        let id: String
-        let title: String
-        let sortKey: Int
-        let points: [ChartPoint]
+    struct ChartDataGroup: Identifiable {
+        let source: ChartGroup
+
+        var id: String {
+            source.id
+        }
+
+        var title: String {
+            source.displayTitle
+        }
+
+        var sortKey: Int {
+            source.order
+        }
+
+        var points: [ChartDataPoint] {
+            source.points.map { .init(source: $0) }
+        }
     }
 
     struct YearPageRange: Identifiable {
         var id: String {
-            title
+            displayTitle
         }
 
-        let title: String
-        let sortKey: Int
+        let displayTitle: String
+        let groupOrder: Int
         let startMonthIndex: Int
         let endMonthIndex: Int
         let startPage: Int
@@ -379,12 +563,44 @@ extension CombinedChartView {
 }
 
 extension CombinedChartView {
-    private var sortedGroups: [ChartGroup] {
-        groups.sorted { $0.sortKey < $1.sortKey }
+    @ViewBuilder
+    private var pagerView: some View {
+        let context = PagerContext(
+            ranges: yearPageRanges,
+            highlightedTitle: (fullyVisibleYearRange ?? currentYearRange)?.displayTitle,
+            scrollPage: scrollPage,
+            maxScrollPage: maxScrollPage,
+            showAllYears: config.pager.displayStyle == .allYears,
+            onSelectPreviousPage: { selectPage(scrollPage - 1) },
+            onSelectRange: { range in
+                scrollPage = range.startPage
+                updateSelection(to: range.startMonthIndex)
+            },
+            onSelectNextPage: { selectPage(scrollPage + 1) })
+
+        if let pager = viewSlots.pager {
+            pager(context)
+        } else {
+            CombinedChartPager(
+                ranges: context.ranges,
+                highlightedTitle: context.highlightedTitle,
+                scrollPage: context.scrollPage,
+                maxScrollPage: context.maxScrollPage,
+                showAllYears: context.showAllYears,
+                onSelectPreviousPage: context.onSelectPreviousPage,
+                onSelectRange: context.onSelectRange,
+                onSelectNextPage: context.onSelectNextPage)
+        }
+    }
+
+    private var sortedGroups: [ChartDataGroup] {
+        groups
+            .map { ChartDataGroup(source: $0) }
+            .sorted { $0.sortKey < $1.sortKey }
     }
 
     /// Data array for all years, ordered by year ascending.
-    private var data: [ChartPoint] {
+    private var data: [ChartDataPoint] {
         sortedGroups.flatMap(\.points)
     }
 
@@ -398,8 +614,8 @@ extension CombinedChartView {
             let endPage = endMonthIndex / config.monthsPerPage
             ranges.append(
                 YearPageRange(
-                    title: group.title,
-                    sortKey: group.sortKey,
+                    displayTitle: group.title,
+                    groupOrder: group.sortKey,
                     startMonthIndex: startMonthIndex,
                     endMonthIndex: endMonthIndex,
                     startPage: startPage,
@@ -470,13 +686,7 @@ extension CombinedChartView {
 
     private var axisPointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo] {
         data.enumerated().map { index, point in
-            ChartConfig.ChartAxisConfig.AxisPointInfo(
-                id: point.id.uuidString,
-                index: index,
-                xKey: point.xKey,
-                xLabel: point.xLabel,
-                values: point.values,
-                payload: point.payload)
+            point.axisPointInfo(index: index)
         }
     }
 
@@ -490,7 +700,7 @@ extension CombinedChartView {
     private func updateSelection(to index: Int?) {
         selectedIndex = index
         guard let index, data.indices.contains(index) else { return }
-        onSelect?(data[index])
+        onSelect?(data[index].source)
     }
 
     private func selectPage(_ page: Int) {
@@ -519,27 +729,17 @@ extension CombinedChartView {
                         yAxisDisplayDomain: yAxisDisplayDomain,
                         maxScrollPage: maxScrollPage,
                         showDebugOverlay: showDebugOverlay,
+                        selectionOverlay: viewSlots.selectionOverlay,
                         yAxisLabel: yAxisLabel(for:),
                         onSelectIndex: updateSelection(to:),
                         scrollPage: scrollPage)
                 } else {
-                    emptyState
+                    viewSlots.emptyState
                 }
             }
 
             if hasData, config.pager.isVisible {
-                CombinedChartPager(
-                    ranges: yearPageRanges,
-                    highlightedTitle: (fullyVisibleYearRange ?? currentYearRange)?.title,
-                    scrollPage: scrollPage,
-                    maxScrollPage: maxScrollPage,
-                    showAllYears: config.pager.displayStyle == .allYears,
-                    onSelectPreviousPage: { selectPage(scrollPage - 1) },
-                    onSelectRange: { range in
-                        scrollPage = range.startPage
-                        updateSelection(to: range.startMonthIndex)
-                    },
-                    onSelectNextPage: { selectPage(scrollPage + 1) })
+                pagerView
             }
         }
         .frame(height: config.chartHeight)
@@ -587,11 +787,12 @@ private extension CombinedChartView {
         @Binding var viewportWidth: CGFloat
         @Binding var plotAreaInfo: PlotAreaInfo?
         @Binding var yTickPositions: [Double: CGFloat]
-        let data: [ChartPoint]
+        let data: [ChartDataPoint]
         let yAxisTickValues: [Double]
         let yAxisDisplayDomain: ClosedRange<Double>
         let maxScrollPage: Int
         let showDebugOverlay: Bool
+        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
         let yAxisLabel: (Double) -> String
         let onSelectIndex: (Int?) -> Void
         let scrollPage: Int
@@ -639,6 +840,7 @@ private extension CombinedChartView {
                                     plotAreaHeight: plotAreaInfo?.height ?? 0,
                                     config: config,
                                     showDebugOverlay: showDebugOverlay,
+                                    selectionOverlay: selectionOverlay,
                                     onSelectIndex: onSelectIndex,
                                     onPlotAreaChange: { plotRect in
                                         let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
@@ -710,9 +912,9 @@ private extension CombinedChartView {
                 if showAllYears {
                     HStack(spacing: 16) {
                         ForEach(ranges) { range in
-                            Text(range.title)
-                                .font(.callout.weight(range.title == highlightedTitle ? .semibold : .regular))
-                                .foregroundStyle(range.title == highlightedTitle ? .primary : .secondary)
+                            Text(range.displayTitle)
+                                .font(.callout.weight(range.displayTitle == highlightedTitle ? .semibold : .regular))
+                                .foregroundStyle(range.displayTitle == highlightedTitle ? .primary : .secondary)
                                 .onTapGesture {
                                     onSelectRange(range)
                                 }
@@ -754,6 +956,13 @@ private extension CombinedChartView {
         let color: Color
     }
 
+    struct ChartSelectionState {
+        let point: ChartDataPoint
+        let index: Int
+        let value: Double
+        let xPosition: CGFloat
+    }
+
     private struct ScrollOffsetKey: PreferenceKey {
         static var defaultValue: CGFloat {
             0
@@ -768,12 +977,13 @@ private extension CombinedChartView {
     struct ChartContainer: View {
         let selectedTab: ChartTab
         @Binding var selectedIndex: Int?
-        let visibleData: [ChartPoint]
+        let visibleData: [ChartDataPoint]
         let yAxisTickValues: [Double]
         let yAxisDisplayDomain: ClosedRange<Double>
         let plotAreaHeight: CGFloat
         let config: ChartConfig
         let showDebugOverlay: Bool
+        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
         let onSelectIndex: (Int) -> Void
         let onPlotAreaChange: (CGRect) -> Void
         let onYAxisTickPositions: ([Double: CGFloat]) -> Void
@@ -781,13 +991,7 @@ private extension CombinedChartView {
         var body: some View {
             let monthValues = visibleData.map(\.xKey)
             let axisPointInfos = visibleData.enumerated().map { index, point in
-                ChartConfig.ChartAxisConfig.AxisPointInfo(
-                    id: point.id.uuidString,
-                    index: index,
-                    xKey: point.xKey,
-                    xLabel: point.xLabel,
-                    values: point.values,
-                    payload: point.payload)
+                point.axisPointInfo(index: index)
             }
             let axisPointByKey = Dictionary(uniqueKeysWithValues: axisPointInfos.map { ($0.xKey, $0) })
 
@@ -868,7 +1072,7 @@ private extension CombinedChartView.ChartContainer {
 
     @ViewBuilder
     func trendLineOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
-        if selectedTab.behavior.showsTrendLine {
+        if selectedTab.mode.showsTrendLine {
             let segments = lineSegmentPaths(proxy: proxy)
             ForEach(segments) { segment in
                 segment.path
@@ -883,8 +1087,23 @@ private extension CombinedChartView.ChartContainer {
     @ViewBuilder
     func selectionOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
         if let selectionState = selectionState(plotRect: plotRect, proxy: proxy) {
+            let highlightWidth = selectionHighlightWidth(
+                at: selectionState.index,
+                xPosition: selectionState.xPosition,
+                proxy: proxy)
+
             Group {
-                if selectedTab.behavior.selectionIndicatorStyle == .line {
+                if let selectionOverlay {
+                    selectionOverlay(
+                        .init(
+                            point: selectionState.point.source,
+                            index: selectionState.index,
+                            value: selectionState.value,
+                            xPosition: selectionState.xPosition,
+                            plotRect: plotRect,
+                            indicatorStyle: selectedTab.mode.selectionIndicatorStyle,
+                            highlightWidth: highlightWidth))
+                } else if selectedTab.mode.selectionIndicatorStyle == .line {
                     Path { path in
                         path.move(to: CGPoint(x: selectionState.xPosition, y: plotRect.minY))
                         path.addLine(to: CGPoint(x: selectionState.xPosition, y: plotRect.maxY))
@@ -894,12 +1113,7 @@ private extension CombinedChartView.ChartContainer {
                 } else {
                     Rectangle()
                         .fill(config.line.selection.fillColor)
-                        .frame(
-                            width: selectionHighlightWidth(
-                                at: selectionState.index,
-                                xPosition: selectionState.xPosition,
-                                proxy: proxy),
-                            height: plotRect.height)
+                        .frame(width: highlightWidth, height: plotRect.height)
                         .position(x: selectionState.xPosition, y: plotRect.midY)
                 }
             }
@@ -942,18 +1156,25 @@ private extension CombinedChartView.ChartContainer {
             .position(x: plotRect.midX, y: plotRect.midY)
     }
 
-    func selectionState(plotRect: CGRect, proxy: ChartProxy) -> (index: Int, value: Double, xPosition: CGFloat)? {
+    func selectionState(
+        plotRect: CGRect,
+        proxy: ChartProxy) -> CombinedChartView.ChartSelectionState? {
         guard let selectedIndex, visibleData.indices.contains(selectedIndex) else {
             return nil
         }
 
-        let selectedKey = visibleData[selectedIndex].xKey
+        let point = visibleData[selectedIndex]
+        let selectedKey = point.xKey
         guard let xPos = proxy.position(forX: selectedKey) else {
             return nil
         }
 
-        let value = visibleData[selectedIndex].trendLineValue(using: config)
-        return (selectedIndex, value, xPos)
+        let value = point.trendLineValue(using: config)
+        return CombinedChartView.ChartSelectionState(
+            point: point,
+            index: selectedIndex,
+            value: value,
+            xPosition: xPos)
     }
 
     func selectionHighlightWidth(at index: Int, xPosition: CGFloat, proxy: ChartProxy) -> CGFloat {
@@ -973,7 +1194,7 @@ private extension CombinedChartView.ChartContainer {
     }
 
     var usesTrendBarColor: Bool {
-        guard selectedTab.behavior.barColorStyle == .unifiedTrendColor else {
+        guard selectedTab.mode.barColorStyle == .unifiedTrendColor else {
             return false
         }
 
@@ -1083,7 +1304,7 @@ private extension CombinedChartView.ChartContainer {
     }
 
     func segments(
-        for point: CombinedChartView.ChartPoint,
+        for point: CombinedChartView.ChartDataPoint,
         useTrendBarColor: Bool) -> [CombinedChartView.ChartContainerSegment] {
         var positiveStart: Double = 0
         var negativeStart: Double = 0
@@ -1139,7 +1360,7 @@ private extension CombinedChartView.ChartContainer {
             .foregroundStyle(config.axis.zeroLineColor)
             .lineStyle(StrokeStyle(lineWidth: config.axis.zeroLineWidth))
 
-        if selectedTab.behavior.showsSelectedPoint, let selectedIndex,
+        if selectedTab.mode.showsSelectedPoint, let selectedIndex,
            visibleData.indices.contains(selectedIndex) {
             let value = visibleData[selectedIndex].trendLineValue(using: config)
             PointMark(
@@ -1194,7 +1415,8 @@ private extension CombinedChartView.ChartContainer {
 private struct LineAndBarChartPreviewHost: View {
     private let groups = ChartSampleData.makeGroups(variance: 0.6)
     private let config = ChartSampleData.makeConfig()
-    @State private var selectedTab: CombinedChartView<String>.ChartTab = .totalTrend
+    private let tabs = CombinedChartView.ChartTab.defaults
+    @State private var selectedTab: CombinedChartView.ChartTab = .totalTrend
     @State private var showDebugOverlay = false
 
     var body: some View {
@@ -1206,8 +1428,8 @@ private struct LineAndBarChartPreviewHost: View {
             }
 
             Picker("", selection: $selectedTab) {
-                ForEach(CombinedChartView<String>.ChartTab.allCases) { tab in
-                    Text(tab.rawValue).tag(tab)
+                ForEach(tabs) { tab in
+                    Text(tab.title).tag(tab)
                 }
             }
             .pickerStyle(.segmented)
@@ -1216,9 +1438,10 @@ private struct LineAndBarChartPreviewHost: View {
                 .font(.caption)
                 .toggleStyle(SwitchToggleStyle(tint: .gray))
 
-            CombinedChartView<String>(
+            CombinedChartView(
                 config: config,
                 groups: groups,
+                tabs: tabs,
                 selectedTab: $selectedTab,
                 showDebugOverlay: $showDebugOverlay)
         }

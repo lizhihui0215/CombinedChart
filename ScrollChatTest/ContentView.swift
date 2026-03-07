@@ -11,7 +11,8 @@ import UIKit
 struct ContentView: View {
     private let groups = ChartSampleData.makeGroups(variance: 0.6)
     private let config = ChartSampleData.makeConfig()
-    @State private var selectedTab: CombinedChartView<String>.ChartTab = .totalTrend
+    private let tabs = CombinedChartView.ChartTab.defaults
+    @State private var selectedTab: CombinedChartView.ChartTab = .totalTrend
     @State private var showDebugOverlay = false
 
     var body: some View {
@@ -23,8 +24,8 @@ struct ContentView: View {
             }
 
             Picker("", selection: $selectedTab) {
-                ForEach(CombinedChartView<String>.ChartTab.allCases) { tab in
-                    Text(tab.rawValue).tag(tab)
+                ForEach(tabs) { tab in
+                    Text(tab.title).tag(tab)
                 }
             }
             .pickerStyle(.segmented)
@@ -33,9 +34,10 @@ struct ContentView: View {
                 .font(.caption)
                 .toggleStyle(SwitchToggleStyle(tint: .gray))
 
-            CombinedChartView<String>(
+            CombinedChartView(
                 config: config,
                 groups: groups,
+                tabs: tabs,
                 selectedTab: $selectedTab,
                 showDebugOverlay: $showDebugOverlay)
         }
