@@ -204,7 +204,9 @@ extension CombinedChartView {
                     startMonthIndex: startMonthIndex,
                     endMonthIndex: endMonthIndex,
                     startPage: startPage,
-                    endPage: endPage))
+                    endPage: endPage
+                )
+            )
             cumulativeMonths += group.points.count
         }
         return ranges
@@ -240,14 +242,14 @@ extension CombinedChartView {
         !data.isEmpty
     }
 
-    private var visibleData: [ChartPoint] {
-        data
-    }
-
     /// Dynamic Y range to fit all visible bars/line.
     private var yDomain: ClosedRange<Double> {
-        let minValue = data.map { stackedExtents(for: $0).min }.min() ?? -20
-        let maxValue = data.map { stackedExtents(for: $0).max }.max() ?? 20
+        let minValue = data
+            .map { ChartMath.stackedExtents(for: $0, config: config).min }
+            .min() ?? -20
+        let maxValue = data
+            .map { ChartMath.stackedExtents(for: $0, config: config).max }
+            .max() ?? 20
         let padding = max((maxValue - minValue) * 0.1, 2)
         return (minValue - padding)...(maxValue + padding)
     }
@@ -271,31 +273,36 @@ extension CombinedChartView {
         config.axis.yAxisLabel(amount)
     }
 
-    private func signedValue(for point: ChartPoint, series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
-        let raw = point.values[series.id] ?? 0
-        return series.isNegative ? -abs(raw) : raw
-    }
-
-    private func lineValue(for point: ChartPoint) -> Double {
-        config.bar.series.reduce(0) { partial, series in
-            guard series.includeInLine else { return partial }
-            let value = signedValue(for: point, series: series)
-            return partial + value
+    private struct ChartMath {
+        static func signedValue(
+            for point: ChartPoint,
+            series: ChartConfig.ChartBarConfig.ChartSeriesStyle
+        ) -> Double {
+            let raw = point.values[series.id] ?? 0
+            return series.isNegative ? -abs(raw) : raw
         }
-    }
 
-    private func stackedExtents(for point: ChartPoint) -> (min: Double, max: Double) {
-        var positiveTotal: Double = 0
-        var negativeTotal: Double = 0
-        for series in config.bar.series {
-            let value = signedValue(for: point, series: series)
-            if value >= 0 {
-                positiveTotal += value
-            } else {
-                negativeTotal += value
+        static func lineValue(for point: ChartPoint, config: ChartConfig) -> Double {
+            config.bar.series.reduce(0) { partial, series in
+                guard series.includeInLine else { return partial }
+                let value = signedValue(for: point, series: series)
+                return partial + value
             }
         }
-        return (negativeTotal, positiveTotal)
+
+        static func stackedExtents(for point: ChartPoint, config: ChartConfig) -> (min: Double, max: Double) {
+            var positiveTotal: Double = 0
+            var negativeTotal: Double = 0
+            for series in config.bar.series {
+                let value = signedValue(for: point, series: series)
+                if value >= 0 {
+                    positiveTotal += value
+                } else {
+                    negativeTotal += value
+                }
+            }
+            return (negativeTotal, positiveTotal)
+        }
     }
 }
 
@@ -374,7 +381,7 @@ extension CombinedChartView {
             let yAxisWidth: CGFloat = 40
             let computedViewportWidth = max(geometry.size.width - yAxisWidth, 1)
             let computedUnitWidth = computedViewportWidth / visibleCount
-            let chartWidth = max(computedViewportWidth, computedUnitWidth * CGFloat(visibleData.count))
+            let chartWidth = max(computedViewportWidth, computedUnitWidth * CGFloat(data.count))
 
             HStack(alignment: .top, spacing: 0) {
                 HStack(alignment: .top, spacing: 8) {
@@ -401,7 +408,7 @@ extension CombinedChartView {
 
                             ChartContainer(
                                 selectedTab: selectedTab,
-                                visibleData: visibleData,
+                                visibleData: data,
                                 yAxisTickValues: yAxisTickValues,
                                 yAxisDisplayDomain: yAxisDisplayDomain,
                                 plotAreaHeight: plotAreaInfo?.height ?? 0,
@@ -409,8 +416,8 @@ extension CombinedChartView {
                                 showDebugOverlay: showDebugOverlay,
                                 onSelectIndex: { index in
                                     selectedIndex = index
-                                    if visibleData.indices.contains(index) {
-                                        onSelect?(visibleData[index])
+                                    if data.indices.contains(index) {
+                                        onSelect?(data[index])
                                     }
                                 },
                                 onPlotAreaChange: { plotRect in
@@ -496,7 +503,7 @@ extension CombinedChartView {
 
             Button {
                 scrollPage = min(maxScrollPage, scrollPage + 1)
-                selectedIndex = min(visibleData.count - 1, (scrollPage + 1) * 4)
+                selectedIndex = min(data.count - 1, (scrollPage + 1) * 4)
             } label: {
                 Image(systemName: "chevron.right")
             }
@@ -532,19 +539,6 @@ extension CombinedChartView {
         let onYAxisTickPositions: ([Double: CGFloat]) -> Void
         @State private var selectedIndex: Int?
 
-        private func signedValue(for point: ChartPoint, series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
-            let raw = point.values[series.id] ?? 0
-            return series.isNegative ? -abs(raw) : raw
-        }
-
-        private func lineValue(for point: ChartPoint) -> Double {
-            config.bar.series.reduce(0) { partial, series in
-                guard series.includeInLine else { return partial }
-                let value = signedValue(for: point, series: series)
-                return partial + value
-            }
-        }
-
         private func lineColor(for value: Double) -> Color {
             value >= 0 ? config.line.positiveLineColor : config.line.negativeLineColor
         }
@@ -575,7 +569,7 @@ extension CombinedChartView {
             var result: [Segment] = []
 
             for series in config.bar.series {
-                let value = signedValue(for: point, series: series)
+                let value = ChartMath.signedValue(for: point, series: series)
                 let color = useTotalTrendColor ? config.bar.totalTrendColor : series.color
                 if value >= 0 {
                     result.append(Segment(start: positiveStart, value: value, color: color))
@@ -749,7 +743,7 @@ extension CombinedChartView {
 
             if selectedTab == .totalTrend {
                 ForEach(visibleData, id: \.id) { item in
-                    let value = lineValue(for: item)
+                    let value = ChartMath.lineValue(for: item, config: config)
                     LineMark(
                         x: .value("Month", item.xKey),
                         y: .value("Total", value))
@@ -759,7 +753,7 @@ extension CombinedChartView {
             }
 
             if selectedTab == .totalTrend, let selectedIndex, visibleData.indices.contains(selectedIndex) {
-                let value = lineValue(for: visibleData[selectedIndex])
+                let value = ChartMath.lineValue(for: visibleData[selectedIndex], config: config)
                 PointMark(
                     x: .value("Selected Month", visibleData[selectedIndex].xKey),
                     y: .value("Selected Value", value))
@@ -817,7 +811,8 @@ private struct LineAndBarChartPreviewHost: View {
     var body: some View {
         CombinedChartView<String>(
             config: config,
-            groups: groups)
+            groups: groups
+        )
     }
 }
 
