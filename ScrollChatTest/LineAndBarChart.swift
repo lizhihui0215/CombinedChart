@@ -996,15 +996,11 @@ private extension CombinedChartView {
                 AxisMarks(values: monthValues) { value in
                     AxisValueLabel(centered: true) {
                         if let key = value.as(String.self) {
-                            let labelContext = ChartConfig.ChartAxisConfig.XAxisLabelContext(
-                                point: axisPointByKey[key] ?? .init(
-                                    id: key,
-                                    index: 0,
-                                    xKey: key,
-                                    xLabel: key,
-                                    values: [:]),
-                                visiblePoints: axisPointInfos)
-                            Text(config.axis.xAxisLabel(labelContext))
+                            Text(config.axis.xAxisLabel(
+                                xAxisLabelContext(
+                                    for: key,
+                                    axisPointByKey: axisPointByKey,
+                                    axisPointInfos: axisPointInfos)))
                                 .font(.caption2)
                         }
                     }
@@ -1094,21 +1090,52 @@ private extension CombinedChartView.ChartContainer {
                             plotRect: plotRect,
                             indicatorStyle: selectedTab.mode.selectionIndicatorStyle,
                             highlightWidth: highlightWidth))
-                } else if selectedTab.mode.selectionIndicatorStyle == .line {
-                    Path { path in
-                        path.move(to: CGPoint(x: selectionState.xPosition, y: plotRect.minY))
-                        path.addLine(to: CGPoint(x: selectionState.xPosition, y: plotRect.maxY))
-                    }
-                    .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                    .foregroundStyle(selectionLineColor(for: selectionState.value))
                 } else {
-                    Rectangle()
-                        .fill(config.line.selection.fillColor)
-                        .frame(width: highlightWidth, height: plotRect.height)
-                        .position(x: selectionState.xPosition, y: plotRect.midY)
+                    defaultSelectionOverlay(
+                        selectionState: selectionState,
+                        plotRect: plotRect,
+                        highlightWidth: highlightWidth)
                 }
             }
             .mask(plotMask(for: plotRect))
+        }
+    }
+
+    func xAxisLabelContext(
+        for key: String,
+        axisPointByKey: [String: ChartConfig.ChartAxisConfig.AxisPointInfo],
+        axisPointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo]) -> ChartConfig.ChartAxisConfig.XAxisLabelContext {
+        .init(
+            point: axisPointByKey[key] ?? fallbackAxisPointInfo(for: key),
+            visiblePoints: axisPointInfos)
+    }
+
+    func fallbackAxisPointInfo(for key: String) -> ChartConfig.ChartAxisConfig.AxisPointInfo {
+        .init(
+            id: key,
+            index: 0,
+            xKey: key,
+            xLabel: key,
+            values: [:])
+    }
+
+    @ViewBuilder
+    func defaultSelectionOverlay(
+        selectionState: CombinedChartView.ChartSelectionState,
+        plotRect: CGRect,
+        highlightWidth: CGFloat) -> some View {
+        if selectedTab.mode.selectionIndicatorStyle == .line {
+            Path { path in
+                path.move(to: CGPoint(x: selectionState.xPosition, y: plotRect.minY))
+                path.addLine(to: CGPoint(x: selectionState.xPosition, y: plotRect.maxY))
+            }
+            .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+            .foregroundStyle(selectionLineColor(for: selectionState.value))
+        } else {
+            Rectangle()
+                .fill(config.line.selection.fillColor)
+                .frame(width: highlightWidth, height: plotRect.height)
+                .position(x: selectionState.xPosition, y: plotRect.midY)
         }
     }
 
