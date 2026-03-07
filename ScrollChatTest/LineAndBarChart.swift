@@ -123,19 +123,19 @@ extension ChartConfig {
     }
 
     struct ChartPagerConfig {
-        enum DisplayStyle {
-            case allYears
-            case highlightedYear
+        enum ArrowScrollMode {
+            case byPage
+            case byEntry
         }
 
         let isVisible: Bool
-        let displayStyle: DisplayStyle
+        let arrowScrollMode: ArrowScrollMode
 
         init(
             isVisible: Bool = true,
-            displayStyle: DisplayStyle = .allYears) {
+            arrowScrollMode: ArrowScrollMode = .byPage) {
             self.isVisible = isVisible
-            self.displayStyle = displayStyle
+            self.arrowScrollMode = arrowScrollMode
         }
     }
 }
@@ -292,6 +292,7 @@ struct CombinedChartView: View {
     // UI state.
     @State private var selectedIndex: Int? = 0
     @State private var scrollPage: Int = 0
+    @State private var scrollRequestID: Int = 0
     @State private var scrollOffsetX: CGFloat = 0
     @State private var unitWidth: CGFloat = 0
     @State private var viewportWidth: CGFloat = 0
@@ -384,7 +385,6 @@ extension CombinedChartView {
     struct PagerContext {
         let entries: [PagerEntry]
         let highlightedEntryID: PagerEntry.ID?
-        let displayStyle: ChartConfig.ChartPagerConfig.DisplayStyle
         let canSelectPreviousPage: Bool
         let canSelectNextPage: Bool
         let onSelectPreviousPage: () -> Void
@@ -586,14 +586,13 @@ extension CombinedChartView {
         let context = PagerContext(
             entries: pagerEntries,
             highlightedEntryID: highlightedPagerEntryID,
-            displayStyle: config.pager.displayStyle,
             canSelectPreviousPage: currentPage > 0,
             canSelectNextPage: currentPage < maxScrollPage,
-            onSelectPreviousPage: { selectPage(currentPage - 1) },
+            onSelectPreviousPage: { selectPreviousPage() },
             onSelectEntry: { entry in
                 selectPage(entry.page)
             },
-            onSelectNextPage: { selectPage(currentPage + 1) })
+            onSelectNextPage: { selectNextPage() })
 
         if let pager = viewSlots.pager {
             pager(context)
@@ -601,7 +600,6 @@ extension CombinedChartView {
             CombinedChartPager(
                 entries: context.entries,
                 highlightedEntryID: context.highlightedEntryID,
-                displayStyle: context.displayStyle,
                 canSelectPreviousPage: context.canSelectPreviousPage,
                 canSelectNextPage: context.canSelectNextPage,
                 onSelectPreviousPage: context.onSelectPreviousPage,
@@ -652,6 +650,11 @@ extension CombinedChartView {
 
     private var currentYearRange: YearPageRange? {
         yearPageRanges.first { $0.contains(page: currentPage) } ?? yearPageRanges.first
+    }
+
+    private var currentYearRangeIndex: Int? {
+        guard let currentYearRange else { return nil }
+        return yearPageRanges.firstIndex { $0.id == currentYearRange.id }
     }
 
     private var highlightedPagerEntryID: PagerEntry.ID? {
@@ -757,7 +760,30 @@ extension CombinedChartView {
     private func selectPage(_ page: Int) {
         let clampedPage = clampedPageIndex(for: page)
         scrollPage = clampedPage
+        scrollRequestID += 1
         updateSelection(to: selectionIndex(forPage: clampedPage))
+    }
+
+    private func selectPreviousPage() {
+        switch config.pager.arrowScrollMode {
+        case .byPage:
+            selectPage(currentPage - 1)
+        case .byEntry:
+            guard let currentYearRangeIndex else { return }
+            let previousIndex = max(0, currentYearRangeIndex - 1)
+            selectPage(yearPageRanges[previousIndex].startPage)
+        }
+    }
+
+    private func selectNextPage() {
+        switch config.pager.arrowScrollMode {
+        case .byPage:
+            selectPage(currentPage + 1)
+        case .byEntry:
+            guard let currentYearRangeIndex else { return }
+            let nextIndex = min(yearPageRanges.count - 1, currentYearRangeIndex + 1)
+            selectPage(yearPageRanges[nextIndex].startPage)
+        }
     }
 
     private func clampedPageIndex(for page: Int) -> Int {
@@ -792,7 +818,8 @@ extension CombinedChartView {
                         selectionOverlay: viewSlots.selectionOverlay,
                         yAxisLabel: yAxisLabel(for:),
                         onSelectIndex: updateSelection(to:),
-                        scrollPage: $scrollPage)
+                        scrollPage: scrollPage,
+                        scrollRequestID: scrollRequestID)
                 } else {
                     viewSlots.emptyState
                 }
@@ -855,7 +882,8 @@ private extension CombinedChartView {
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
         let yAxisLabel: (Double) -> String
         let onSelectIndex: (Int?) -> Void
-        @Binding var scrollPage: Int
+        let scrollPage: Int
+        let scrollRequestID: Int
 
         var body: some View {
             GeometryReader { geometry in
@@ -929,19 +957,10 @@ private extension CombinedChartView {
                         }
                         .frame(width: computedViewportWidth)
                         .coordinateSpace(name: "ChartScroll")
-                        .onPreferenceChange(ScrollOffsetKey.self) { offset in
-                            scrollOffsetX = offset
-                            let pageWidth = computedUnitWidth * CGFloat(config.monthsPerPage)
-                            guard pageWidth > 0 else { return }
-                            let derivedPage = Int(round(max(0, -offset) / pageWidth))
-                            let clampedPage = min(max(derivedPage, 0), maxScrollPage)
-                            if scrollPage != clampedPage {
-                                scrollPage = clampedPage
-                            }
-                        }
-                        .onChange(of: scrollPage) { newValue in
+                        .onPreferenceChange(ScrollOffsetKey.self) { scrollOffsetX = $0 }
+                        .onChange(of: scrollRequestID) { _ in
                             withAnimation(.easeInOut(duration: 0.25)) {
-                                proxy.scrollTo(newValue, anchor: .leading)
+                                proxy.scrollTo(scrollPage, anchor: .leading)
                             }
                         }
                     }
@@ -961,7 +980,6 @@ private extension CombinedChartView {
     struct CombinedChartPager: View {
         let entries: [PagerEntry]
         let highlightedEntryID: PagerEntry.ID?
-        let displayStyle: ChartConfig.ChartPagerConfig.DisplayStyle
         let canSelectPreviousPage: Bool
         let canSelectNextPage: Bool
         let onSelectPreviousPage: () -> Void
@@ -982,21 +1000,8 @@ private extension CombinedChartView {
 
                 Spacer()
 
-                if displayStyle == .allYears {
-                    HStack(spacing: 16) {
-                        ForEach(entries) { entry in
-                            Text(entry.displayTitle)
-                                .font(.callout.weight(entry.id == highlightedEntryID ? .semibold : .regular))
-                                .foregroundStyle(entry.id == highlightedEntryID ? .primary : .secondary)
-                                .onTapGesture {
-                                    onSelectEntry(entry)
-                                }
-                        }
-                    }
-                } else {
-                    Text(highlightedEntryTitle ?? "")
-                        .font(.callout.weight(.semibold))
-                }
+                Text(highlightedEntryTitle ?? "")
+                    .font(.callout.weight(.semibold))
 
                 Spacer()
 

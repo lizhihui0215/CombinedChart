@@ -152,9 +152,7 @@ enum ChartSampleData {
                 zeroLineColor: .black,
                 zeroLineWidth: 1,
                 yAxisWidth: 40),
-            pager: .init(
-                isVisible: true,
-                displayStyle: .allYears))
+            pager: .init(isVisible: true))
     }
 
     private static func makeBarConfig() -> ChartConfig.ChartBarConfig {
