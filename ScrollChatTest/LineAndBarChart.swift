@@ -11,56 +11,61 @@ import UIKit
 
 // swiftlint:disable file_length
 struct ChartConfig {
+    let monthsPerPage: Int
+    let chartHeight: CGFloat
     let bar: ChartBarConfig
     let line: ChartLineConfig
     let axis: ChartAxisConfig
 
     static let `default` = ChartConfig(
+        monthsPerPage: 4,
+        chartHeight: 420,
         bar: ChartBarConfig(
             series: [
                 ChartConfig.ChartBarConfig.ChartSeriesStyle(
                     id: "liabilities",
                     label: "Liabilities",
                     color: Color(red: 0.82, green: 0.35, blue: 0.42),
-                    isNegative: true,
-                    includeInLine: true),
+                    valuePolarity: .forcedSign(.negative),
+                    trendLineInclusion: .included),
                 ChartConfig.ChartBarConfig.ChartSeriesStyle(
                     id: "saving",
                     label: "Saving",
                     color: Color(red: 0.20, green: 0.52, blue: 0.68),
-                    isNegative: false,
-                    includeInLine: true),
+                    valuePolarity: .forcedSign(.positive),
+                    trendLineInclusion: .included),
                 ChartConfig.ChartBarConfig.ChartSeriesStyle(
                     id: "investment",
                     label: "Investment",
                     color: Color(red: 0.86, green: 0.43, blue: 0.16),
-                    isNegative: false,
-                    includeInLine: true),
+                    valuePolarity: .forcedSign(.positive),
+                    trendLineInclusion: .included),
                 ChartConfig.ChartBarConfig.ChartSeriesStyle(
                     id: "otherLiquid",
                     label: "Other Liquid",
                     color: Color(red: 0.30, green: 0.67, blue: 0.14),
-                    isNegative: false,
-                    includeInLine: true),
+                    valuePolarity: .forcedSign(.positive),
+                    trendLineInclusion: .included),
                 ChartConfig.ChartBarConfig.ChartSeriesStyle(
                     id: "otherNonLiquid",
                     label: "Other Non-Liquid",
                     color: Color(red: 0.08, green: 0.28, blue: 0.34),
-                    isNegative: false,
-                    includeInLine: true)
+                    valuePolarity: .forcedSign(.positive),
+                    trendLineInclusion: .included)
             ],
-            totalTrendColor: Color.gray.opacity(0.45),
-            useTotalTrendSingleColor: false,
+            trendBarColorStyle: .seriesColor,
             segmentGap: 4,
-            segmentGapColor: Color(uiColor: .systemBackground)),
+            segmentGapColor: Color(uiColor: .systemBackground),
+            barWidth: 40),
         line: ChartLineConfig(
             positiveLineColor: Color(red: 0.16, green: 0.30, blue: 0.38),
             negativeLineColor: Color(red: 0.74, green: 0.24, blue: 0.28),
             lineWidth: 2,
             selection: .init(
                 pointSize: 60,
-                lineColorStrategy: .fixedLine(Color.gray),
-                fillColor: Color.gray.opacity(0.12))),
+                selectionLineColorStrategy: .fixedLine(Color.gray),
+                fillColor: Color.gray.opacity(0.12),
+                minimumSelectionWidth: 24)),
         axis: ChartAxisConfig(
             xAxisLabel: { context in
                 context.point.xLabel
@@ -70,16 +75,22 @@ struct ChartConfig {
                 return value == 0 ? "0" : "\(Int(value / 1000))K"
             },
             zeroLineColor: .black,
-            zeroLineWidth: 1))
+            zeroLineWidth: 1,
+            yAxisWidth: 40))
 }
 
 extension ChartConfig {
     struct ChartBarConfig {
+        enum TrendBarColorStyle {
+            case seriesColor
+            case unified(Color)
+        }
+
         let series: [ChartSeriesStyle]
-        let totalTrendColor: Color
-        let useTotalTrendSingleColor: Bool
+        let trendBarColorStyle: TrendBarColorStyle
         let segmentGap: CGFloat
         let segmentGapColor: Color
+        let barWidth: CGFloat
     }
 
     struct ChartLineConfig {
@@ -94,24 +105,56 @@ extension ChartConfig {
         let yAxisLabel: (YAxisLabelContext) -> String
         let zeroLineColor: Color
         let zeroLineWidth: CGFloat
+        let yAxisWidth: CGFloat
     }
 }
 
 extension ChartConfig.ChartBarConfig {
     struct ChartSeriesStyle: Identifiable {
+        enum TrendLineInclusion {
+            case included
+            case excluded
+        }
+
+        enum Sign {
+            case positive
+            case negative
+        }
+
+        enum ValuePolarity {
+            case preserveSign
+            case forcedSign(Sign)
+        }
+
         let id: String
         let label: String
         let color: Color
-        let isNegative: Bool
-        let includeInLine: Bool
+        let valuePolarity: ValuePolarity
+        let trendLineInclusion: TrendLineInclusion
+
+        func signedValue(for rawValue: Double) -> Double {
+            switch valuePolarity {
+            case .preserveSign:
+                rawValue
+            case .forcedSign(.positive):
+                abs(rawValue)
+            case .forcedSign(.negative):
+                -abs(rawValue)
+            }
+        }
+
+        var contributesToTrendLine: Bool {
+            trendLineInclusion == .included
+        }
     }
 }
 
 extension ChartConfig.ChartLineConfig {
     struct SelectionConfig {
         let pointSize: CGFloat
-        let lineColorStrategy: LineColorStrategy
+        let selectionLineColorStrategy: LineColorStrategy
         let fillColor: Color
+        let minimumSelectionWidth: CGFloat
     }
 
     enum LineColorStrategy {
@@ -149,19 +192,26 @@ struct CombinedChartView<Payload>: View {
     private let config: ChartConfig
     private let onSelect: ((ChartPoint) -> Void)?
     private let groups: [ChartGroup]
+    @Binding private var selectedTab: ChartTab
+    @Binding private var showDebugOverlay: Bool
 
-    init(config: ChartConfig = .default, groups: [ChartGroup], onSelect: ((ChartPoint) -> Void)? = nil) {
+    init(
+        config: ChartConfig = .default,
+        groups: [ChartGroup],
+        selectedTab: Binding<ChartTab> = .constant(.totalTrend),
+        showDebugOverlay: Binding<Bool> = .constant(false),
+        onSelect: ((ChartPoint) -> Void)? = nil) {
         self.config = config
         self.groups = groups
+        _selectedTab = selectedTab
+        _showDebugOverlay = showDebugOverlay
         self.onSelect = onSelect
     }
 
     // UI state.
-    @State private var selectedTab: ChartTab = .totalTrend
     @State private var selectedIndex: Int? = 0
     @State private var scrollPage: Int = 0
-    @State private var showDebugOverlay: Bool = false
-    @State private var showAllYearsInPager: Bool = true
+    @State private var showsAllYearsInPager: Bool = true
     @State private var scrollOffsetX: CGFloat = 0
     @State private var unitWidth: CGFloat = 0
     @State private var viewportWidth: CGFloat = 0
@@ -173,6 +223,23 @@ struct CombinedChartView<Payload>: View {
 extension CombinedChartView {
     /// Two display modes for the same dataset.
     enum ChartTab: String, CaseIterable, Identifiable {
+        enum BarColorStyle {
+            case seriesColors
+            case unifiedTrendColor
+        }
+
+        enum SelectionIndicatorStyle {
+            case line
+            case band
+        }
+
+        struct Behavior {
+            let barColorStyle: BarColorStyle
+            let showsTrendLine: Bool
+            let selectionIndicatorStyle: SelectionIndicatorStyle
+            let showsSelectedPoint: Bool
+        }
+
         case totalTrend = "Total Trend"
         case breakdown = "Breakdown"
 
@@ -180,20 +247,21 @@ extension CombinedChartView {
             rawValue
         }
 
-        var showsTrendMarks: Bool {
-            self == .totalTrend
-        }
-
-        var showsTrendLineOverlay: Bool {
-            self == .totalTrend
-        }
-
-        var usesTrendSelectionIndicator: Bool {
-            self == .totalTrend
-        }
-
-        var showsSelectedTrendPoint: Bool {
-            self == .totalTrend
+        var behavior: Behavior {
+            switch self {
+            case .totalTrend:
+                Behavior(
+                    barColorStyle: .unifiedTrendColor,
+                    showsTrendLine: true,
+                    selectionIndicatorStyle: .line,
+                    showsSelectedPoint: true)
+            case .breakdown:
+                Behavior(
+                    barColorStyle: .seriesColors,
+                    showsTrendLine: false,
+                    selectionIndicatorStyle: .band,
+                    showsSelectedPoint: false)
+            }
         }
     }
 
@@ -251,8 +319,8 @@ extension CombinedChartView {
         for group in sortedGroups {
             let startMonthIndex = cumulativeMonths
             let endMonthIndex = cumulativeMonths + max(group.points.count - 1, 0)
-            let startPage = startMonthIndex / 4
-            let endPage = endMonthIndex / 4
+            let startPage = startMonthIndex / config.monthsPerPage
+            let endPage = endMonthIndex / config.monthsPerPage
             ranges.append(
                 YearPageRange(
                     title: group.title,
@@ -289,7 +357,9 @@ extension CombinedChartView {
 
     /// Number of 4-month pages for arrow navigation.
     private var maxScrollPage: Int {
-        max(0, Int(ceil(Double(max(data.count - 4, 0)) / 4.0)))
+        max(
+            0,
+            Int(ceil(Double(max(data.count - config.monthsPerPage, 0)) / Double(config.monthsPerPage))))
     }
 
     private var hasData: Bool {
@@ -342,17 +412,29 @@ extension CombinedChartView {
                 visiblePoints: axisPointInfos))
     }
 
+    private func updateSelection(to index: Int?) {
+        selectedIndex = index
+        guard let index, data.indices.contains(index) else { return }
+        onSelect?(data[index])
+    }
+
+    private func selectPage(_ page: Int) {
+        let clampedPage = min(max(page, 0), maxScrollPage)
+        scrollPage = clampedPage
+        updateSelection(to: min(data.count - 1, clampedPage * config.monthsPerPage))
+    }
+
     fileprivate enum ChartMath {
         static func signedValue(
             for point: ChartPoint,
             series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
             let raw = point.values[series.id] ?? 0
-            return series.isNegative ? -abs(raw) : raw
+            return series.signedValue(for: raw)
         }
 
         static func lineValue(for point: ChartPoint, config: ChartConfig) -> Double {
             config.bar.series.reduce(0) { partial, series in
-                guard series.includeInLine else { return partial }
+                guard series.contributesToTrendLine else { return partial }
                 let value = signedValue(for: point, series: series)
                 return partial + value
             }
@@ -377,212 +459,239 @@ extension CombinedChartView {
 extension CombinedChartView {
     var body: some View {
         VStack(spacing: 12) {
-            tabPicker
-            currencyHeader
-            debugToggle
-            if hasData {
-                chartSection
-                yearPager
-            } else {
-                Text("No data")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 420)
-            }
-        }
-        .padding()
-    }
-
-    private var tabPicker: some View {
-        Picker("", selection: $selectedTab) {
-            ForEach(ChartTab.allCases) { tab in
-                Text(tab.rawValue).tag(tab)
-            }
-        }
-        .pickerStyle(.segmented)
-    }
-
-    private var currencyHeader: some View {
-        HStack {
-            Text("HKD")
-                .font(.headline)
-            Spacer()
-        }
-    }
-
-    /// Fixed Y-axis labels aligned to the chart's plot area.
-    /// Each label is centered on its corresponding grid line.
-    private func yAxisLabels(plotArea: PlotAreaInfo?, tickPositions: [Double: CGFloat]) -> some View {
-        let topPadding = plotArea?.minY ?? 12
-        let plotHeight = plotArea?.height ?? 320
-
-        return GeometryReader { _ in
-            let maxLabelWidth: CGFloat = 44
-            ZStack(alignment: .topLeading) {
-                ForEach(yAxisTickValues, id: \.self) { value in
-                    if let yPos = tickPositions[value] {
-                        Text(yAxisLabel(for: value))
-                            .font(.caption2)
-                            .foregroundStyle(.gray)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: maxLabelWidth, alignment: .trailing)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .position(x: 0, y: yPos)
-                    }
+            Group {
+                if hasData {
+                    CombinedChartSection(
+                        config: config,
+                        selectedTab: selectedTab,
+                        selectedIndex: $selectedIndex,
+                        scrollOffsetX: $scrollOffsetX,
+                        unitWidth: $unitWidth,
+                        viewportWidth: $viewportWidth,
+                        plotAreaInfo: $plotAreaInfo,
+                        yTickPositions: $yTickPositions,
+                        data: data,
+                        yAxisTickValues: yAxisTickValues,
+                        yAxisDisplayDomain: yAxisDisplayDomain,
+                        maxScrollPage: maxScrollPage,
+                        showDebugOverlay: showDebugOverlay,
+                        yAxisLabel: yAxisLabel(for:),
+                        onSelectIndex: updateSelection(to:),
+                        scrollPage: scrollPage)
+                } else {
+                    Text("No data")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
+
+            CombinedChartPager(
+                ranges: yearPageRanges,
+                highlightedTitle: (fullyVisibleYearRange ?? currentYearRange)?.title,
+                scrollPage: scrollPage,
+                maxScrollPage: maxScrollPage,
+                showAllYears: showsAllYearsInPager,
+                onSelectPreviousPage: { selectPage(scrollPage - 1) },
+                onSelectRange: { range in
+                    scrollPage = range.startPage
+                    updateSelection(to: range.startMonthIndex)
+                },
+                onSelectNextPage: { selectPage(scrollPage + 1) })
         }
-        .frame(height: plotHeight)
-        .padding(.top, topPadding)
-    }
-
-    private var debugToggle: some View {
-        Toggle("Debug axis alignment", isOn: $showDebugOverlay)
-            .font(.caption)
-            .toggleStyle(SwitchToggleStyle(tint: .gray))
-    }
-
-    /// Main chart area: fixed Y labels + horizontally scrollable chart.
-    private var chartSection: some View {
-        GeometryReader { geometry in
-            let visibleCount: CGFloat = 4
-            let yAxisWidth: CGFloat = 40
-            let computedViewportWidth = max(geometry.size.width - yAxisWidth, 1)
-            let computedUnitWidth = computedViewportWidth / visibleCount
-            let chartWidth = max(computedViewportWidth, computedUnitWidth * CGFloat(data.count))
-
-            HStack(alignment: .top, spacing: 0) {
-                HStack(alignment: .top, spacing: 8) {
-                    yAxisLabels(plotArea: plotAreaInfo, tickPositions: yTickPositions)
-
-                    if let plotAreaInfo {
-                        Rectangle()
-                            .fill(.black)
-                            .frame(width: 1, height: plotAreaInfo.height)
-                            .offset(y: plotAreaInfo.minY)
-                    }
-                }
-
-                ScrollViewReader { proxy in
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        ZStack(alignment: .topLeading) {
-                            GeometryReader { proxy in
-                                Color.clear
-                                    .preference(
-                                        key: ScrollOffsetKey.self,
-                                        value: proxy.frame(in: .named("ChartScroll")).minX)
-                            }
-                            .frame(width: chartWidth, height: 1, alignment: .topLeading)
-
-                            ChartContainer(
-                                selectedTab: selectedTab,
-                                visibleData: data,
-                                yAxisTickValues: yAxisTickValues,
-                                yAxisDisplayDomain: yAxisDisplayDomain,
-                                plotAreaHeight: plotAreaInfo?.height ?? 0,
-                                config: config,
-                                showDebugOverlay: showDebugOverlay,
-                                onSelectIndex: { index in
-                                    selectedIndex = index
-                                    if data.indices.contains(index) {
-                                        onSelect?(data[index])
-                                    }
-                                },
-                                onPlotAreaChange: { plotRect in
-                                    let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
-                                    if plotAreaInfo != info {
-                                        plotAreaInfo = info
-                                    }
-                                },
-                                onYAxisTickPositions: { positions in
-                                    if yTickPositions != positions {
-                                        yTickPositions = positions
-                                    }
-                                })
-                                .frame(width: chartWidth, height: 420)
-
-                            HStack(spacing: 0) {
-                                ForEach(0...maxScrollPage, id: \.self) { page in
-                                    Color.clear
-                                        .frame(width: computedUnitWidth * 4, height: 1)
-                                        .id(page)
-                                }
-                            }
-                        }
-                    }
-                    .frame(width: computedViewportWidth)
-                    .coordinateSpace(name: "ChartScroll")
-                    .onPreferenceChange(ScrollOffsetKey.self) { scrollOffsetX = $0 }
-                    .onChange(of: scrollPage) { newValue in
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            proxy.scrollTo(newValue, anchor: .leading)
-                        }
-                    }
-                }
-            }
-            .onAppear {
-                unitWidth = computedUnitWidth
-                viewportWidth = computedViewportWidth
-            }
-            .onChange(of: geometry.size) { _ in
-                unitWidth = computedUnitWidth
-                viewportWidth = computedViewportWidth
-            }
-        }
-        .frame(height: 420)
-    }
-
-    private var yearPager: some View {
-        let ranges = yearPageRanges
-        let current = fullyVisibleYearRange ?? currentYearRange
-        let highlightedTitle = current?.title
-
-        return HStack(spacing: 12) {
-            Button {
-                let newPage = max(0, scrollPage - 1)
-                scrollPage = newPage
-                selectedIndex = max(0, newPage * 4)
-            } label: {
-                Image(systemName: "chevron.left")
-            }
-            .foregroundStyle(scrollPage > 0 ? .primary : .secondary)
-            .disabled(scrollPage == 0)
-
-            Spacer()
-
-            if showAllYearsInPager {
-                HStack(spacing: 16) {
-                    ForEach(ranges) { range in
-                        Text(range.title)
-                            .font(.callout.weight(range.title == highlightedTitle ? .semibold : .regular))
-                            .foregroundStyle(range.title == highlightedTitle ? .primary : .secondary)
-                            .onTapGesture {
-                                scrollPage = range.startPage
-                                selectedIndex = range.startMonthIndex
-                            }
-                    }
-                }
-            } else {
-                Text(highlightedTitle ?? "")
-                    .font(.callout.weight(.semibold))
-            }
-
-            Spacer()
-
-            Button {
-                scrollPage = min(maxScrollPage, scrollPage + 1)
-                selectedIndex = min(data.count - 1, (scrollPage + 1) * 4)
-            } label: {
-                Image(systemName: "chevron.right")
-            }
-            .foregroundStyle(scrollPage < maxScrollPage ? .primary : .secondary)
-            .disabled(scrollPage >= maxScrollPage)
-        }
-        .padding(.horizontal, 8)
+        .frame(height: config.chartHeight)
     }
 }
 
 private extension CombinedChartView {
+    struct ChartYAxisLabels: View {
+        let yAxisTickValues: [Double]
+        let tickPositions: [Double: CGFloat]
+        let plotArea: PlotAreaInfo?
+        let labelText: (Double) -> String
+
+        var body: some View {
+            let topPadding = plotArea?.minY ?? 12
+            let plotHeight = plotArea?.height ?? 320
+
+            GeometryReader { _ in
+                let maxLabelWidth: CGFloat = 44
+                ZStack(alignment: .topLeading) {
+                    ForEach(yAxisTickValues, id: \.self) { value in
+                        if let yPos = tickPositions[value] {
+                            Text(labelText(value))
+                                .font(.caption2)
+                                .foregroundStyle(.gray)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: maxLabelWidth, alignment: .trailing)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .position(x: 0, y: yPos)
+                        }
+                    }
+                }
+            }
+            .frame(height: plotHeight)
+            .padding(.top, topPadding)
+        }
+    }
+
+    struct CombinedChartSection: View {
+        let config: ChartConfig
+        let selectedTab: ChartTab
+        @Binding var selectedIndex: Int?
+        @Binding var scrollOffsetX: CGFloat
+        @Binding var unitWidth: CGFloat
+        @Binding var viewportWidth: CGFloat
+        @Binding var plotAreaInfo: PlotAreaInfo?
+        @Binding var yTickPositions: [Double: CGFloat]
+        let data: [ChartPoint]
+        let yAxisTickValues: [Double]
+        let yAxisDisplayDomain: ClosedRange<Double>
+        let maxScrollPage: Int
+        let showDebugOverlay: Bool
+        let yAxisLabel: (Double) -> String
+        let onSelectIndex: (Int?) -> Void
+        let scrollPage: Int
+
+        var body: some View {
+            GeometryReader { geometry in
+                let visibleCount = CGFloat(config.monthsPerPage)
+                let computedViewportWidth = max(geometry.size.width - config.axis.yAxisWidth, 1)
+                let computedUnitWidth = computedViewportWidth / visibleCount
+                let chartWidth = max(computedViewportWidth, computedUnitWidth * CGFloat(data.count))
+
+                HStack(alignment: .top, spacing: 0) {
+                    HStack(alignment: .top, spacing: 8) {
+                        ChartYAxisLabels(
+                            yAxisTickValues: yAxisTickValues,
+                            tickPositions: yTickPositions,
+                            plotArea: plotAreaInfo,
+                            labelText: yAxisLabel)
+
+                        if let plotAreaInfo {
+                            Rectangle()
+                                .fill(.black)
+                                .frame(width: 1, height: plotAreaInfo.height)
+                                .offset(y: plotAreaInfo.minY)
+                        }
+                    }
+
+                    ScrollViewReader { proxy in
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            ZStack(alignment: .topLeading) {
+                                GeometryReader { proxy in
+                                    Color.clear
+                                        .preference(
+                                            key: ScrollOffsetKey.self,
+                                            value: proxy.frame(in: .named("ChartScroll")).minX)
+                                }
+                                .frame(width: chartWidth, height: 1, alignment: .topLeading)
+
+                                ChartContainer(
+                                    selectedTab: selectedTab,
+                                    selectedIndex: $selectedIndex,
+                                    visibleData: data,
+                                    yAxisTickValues: yAxisTickValues,
+                                    yAxisDisplayDomain: yAxisDisplayDomain,
+                                    plotAreaHeight: plotAreaInfo?.height ?? 0,
+                                    config: config,
+                                    showDebugOverlay: showDebugOverlay,
+                                    onSelectIndex: onSelectIndex,
+                                    onPlotAreaChange: { plotRect in
+                                        let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
+                                        if plotAreaInfo != info {
+                                            plotAreaInfo = info
+                                        }
+                                    },
+                                    onYAxisTickPositions: { positions in
+                                        if yTickPositions != positions {
+                                            yTickPositions = positions
+                                        }
+                                    })
+                                    .frame(width: chartWidth)
+                                    .frame(maxHeight: .infinity)
+
+                                HStack(spacing: 0) {
+                                    ForEach(0...maxScrollPage, id: \.self) { page in
+                                        Color.clear
+                                            .frame(
+                                                width: computedUnitWidth * CGFloat(config.monthsPerPage),
+                                                height: 1)
+                                            .id(page)
+                                    }
+                                }
+                            }
+                        }
+                        .frame(width: computedViewportWidth)
+                        .coordinateSpace(name: "ChartScroll")
+                        .onPreferenceChange(ScrollOffsetKey.self) { scrollOffsetX = $0 }
+                        .onChange(of: scrollPage) { newValue in
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                proxy.scrollTo(newValue, anchor: .leading)
+                            }
+                        }
+                    }
+                }
+                .onAppear {
+                    unitWidth = computedUnitWidth
+                    viewportWidth = computedViewportWidth
+                }
+                .onChange(of: geometry.size) { _ in
+                    unitWidth = computedUnitWidth
+                    viewportWidth = computedViewportWidth
+                }
+            }
+        }
+    }
+
+    struct CombinedChartPager: View {
+        let ranges: [YearPageRange]
+        let highlightedTitle: String?
+        let scrollPage: Int
+        let maxScrollPage: Int
+        let showAllYears: Bool
+        let onSelectPreviousPage: () -> Void
+        let onSelectRange: (YearPageRange) -> Void
+        let onSelectNextPage: () -> Void
+
+        var body: some View {
+            HStack(spacing: 12) {
+                Button(action: onSelectPreviousPage) {
+                    Image(systemName: "chevron.left")
+                }
+                .foregroundStyle(scrollPage > 0 ? .primary : .secondary)
+                .disabled(scrollPage == 0)
+
+                Spacer()
+
+                if showAllYears {
+                    HStack(spacing: 16) {
+                        ForEach(ranges) { range in
+                            Text(range.title)
+                                .font(.callout.weight(range.title == highlightedTitle ? .semibold : .regular))
+                                .foregroundStyle(range.title == highlightedTitle ? .primary : .secondary)
+                                .onTapGesture {
+                                    onSelectRange(range)
+                                }
+                        }
+                    }
+                } else {
+                    Text(highlightedTitle ?? "")
+                        .font(.callout.weight(.semibold))
+                }
+
+                Spacer()
+
+                Button(action: onSelectNextPage) {
+                    Image(systemName: "chevron.right")
+                }
+                .foregroundStyle(scrollPage < maxScrollPage ? .primary : .secondary)
+                .disabled(scrollPage >= maxScrollPage)
+            }
+            .padding(.horizontal, 8)
+        }
+    }
+
     struct ChartContainerSegment: Identifiable {
         let id = UUID()
         let start: Double
@@ -615,6 +724,7 @@ private extension CombinedChartView {
     /// Encapsulates the Chart to keep SwiftUI type-checking fast.
     struct ChartContainer: View {
         let selectedTab: ChartTab
+        @Binding var selectedIndex: Int?
         let visibleData: [ChartPoint]
         let yAxisTickValues: [Double]
         let yAxisDisplayDomain: ClosedRange<Double>
@@ -624,7 +734,6 @@ private extension CombinedChartView {
         let onSelectIndex: (Int) -> Void
         let onPlotAreaChange: (CGRect) -> Void
         let onYAxisTickPositions: ([Double: CGFloat]) -> Void
-        @State private var selectedIndex: Int?
 
         var body: some View {
             let monthValues = visibleData.map(\.xKey)
@@ -640,11 +749,7 @@ private extension CombinedChartView {
             let axisPointByKey = Dictionary(uniqueKeysWithValues: axisPointInfos.map { ($0.xKey, $0) })
 
             Chart {
-                if selectedTab.showsTrendMarks {
-                    totalTrendMarks
-                } else {
-                    breakdownMarks
-                }
+                barMarks(useTrendBarColor: usesTrendBarColor)
                 sharedMarks
             }
             .chartXScale(domain: monthValues)
@@ -680,111 +785,168 @@ private extension CombinedChartView {
             }
             // Tap in plot area to select the nearest month index.
             .chartOverlay { proxy in
-                GeometryReader { geometry in
-                    let plotRect = geometry[proxy.plotAreaFrame]
-                    if plotRect.width > 0, plotRect.height > 0 {
-                        let currentRect = plotRect
-                        Color.clear
-                            .onAppear { onPlotAreaChange(currentRect) }
-                            .onChange(of: currentRect) { onPlotAreaChange($0) }
-                    }
-                    if plotRect.width > 0, plotRect.height > 0 {
-                        let positions: [Double: CGFloat] = Dictionary(
-                            uniqueKeysWithValues: yAxisTickValues.compactMap { value in
-                                if let yPos = proxy.position(forY: value) {
-                                    return (value, yPos - plotRect.minY)
-                                }
-                                return nil
-                            })
-                        Color.clear
-                            .onAppear { onYAxisTickPositions(positions) }
-                            .onChange(of: positions) { onYAxisTickPositions($0) }
-                    }
-                    ZStack(alignment: .topLeading) {
-                        if selectedTab.showsTrendLineOverlay {
-                            let segments = lineSegmentPaths(proxy: proxy)
-                            ForEach(segments) { segment in
-                                segment.path
-                                    .stroke(
-                                        segment.color,
-                                        style: StrokeStyle(lineWidth: config.line.lineWidth))
-                            }
-                            .mask(
-                                Rectangle()
-                                    .frame(width: plotRect.width, height: plotRect.height)
-                                    .position(x: plotRect.midX, y: plotRect.midY))
-                        }
-
-                        if let selectedIndex, visibleData.indices.contains(selectedIndex) {
-                            let selectedKey = visibleData[selectedIndex].xKey
-                            if let xPos = proxy.position(forX: selectedKey) {
-                                Group {
-                                    if selectedTab.usesTrendSelectionIndicator {
-                                        let selectedValue = ChartMath.lineValue(
-                                            for: visibleData[selectedIndex],
-                                            config: config)
-                                        Path { path in
-                                            path.move(to: CGPoint(x: xPos, y: plotRect.minY))
-                                            path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
-                                        }
-                                        .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                                        .foregroundStyle(selectionLineColor(for: selectedValue))
-                                    } else {
-                                        let step: CGFloat = {
-                                            if selectedIndex + 1 < visibleData.count,
-                                               let nextX = proxy.position(forX: visibleData[selectedIndex + 1].xKey) {
-                                                return nextX - xPos
-                                            }
-                                            if selectedIndex - 1 >= 0,
-                                               let prevX = proxy.position(forX: visibleData[selectedIndex - 1].xKey) {
-                                                return xPos - prevX
-                                            }
-                                            return 40
-                                        }()
-                                        let width = max(step * 0.9, 24)
-                                        Rectangle()
-                                            .fill(config.line.selection.fillColor)
-                                            .frame(width: width, height: plotRect.height)
-                                            .position(x: xPos, y: plotRect.midY)
-                                    }
-                                }
-                                .mask(
-                                    Rectangle()
-                                        .frame(width: plotRect.width, height: plotRect.height)
-                                        .position(x: plotRect.midX, y: plotRect.midY))
-                            }
-                        }
-
-                        if !visibleData.isEmpty {
-                            Color.clear
-                                .contentShape(Rectangle())
-                                .simultaneousGesture(
-                                    SpatialTapGesture()
-                                        .onEnded { value in
-                                            let localX = value.location.x - plotRect.minX
-                                            let clampedX = min(max(localX, 0), plotRect.width)
-                                            if let key = proxy.value(atX: clampedX, as: String.self) {
-                                                if let index = visibleData.firstIndex(where: { $0.xKey == key }) {
-                                                    selectedIndex = index
-                                                    onSelectIndex(index)
-                                                }
-                                            }
-                                        })
-                        }
-                    }
-                }
+                chartOverlay(proxy: proxy)
             }
         }
     }
 }
 
 private extension CombinedChartView.ChartContainer {
+    func chartOverlay(proxy: ChartProxy) -> some View {
+        GeometryReader { geometry in
+            let plotRect = geometry[proxy.plotAreaFrame]
+
+            syncPlotOverlay(plotRect: plotRect, proxy: proxy)
+
+            ZStack(alignment: .topLeading) {
+                trendLineOverlay(plotRect: plotRect, proxy: proxy)
+                selectionOverlay(plotRect: plotRect, proxy: proxy)
+                tapSelectionOverlay(plotRect: plotRect, proxy: proxy)
+            }
+        }
+    }
+
+    @ViewBuilder
+    func syncPlotOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
+        if plotRect.width > 0, plotRect.height > 0 {
+            let currentRect = plotRect
+            Color.clear
+                .onAppear { onPlotAreaChange(currentRect) }
+                .onChange(of: currentRect) { onPlotAreaChange($0) }
+        }
+
+        if plotRect.width > 0, plotRect.height > 0 {
+            let positions = yAxisTickPositions(plotRect: plotRect, proxy: proxy)
+            Color.clear
+                .onAppear { onYAxisTickPositions(positions) }
+                .onChange(of: positions) { onYAxisTickPositions($0) }
+        }
+    }
+
+    @ViewBuilder
+    func trendLineOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
+        if selectedTab.behavior.showsTrendLine {
+            let segments = lineSegmentPaths(proxy: proxy)
+            ForEach(segments) { segment in
+                segment.path
+                    .stroke(
+                        segment.color,
+                        style: StrokeStyle(lineWidth: config.line.lineWidth))
+            }
+            .mask(plotMask(for: plotRect))
+        }
+    }
+
+    @ViewBuilder
+    func selectionOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
+        if let selectionState = selectionState(plotRect: plotRect, proxy: proxy) {
+            Group {
+                if selectedTab.behavior.selectionIndicatorStyle == .line {
+                    Path { path in
+                        path.move(to: CGPoint(x: selectionState.xPosition, y: plotRect.minY))
+                        path.addLine(to: CGPoint(x: selectionState.xPosition, y: plotRect.maxY))
+                    }
+                    .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                    .foregroundStyle(selectionLineColor(for: selectionState.value))
+                } else {
+                    Rectangle()
+                        .fill(config.line.selection.fillColor)
+                        .frame(
+                            width: selectionHighlightWidth(
+                                at: selectionState.index,
+                                xPosition: selectionState.xPosition,
+                                proxy: proxy),
+                            height: plotRect.height)
+                        .position(x: selectionState.xPosition, y: plotRect.midY)
+                }
+            }
+            .mask(plotMask(for: plotRect))
+        }
+    }
+
+    @ViewBuilder
+    func tapSelectionOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
+        if !visibleData.isEmpty {
+            Color.clear
+                .contentShape(Rectangle())
+                .simultaneousGesture(
+                    SpatialTapGesture()
+                        .onEnded { value in
+                            let localX = value.location.x - plotRect.minX
+                            let clampedX = min(max(localX, 0), plotRect.width)
+                            if let key = proxy.value(atX: clampedX, as: String.self),
+                               let index = visibleData.firstIndex(where: { $0.xKey == key }) {
+                                selectedIndex = index
+                                onSelectIndex(index)
+                            }
+                        })
+        }
+    }
+
+    func yAxisTickPositions(plotRect: CGRect, proxy: ChartProxy) -> [Double: CGFloat] {
+        Dictionary(
+            uniqueKeysWithValues: yAxisTickValues.compactMap { value in
+                if let yPos = proxy.position(forY: value) {
+                    return (value, yPos - plotRect.minY)
+                }
+                return nil
+            })
+    }
+
+    func plotMask(for plotRect: CGRect) -> some View {
+        Rectangle()
+            .frame(width: plotRect.width, height: plotRect.height)
+            .position(x: plotRect.midX, y: plotRect.midY)
+    }
+
+    func selectionState(plotRect: CGRect, proxy: ChartProxy) -> (index: Int, value: Double, xPosition: CGFloat)? {
+        guard let selectedIndex, visibleData.indices.contains(selectedIndex) else {
+            return nil
+        }
+
+        let selectedKey = visibleData[selectedIndex].xKey
+        guard let xPos = proxy.position(forX: selectedKey) else {
+            return nil
+        }
+
+        let value = CombinedChartView.ChartMath.lineValue(for: visibleData[selectedIndex], config: config)
+        return (selectedIndex, value, xPos)
+    }
+
+    func selectionHighlightWidth(at index: Int, xPosition: CGFloat, proxy: ChartProxy) -> CGFloat {
+        let step: CGFloat = {
+            if index + 1 < visibleData.count,
+               let nextX = proxy.position(forX: visibleData[index + 1].xKey) {
+                return nextX - xPosition
+            }
+            if index - 1 >= 0,
+               let previousX = proxy.position(forX: visibleData[index - 1].xKey) {
+                return xPosition - previousX
+            }
+            return config.bar.barWidth
+        }()
+
+        return max(step * 0.9, config.line.selection.minimumSelectionWidth)
+    }
+
+    var usesTrendBarColor: Bool {
+        guard selectedTab.behavior.barColorStyle == .unifiedTrendColor else {
+            return false
+        }
+
+        if case .unified = config.bar.trendBarColorStyle {
+            return true
+        }
+
+        return false
+    }
+
     func lineColor(for value: Double) -> Color {
         value >= 0 ? config.line.positiveLineColor : config.line.negativeLineColor
     }
 
     func selectionLineColor(for value: Double) -> Color {
-        switch config.line.selection.lineColorStrategy {
+        switch config.line.selection.selectionLineColorStrategy {
         case .fixedLine(let color):
             color
         case .color(let positive, let negative):
@@ -879,14 +1041,14 @@ private extension CombinedChartView.ChartContainer {
 
     func segments(
         for point: CombinedChartView.ChartPoint,
-        useTotalTrendColor: Bool) -> [CombinedChartView.ChartContainerSegment] {
+        useTrendBarColor: Bool) -> [CombinedChartView.ChartContainerSegment] {
         var positiveStart: Double = 0
         var negativeStart: Double = 0
         var result: [CombinedChartView.ChartContainerSegment] = []
 
         for series in config.bar.series {
             let value = CombinedChartView.ChartMath.signedValue(for: point, series: series)
-            let color = useTotalTrendColor ? config.bar.totalTrendColor : series.color
+            let color = trendBarColor(for: series.color, useTrendBarColor: useTrendBarColor)
             if value >= 0 {
                 result.append(CombinedChartView.ChartContainerSegment(start: positiveStart, value: value, color: color))
                 positiveStart += value
@@ -899,34 +1061,26 @@ private extension CombinedChartView.ChartContainer {
         return result
     }
 
-    /// Total Trend: stacked gray bars plus a line on top.
-    @ChartContentBuilder
-    var totalTrendMarks: some ChartContent {
-        ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
-            let gap = gapValue()
-            let style = CombinedChartView.ChartContainerSegmentBarStyle(
-                gap: gap,
-                gapColor: config.bar.segmentGapColor,
-                drawGapMark: true)
-            ForEach(segments(for: item, useTotalTrendColor: config.bar.useTotalTrendSingleColor)) { segment in
-                segmentBar(
-                    index: index,
-                    segment: segment,
-                    style: style)
-            }
+    func trendBarColor(for seriesColor: Color, useTrendBarColor: Bool) -> Color {
+        guard useTrendBarColor else { return seriesColor }
+
+        switch config.bar.trendBarColorStyle {
+        case .seriesColor:
+            return seriesColor
+        case .unified(let color):
+            return color
         }
     }
 
-    // Breakdown: colored stacked bars by category.
     @ChartContentBuilder
-    var breakdownMarks: some ChartContent {
+    func barMarks(useTrendBarColor: Bool) -> some ChartContent {
         ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
             let gap = gapValue()
             let style = CombinedChartView.ChartContainerSegmentBarStyle(
                 gap: gap,
                 gapColor: config.bar.segmentGapColor,
                 drawGapMark: true)
-            ForEach(segments(for: item, useTotalTrendColor: false)) { segment in
+            ForEach(segments(for: item, useTrendBarColor: useTrendBarColor)) { segment in
                 segmentBar(
                     index: index,
                     segment: segment,
@@ -942,7 +1096,8 @@ private extension CombinedChartView.ChartContainer {
             .foregroundStyle(config.axis.zeroLineColor)
             .lineStyle(StrokeStyle(lineWidth: config.axis.zeroLineWidth))
 
-        if selectedTab.showsSelectedTrendPoint, let selectedIndex, visibleData.indices.contains(selectedIndex) {
+        if selectedTab.behavior.showsSelectedPoint, let selectedIndex,
+           visibleData.indices.contains(selectedIndex) {
             let value = CombinedChartView.ChartMath.lineValue(for: visibleData[selectedIndex], config: config)
             PointMark(
                 x: .value("Selected Month", visibleData[selectedIndex].xKey),
@@ -971,7 +1126,7 @@ private extension CombinedChartView.ChartContainer {
             x: .value("Month", visibleData[index].xKey),
             yStart: .value("Value", bounds.low),
             yEnd: .value("Value", bounds.high),
-            width: 40)
+            width: .fixed(config.bar.barWidth))
             .cornerRadius(0)
             .foregroundStyle(segment.color)
         if style.drawGapMark, style.gap > 0.0001, abs(segment.start) > 0.0001 {
@@ -979,7 +1134,7 @@ private extension CombinedChartView.ChartContainer {
                 x: .value("Month", visibleData[index].xKey),
                 yStart: .value("Gap", segment.start - style.gap / 2.0),
                 yEnd: .value("Gap", segment.start + style.gap / 2.0),
-                width: 40)
+                width: .fixed(config.bar.barWidth))
                 .foregroundStyle(style.gapColor)
         }
     }
@@ -996,11 +1151,35 @@ private extension CombinedChartView.ChartContainer {
 private struct LineAndBarChartPreviewHost: View {
     private let groups = ChartSampleData.makeGroups(variance: 0.6)
     private let config = ChartSampleData.makeConfig()
+    @State private var selectedTab: CombinedChartView<String>.ChartTab = .totalTrend
+    @State private var showDebugOverlay = false
 
     var body: some View {
-        CombinedChartView<String>(
-            config: config,
-            groups: groups)
+        VStack(spacing: 12) {
+            HStack {
+                Text("HKD")
+                    .font(.headline)
+                Spacer()
+            }
+
+            Picker("", selection: $selectedTab) {
+                ForEach(CombinedChartView<String>.ChartTab.allCases) { tab in
+                    Text(tab.rawValue).tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Toggle("Debug axis alignment", isOn: $showDebugOverlay)
+                .font(.caption)
+                .toggleStyle(SwitchToggleStyle(tint: .gray))
+
+            CombinedChartView<String>(
+                config: config,
+                groups: groups,
+                selectedTab: $selectedTab,
+                showDebugOverlay: $showDebugOverlay)
+        }
+        .padding()
     }
 }
 

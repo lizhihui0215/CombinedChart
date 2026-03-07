@@ -104,6 +104,8 @@ enum ChartSampleData {
 
     static func makeConfig() -> ChartConfig {
         ChartConfig(
+            monthsPerPage: 4,
+            chartHeight: 420,
             bar: makeBarConfig(),
             line: ChartConfig.ChartLineConfig(
                 positiveLineColor: .red,
@@ -111,8 +113,9 @@ enum ChartSampleData {
                 lineWidth: 1,
                 selection: .init(
                     pointSize: 20,
-                    lineColorStrategy: .fixedLine(Color.gray),
-                    fillColor: Color.gray.opacity(0.12))),
+                    selectionLineColorStrategy: .fixedLine(Color.gray),
+                    fillColor: Color.gray.opacity(0.12),
+                    minimumSelectionWidth: 24)),
             axis: ChartConfig.ChartAxisConfig(
                 xAxisLabel: { context in
                     context.point.xLabel
@@ -122,16 +125,17 @@ enum ChartSampleData {
                     return value == 0 ? "0" : "\(Int(value / 1000))K"
                 },
                 zeroLineColor: .black,
-                zeroLineWidth: 1))
+                zeroLineWidth: 1,
+                yAxisWidth: 40))
     }
 
     private static func makeBarConfig() -> ChartConfig.ChartBarConfig {
         ChartConfig.ChartBarConfig(
             series: makeBarSeries(),
-            totalTrendColor: Color.gray.opacity(0.45),
-            useTotalTrendSingleColor: true,
+            trendBarColorStyle: .unified(Color.gray.opacity(0.45)),
             segmentGap: 2,
-            segmentGapColor: Color(uiColor: .systemBackground))
+            segmentGapColor: Color(uiColor: .systemBackground),
+            barWidth: 40)
     }
 
     private static func makeBarSeries() -> [ChartConfig.ChartBarConfig.ChartSeriesStyle] {
@@ -140,7 +144,7 @@ enum ChartSampleData {
                 id: "liabilities",
                 label: "Liabilities",
                 color: Color(red: 0.82, green: 0.35, blue: 0.42),
-                isNegative: true),
+                valuePolarity: .forcedSign(.negative)),
             makeSeriesStyle(
                 id: "saving",
                 label: "Saving",
@@ -164,12 +168,13 @@ enum ChartSampleData {
         id: String,
         label: String,
         color: Color,
-        isNegative: Bool = false) -> ChartConfig.ChartBarConfig.ChartSeriesStyle {
+        valuePolarity: ChartConfig.ChartBarConfig.ChartSeriesStyle.ValuePolarity = .preserveSign) -> ChartConfig
+        .ChartBarConfig.ChartSeriesStyle {
         ChartConfig.ChartBarConfig.ChartSeriesStyle(
             id: id,
             label: label,
             color: color,
-            isNegative: isNegative,
-            includeInLine: true)
+            valuePolarity: valuePolarity,
+            trendLineInclusion: .included)
     }
 }
