@@ -7,6 +7,7 @@
 
 import Charts
 import SwiftUI
+import UIKit
 
 // swiftlint:disable file_length
 public enum ChartSeriesKey: String, CaseIterable, Hashable, Identifiable {
@@ -1048,41 +1049,23 @@ private extension CombinedChartView {
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
         let yAxisLabel: (Double) -> String
         let onSelectIndex: (Int?) -> Void
-        @GestureState private var dragTranslationX: CGFloat = 0
-        @State private var settlingOffsetX: CGFloat = 0
 
         private var maxStartMonthIndex: Int {
             max(0, data.count - config.monthsPerPage)
         }
 
-        private func clampDragTranslation(
-            from translationX: CGFloat,
-            maxLeftDragOffset: CGFloat,
-            maxRightDragOffset: CGFloat) -> CGFloat {
-            min(
-                max(translationX, -maxLeftDragOffset),
-                maxRightDragOffset)
-        }
-
-        private func makeProposedContentOffsetX(
-            from clampedTranslationX: CGFloat,
-            maxContentOffsetX: CGFloat) -> CGFloat {
-            min(
-                max(contentOffsetX - clampedTranslationX, 0),
-                maxContentOffsetX)
-        }
-
-        private func resolveTargetContentOffsetX(
+        private func resolvedTargetContentOffsetX(
             from proposedContentOffsetX: CGFloat,
-            clampedTranslationX: CGFloat,
+            currentContentOffsetX: CGFloat,
             computedUnitWidth: CGFloat,
             computedViewportWidth: CGFloat) -> CGFloat {
             switch config.pager.dragScrollMode {
             case .byPage:
                 let threshold = computedViewportWidth * 0.2
-                let pageDelta: Int = if clampedTranslationX <= -threshold {
+                let offsetDelta = proposedContentOffsetX - currentContentOffsetX
+                let pageDelta: Int = if offsetDelta >= threshold {
                     config.monthsPerPage
-                } else if clampedTranslationX >= threshold {
+                } else if offsetDelta <= -threshold {
                     -config.monthsPerPage
                 } else {
                     0
@@ -1115,20 +1098,6 @@ private extension CombinedChartView {
                 let computedViewportWidth = max(geometry.size.width - config.axis.yAxisWidth, 1)
                 let computedUnitWidth = computedViewportWidth / visibleCount
                 let chartWidth = max(computedViewportWidth, computedUnitWidth * CGFloat(data.count))
-                let isDragging = dragTranslationX != 0
-                let liveDragTranslationX: CGFloat = if config.pager.dragScrollMode == .byPage {
-                    0
-                } else {
-                    dragTranslationX
-                }
-                let maxContentOffsetX = CGFloat(maxStartMonthIndex) * computedUnitWidth
-                let maxRightDragOffset = contentOffsetX
-                let maxLeftDragOffset = maxContentOffsetX - contentOffsetX
-                let clampedDragTranslationX = min(
-                    max(liveDragTranslationX, -maxLeftDragOffset),
-                    maxRightDragOffset)
-                let currentContentOffsetX = -contentOffsetX + settlingOffsetX +
-                    clampedDragTranslationX
 
                 HStack(alignment: .top, spacing: 0) {
                     HStack(alignment: .top, spacing: 8) {
@@ -1146,7 +1115,17 @@ private extension CombinedChartView {
                         }
                     }
 
-                    ZStack(alignment: .topLeading) {
+                    NativeChartScrollView(
+                        contentOffsetX: $contentOffsetX,
+                        visibleStartMonthIndex: $visibleStartMonthIndex,
+                        viewportWidth: computedViewportWidth,
+                        contentWidth: chartWidth,
+                        unitWidth: computedUnitWidth,
+                        monthsPerPage: config.monthsPerPage,
+                        maxStartMonthIndex: maxStartMonthIndex,
+                        dragScrollMode: config.pager.dragScrollMode,
+                        resolveTargetOffsetX: resolvedTargetContentOffsetX(
+                            from:currentContentOffsetX:computedUnitWidth:computedViewportWidth:)) {
                         ChartContainer(
                             selectedTab: selectedTab,
                             selectedIndex: $selectedIndex,
@@ -1159,14 +1138,12 @@ private extension CombinedChartView {
                             selectionOverlay: selectionOverlay,
                             onSelectIndex: onSelectIndex,
                             onPlotAreaChange: { plotRect in
-                                guard !isDragging else { return }
                                 let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
                                 if plotAreaInfo != info {
                                     plotAreaInfo = info
                                 }
                             },
                             onYAxisTickPositions: { positions in
-                                guard !isDragging else { return }
                                 if yTickPositions != positions {
                                     yTickPositions = positions
                                 }
@@ -1174,37 +1151,8 @@ private extension CombinedChartView {
                             .frame(width: chartWidth)
                             .frame(maxHeight: .infinity)
                     }
-                    .compositingGroup()
-                    .offset(x: currentContentOffsetX)
                     .frame(width: computedViewportWidth, alignment: .leading)
                     .clipped()
-                    .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture()
-                            .updating($dragTranslationX) { value, state, _ in
-                                state = value.translation.width
-                            }
-                            .onEnded { value in
-                                let clampedTranslationX = clampDragTranslation(
-                                    from: value.translation.width,
-                                    maxLeftDragOffset: maxLeftDragOffset,
-                                    maxRightDragOffset: maxRightDragOffset)
-                                let proposedOffsetX = makeProposedContentOffsetX(
-                                    from: clampedTranslationX,
-                                    maxContentOffsetX: maxContentOffsetX)
-                                let targetOffsetX = resolveTargetContentOffsetX(
-                                    from: proposedOffsetX,
-                                    clampedTranslationX: clampedTranslationX,
-                                    computedUnitWidth: computedUnitWidth,
-                                    computedViewportWidth: computedViewportWidth)
-                                let targetMonthIndex = targetMonthIndex(
-                                    for: targetOffsetX,
-                                    computedUnitWidth: computedUnitWidth)
-                                settlingOffsetX = clampedTranslationX
-                                contentOffsetX = targetOffsetX
-                                visibleStartMonthIndex = targetMonthIndex
-                                settlingOffsetX = 0
-                            })
                 }
                 .onAppear {
                     unitWidth = computedUnitWidth
@@ -1351,6 +1299,167 @@ private extension CombinedChartView {
             AxisMarks(position: .leading, values: yAxisTickValues) { _ in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
                     .foregroundStyle(.gray)
+            }
+        }
+    }
+}
+
+private extension CombinedChartView {
+    struct NativeChartScrollView<Content: View>: UIViewRepresentable {
+        @Binding var contentOffsetX: CGFloat
+        @Binding var visibleStartMonthIndex: Int
+        let viewportWidth: CGFloat
+        let contentWidth: CGFloat
+        let unitWidth: CGFloat
+        let monthsPerPage: Int
+        let maxStartMonthIndex: Int
+        let dragScrollMode: ChartConfig.ChartPagerConfig.DragScrollMode
+        let resolveTargetOffsetX: (CGFloat, CGFloat, CGFloat, CGFloat) -> CGFloat
+        let content: Content
+
+        init(
+            contentOffsetX: Binding<CGFloat>,
+            visibleStartMonthIndex: Binding<Int>,
+            viewportWidth: CGFloat,
+            contentWidth: CGFloat,
+            unitWidth: CGFloat,
+            monthsPerPage: Int,
+            maxStartMonthIndex: Int,
+            dragScrollMode: ChartConfig.ChartPagerConfig.DragScrollMode,
+            resolveTargetOffsetX: @escaping (CGFloat, CGFloat, CGFloat, CGFloat) -> CGFloat,
+            @ViewBuilder content: () -> Content) {
+            _contentOffsetX = contentOffsetX
+            _visibleStartMonthIndex = visibleStartMonthIndex
+            self.viewportWidth = viewportWidth
+            self.contentWidth = contentWidth
+            self.unitWidth = unitWidth
+            self.monthsPerPage = monthsPerPage
+            self.maxStartMonthIndex = maxStartMonthIndex
+            self.dragScrollMode = dragScrollMode
+            self.resolveTargetOffsetX = resolveTargetOffsetX
+            self.content = content()
+        }
+
+        func makeCoordinator() -> Coordinator {
+            Coordinator(self)
+        }
+
+        func makeUIView(context: Context) -> UIScrollView {
+            let scrollView = UIScrollView()
+            scrollView.delegate = context.coordinator
+            scrollView.showsHorizontalScrollIndicator = false
+            scrollView.showsVerticalScrollIndicator = false
+            scrollView.alwaysBounceVertical = false
+            scrollView.bounces = true
+            scrollView.backgroundColor = .clear
+            scrollView.delaysContentTouches = false
+            scrollView.canCancelContentTouches = true
+
+            context.coordinator.hostingController.loadViewIfNeeded()
+            guard let hostingView = context.coordinator.hostingController.view else {
+                return scrollView
+            }
+            hostingView.translatesAutoresizingMaskIntoConstraints = false
+            hostingView.backgroundColor = .clear
+            scrollView.addSubview(hostingView)
+
+            let widthConstraint = hostingView.widthAnchor.constraint(equalToConstant: contentWidth)
+            context.coordinator.contentWidthConstraint = widthConstraint
+
+            NSLayoutConstraint.activate([
+                hostingView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+                hostingView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+                hostingView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+                hostingView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+                hostingView.heightAnchor.constraint(equalTo: scrollView.frameLayoutGuide.heightAnchor),
+                widthConstraint
+            ])
+
+            return scrollView
+        }
+
+        func updateUIView(_ scrollView: UIScrollView, context: Context) {
+            context.coordinator.parent = self
+            context.coordinator.hostingController.rootView = content
+            context.coordinator.contentWidthConstraint?.constant = contentWidth
+
+            let maxOffsetX = max(contentWidth - viewportWidth, 0)
+            let clampedOffsetX = min(max(contentOffsetX, 0), maxOffsetX)
+            scrollView.isScrollEnabled = maxOffsetX > 0
+            scrollView.alwaysBounceHorizontal = maxOffsetX > 0
+
+            guard !context.coordinator.isUpdatingFromScroll else { return }
+            guard abs(scrollView.contentOffset.x - clampedOffsetX) > 0.5 else { return }
+
+            context.coordinator.isApplyingProgrammaticScroll = true
+            scrollView.setContentOffset(CGPoint(x: clampedOffsetX, y: 0), animated: false)
+            context.coordinator.isApplyingProgrammaticScroll = false
+        }
+
+        final class Coordinator: NSObject, UIScrollViewDelegate {
+            var parent: NativeChartScrollView
+            let hostingController: UIHostingController<Content>
+            var contentWidthConstraint: NSLayoutConstraint?
+            var isApplyingProgrammaticScroll = false
+            var isUpdatingFromScroll = false
+
+            init(_ parent: NativeChartScrollView) {
+                self.parent = parent
+                hostingController = UIHostingController(rootView: parent.content)
+                hostingController.view.backgroundColor = .clear
+            }
+
+            func scrollViewDidScroll(_ scrollView: UIScrollView) {
+                guard !isApplyingProgrammaticScroll else { return }
+                syncState(with: scrollView.contentOffset.x)
+            }
+
+            func scrollViewWillEndDragging(
+                _ scrollView: UIScrollView,
+                withVelocity _: CGPoint,
+                targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+                let maxOffsetX = max(parent.contentWidth - parent.viewportWidth, 0)
+                let proposedOffsetX = min(max(targetContentOffset.pointee.x, 0), maxOffsetX)
+                let targetOffsetX = min(
+                    max(
+                        parent.resolveTargetOffsetX(
+                            proposedOffsetX,
+                            scrollView.contentOffset.x,
+                            parent.unitWidth,
+                            parent.viewportWidth),
+                        0),
+                    maxOffsetX)
+                targetContentOffset.pointee.x = targetOffsetX
+            }
+
+            func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+                syncState(with: scrollView.contentOffset.x)
+            }
+
+            func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+                if !decelerate {
+                    syncState(with: scrollView.contentOffset.x)
+                }
+            }
+
+            func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+                syncState(with: scrollView.contentOffset.x)
+            }
+
+            private func syncState(with offsetX: CGFloat) {
+                let monthIndex = targetMonthIndex(for: offsetX)
+
+                isUpdatingFromScroll = true
+                parent.contentOffsetX = offsetX
+                parent.visibleStartMonthIndex = monthIndex
+                isUpdatingFromScroll = false
+            }
+
+            private func targetMonthIndex(for targetContentOffsetX: CGFloat) -> Int {
+                guard parent.unitWidth > 0 else { return 0 }
+                return min(
+                    max(Int(floor(targetContentOffsetX / parent.unitWidth)), 0),
+                    parent.maxStartMonthIndex)
             }
         }
     }
