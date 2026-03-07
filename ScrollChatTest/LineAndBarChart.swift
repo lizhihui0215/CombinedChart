@@ -326,7 +326,7 @@ extension CombinedChartView {
                 visiblePoints: axisPointInfos))
     }
 
-    private enum ChartMath {
+    fileprivate enum ChartMath {
         static func signedValue(
             for point: ChartPoint,
             series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
@@ -566,21 +566,21 @@ extension CombinedChartView {
     }
 }
 
-extension CombinedChartView {
-    private struct ChartContainerSegment: Identifiable {
+private extension CombinedChartView {
+    struct ChartContainerSegment: Identifiable {
         let id = UUID()
         let start: Double
         let value: Double
         let color: Color
     }
 
-    private struct ChartContainerSegmentBarStyle {
+    struct ChartContainerSegmentBarStyle {
         let gap: Double
         let gapColor: Color
         let drawGapMark: Bool
     }
 
-    private struct ChartContainerLineSegmentPath: Identifiable {
+    struct ChartContainerLineSegmentPath: Identifiable {
         let id = UUID()
         let path: Path
         let color: Color
@@ -597,7 +597,7 @@ extension CombinedChartView {
     }
 
     /// Encapsulates the Chart to keep SwiftUI type-checking fast.
-    private struct ChartContainer: View {
+    struct ChartContainer: View {
         let selectedTab: ChartTab
         let visibleData: [ChartPoint]
         let yAxisTickValues: [Double]
@@ -609,124 +609,6 @@ extension CombinedChartView {
         let onPlotAreaChange: (CGRect) -> Void
         let onYAxisTickPositions: ([Double: CGFloat]) -> Void
         @State private var selectedIndex: Int?
-
-        private func lineColor(for value: Double) -> Color {
-            value >= 0 ? config.line.positiveLineColor : config.line.negativeLineColor
-        }
-
-        private func selectionLineColor(for value: Double) -> Color {
-            switch config.line.selection.lineColorStrategy {
-            case .fixedLine(let color):
-                color
-            case .color(let positive, let negative):
-                value >= 0 ? positive : negative
-            }
-        }
-
-        private func gapValue() -> Double {
-            guard plotAreaHeight > 0 else { return 0 }
-            let domainSpan = yAxisDisplayDomain.upperBound - yAxisDisplayDomain.lowerBound
-            let points = Double(config.bar.segmentGap)
-            return max(0, (points / Double(plotAreaHeight)) * domainSpan)
-        }
-
-        /// Build line segments for the overlay so we can color positive and negative parts separately.
-        private func lineSegmentPaths(proxy: ChartProxy) -> [ChartContainerLineSegmentPath] {
-            guard visibleData.count > 1 else { return [] }
-            var segments: [ChartContainerLineSegmentPath] = []
-
-            for index in 0..<(visibleData.count - 1) {
-                let start = visibleData[index]
-                let end = visibleData[index + 1]
-                let startValue = ChartMath.lineValue(for: start, config: config)
-                let endValue = ChartMath.lineValue(for: end, config: config)
-
-                // Convert data points into chart-space points. If any position is missing, skip this pair.
-                guard let startPoint = linePoint(for: start.xKey, value: startValue, proxy: proxy),
-                      let endPoint = linePoint(for: end.xKey, value: endValue, proxy: proxy) else { continue }
-
-                // If both points are on the same side of zero, the segment is single-colored.
-                if isSameSideOrZero(startValue, endValue) {
-                    segments.append(
-                        ChartContainerLineSegmentPath(
-                            path: linePath(from: startPoint, to: endPoint),
-                            color: lineColor(for: startValue)))
-                    continue
-                }
-
-                // Crossing zero: split the segment at the exact intersection point.
-                if let intersection = zeroIntersection(
-                    from: startPoint,
-                    to: endPoint,
-                    startValue: startValue,
-                    endValue: endValue) {
-                    segments.append(
-                        ChartContainerLineSegmentPath(
-                            path: linePath(from: startPoint, to: intersection),
-                            color: lineColor(for: startValue)))
-                    segments.append(
-                        ChartContainerLineSegmentPath(
-                            path: linePath(from: intersection, to: endPoint),
-                            color: lineColor(for: endValue)))
-                }
-            }
-
-            return segments
-        }
-
-        /// Map a data point into the chart's coordinate space.
-        private func linePoint(for xKey: String, value: Double, proxy: ChartProxy) -> CGPoint? {
-            guard let xPos = proxy.position(forX: xKey),
-                  let yPos = proxy.position(forY: value) else { return nil }
-            return CGPoint(x: xPos, y: yPos)
-        }
-
-        /// Determine whether two values are on the same side of zero or touch zero.
-        private func isSameSideOrZero(_ startValue: Double, _ endValue: Double) -> Bool {
-            startValue == 0 || endValue == 0 || (startValue >= 0) == (endValue >= 0)
-        }
-
-        /// Compute intersection point with the zero line by linear interpolation.
-        private func zeroIntersection(
-            from start: CGPoint,
-            to end: CGPoint,
-            startValue: Double,
-            endValue: Double) -> CGPoint? {
-            let denominator = startValue - endValue
-            guard abs(denominator) > 0.000001 else { return nil }
-            let interpolationFactor = startValue / denominator
-            return CGPoint(
-                x: start.x + (end.x - start.x) * interpolationFactor,
-                y: start.y + (end.y - start.y) * interpolationFactor)
-        }
-
-        /// Construct a straight line path between two points.
-        private func linePath(from start: CGPoint, to end: CGPoint) -> Path {
-            var path = Path()
-            path.move(to: start)
-            path.addLine(to: end)
-            return path
-        }
-
-        private func segments(for point: ChartPoint, useTotalTrendColor: Bool) -> [ChartContainerSegment] {
-            var positiveStart: Double = 0
-            var negativeStart: Double = 0
-            var result: [ChartContainerSegment] = []
-
-            for series in config.bar.series {
-                let value = ChartMath.signedValue(for: point, series: series)
-                let color = useTotalTrendColor ? config.bar.totalTrendColor : series.color
-                if value >= 0 {
-                    result.append(ChartContainerSegment(start: positiveStart, value: value, color: color))
-                    positiveStart += value
-                } else {
-                    result.append(ChartContainerSegment(start: negativeStart, value: value, color: color))
-                    negativeStart += value
-                }
-            }
-
-            return result
-        }
 
         var body: some View {
             let monthValues = visibleData.map(\.xKey)
@@ -877,99 +759,221 @@ extension CombinedChartView {
                 }
             }
         }
+    }
+}
 
-        /// Total Trend: stacked gray bars plus a line on top.
-        @ChartContentBuilder
-        private var totalTrendMarks: some ChartContent {
-            ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
-                let gap = gapValue()
-                let style = ChartContainerSegmentBarStyle(
-                    gap: gap,
-                    gapColor: config.bar.segmentGapColor,
-                    drawGapMark: true)
-                ForEach(segments(for: item, useTotalTrendColor: config.bar.useTotalTrendSingleColor)) { segment in
-                    segmentBar(
-                        index: index,
-                        segment: segment,
-                        style: style)
-                }
+private extension CombinedChartView.ChartContainer {
+    func lineColor(for value: Double) -> Color {
+        value >= 0 ? config.line.positiveLineColor : config.line.negativeLineColor
+    }
+
+    func selectionLineColor(for value: Double) -> Color {
+        switch config.line.selection.lineColorStrategy {
+        case .fixedLine(let color):
+            color
+        case .color(let positive, let negative):
+            value >= 0 ? positive : negative
+        }
+    }
+
+    func gapValue() -> Double {
+        guard plotAreaHeight > 0 else { return 0 }
+        let domainSpan = yAxisDisplayDomain.upperBound - yAxisDisplayDomain.lowerBound
+        let points = Double(config.bar.segmentGap)
+        return max(0, (points / Double(plotAreaHeight)) * domainSpan)
+    }
+
+    /// Build line segments for the overlay so we can color positive and negative parts separately.
+    func lineSegmentPaths(proxy: ChartProxy) -> [CombinedChartView.ChartContainerLineSegmentPath] {
+        guard visibleData.count > 1 else { return [] }
+        var segments: [CombinedChartView.ChartContainerLineSegmentPath] = []
+
+        for index in 0..<(visibleData.count - 1) {
+            let start = visibleData[index]
+            let end = visibleData[index + 1]
+            let startValue = CombinedChartView.ChartMath.lineValue(for: start, config: config)
+            let endValue = CombinedChartView.ChartMath.lineValue(for: end, config: config)
+
+            // Convert data points into chart-space points. If any position is missing, skip this pair.
+            guard let startPoint = linePoint(for: start.xKey, value: startValue, proxy: proxy),
+                  let endPoint = linePoint(for: end.xKey, value: endValue, proxy: proxy) else { continue }
+
+            // If both points are on the same side of zero, the segment is single-colored.
+            if isSameSideOrZero(startValue, endValue) {
+                segments.append(
+                    CombinedChartView.ChartContainerLineSegmentPath(
+                        path: linePath(from: startPoint, to: endPoint),
+                        color: lineColor(for: startValue)))
+                continue
+            }
+
+            // Crossing zero: split the segment at the exact intersection point.
+            if let intersection = zeroIntersection(
+                from: startPoint,
+                to: endPoint,
+                startValue: startValue,
+                endValue: endValue) {
+                segments.append(
+                    CombinedChartView.ChartContainerLineSegmentPath(
+                        path: linePath(from: startPoint, to: intersection),
+                        color: lineColor(for: startValue)))
+                segments.append(
+                    CombinedChartView.ChartContainerLineSegmentPath(
+                        path: linePath(from: intersection, to: endPoint),
+                        color: lineColor(for: endValue)))
             }
         }
 
-        // Breakdown: colored stacked bars by category.
-        @ChartContentBuilder
-        private var breakdownMarks: some ChartContent {
-            ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
-                let gap = gapValue()
-                let style = ChartContainerSegmentBarStyle(
-                    gap: gap,
-                    gapColor: config.bar.segmentGapColor,
-                    drawGapMark: true)
-                ForEach(segments(for: item, useTotalTrendColor: false)) { segment in
-                    segmentBar(
-                        index: index,
-                        segment: segment,
-                        style: style)
-                }
+        return segments
+    }
+
+    /// Map a data point into the chart's coordinate space.
+    func linePoint(for xKey: String, value: Double, proxy: ChartProxy) -> CGPoint? {
+        guard let xPos = proxy.position(forX: xKey),
+              let yPos = proxy.position(forY: value) else { return nil }
+        return CGPoint(x: xPos, y: yPos)
+    }
+
+    /// Determine whether two values are on the same side of zero or touch zero.
+    func isSameSideOrZero(_ startValue: Double, _ endValue: Double) -> Bool {
+        startValue == 0 || endValue == 0 || (startValue >= 0) == (endValue >= 0)
+    }
+
+    /// Compute intersection point with the zero line by linear interpolation.
+    func zeroIntersection(
+        from start: CGPoint,
+        to end: CGPoint,
+        startValue: Double,
+        endValue: Double) -> CGPoint? {
+        let denominator = startValue - endValue
+        guard abs(denominator) > 0.000001 else { return nil }
+        let interpolationFactor = startValue / denominator
+        return CGPoint(
+            x: start.x + (end.x - start.x) * interpolationFactor,
+            y: start.y + (end.y - start.y) * interpolationFactor)
+    }
+
+    /// Construct a straight line path between two points.
+    func linePath(from start: CGPoint, to end: CGPoint) -> Path {
+        var path = Path()
+        path.move(to: start)
+        path.addLine(to: end)
+        return path
+    }
+
+    func segments(
+        for point: CombinedChartView.ChartPoint,
+        useTotalTrendColor: Bool) -> [CombinedChartView.ChartContainerSegment] {
+        var positiveStart: Double = 0
+        var negativeStart: Double = 0
+        var result: [CombinedChartView.ChartContainerSegment] = []
+
+        for series in config.bar.series {
+            let value = CombinedChartView.ChartMath.signedValue(for: point, series: series)
+            let color = useTotalTrendColor ? config.bar.totalTrendColor : series.color
+            if value >= 0 {
+                result.append(CombinedChartView.ChartContainerSegment(start: positiveStart, value: value, color: color))
+                positiveStart += value
+            } else {
+                result.append(CombinedChartView.ChartContainerSegment(start: negativeStart, value: value, color: color))
+                negativeStart += value
             }
         }
 
-        /// Marks shared by both modes (zero line + selection dot).
-        @ChartContentBuilder
-        private var sharedMarks: some ChartContent {
-            RuleMark(y: .value("Zero", 0))
-                .foregroundStyle(config.axis.zeroLineColor)
-                .lineStyle(StrokeStyle(lineWidth: config.axis.zeroLineWidth))
+        return result
+    }
 
-            if selectedTab == .totalTrend, let selectedIndex, visibleData.indices.contains(selectedIndex) {
-                let value = ChartMath.lineValue(for: visibleData[selectedIndex], config: config)
-                PointMark(
-                    x: .value("Selected Month", visibleData[selectedIndex].xKey),
-                    y: .value("Selected Value", value))
-                    .foregroundStyle(lineColor(for: value))
-                    .symbolSize(config.line.selection.pointSize)
-            }
-
-            if showDebugOverlay {
-                ForEach(visibleData, id: \.id) { item in
-                    RuleMark(x: .value("Debug X", item.xKey))
-                        .foregroundStyle(Color.red.opacity(0.6))
-                        .lineStyle(StrokeStyle(lineWidth: 1.0, dash: [2, 3]))
-                }
+    /// Total Trend: stacked gray bars plus a line on top.
+    @ChartContentBuilder
+    var totalTrendMarks: some ChartContent {
+        ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
+            let gap = gapValue()
+            let style = CombinedChartView.ChartContainerSegmentBarStyle(
+                gap: gap,
+                gapColor: config.bar.segmentGapColor,
+                drawGapMark: true)
+            ForEach(segments(for: item, useTotalTrendColor: config.bar.useTotalTrendSingleColor)) { segment in
+                segmentBar(
+                    index: index,
+                    segment: segment,
+                    style: style)
             }
         }
+    }
 
-        /// Draw one stacked segment and apply a small gap so segments are visually separated.
-        @ChartContentBuilder
-        private func segmentBar(
-            index: Int,
-            segment: ChartContainerSegment,
-            style: ChartContainerSegmentBarStyle) -> some ChartContent {
-            let bounds = adjustedSegmentBounds(start: segment.start, value: segment.value)
+    // Breakdown: colored stacked bars by category.
+    @ChartContentBuilder
+    var breakdownMarks: some ChartContent {
+        ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
+            let gap = gapValue()
+            let style = CombinedChartView.ChartContainerSegmentBarStyle(
+                gap: gap,
+                gapColor: config.bar.segmentGapColor,
+                drawGapMark: true)
+            ForEach(segments(for: item, useTotalTrendColor: false)) { segment in
+                segmentBar(
+                    index: index,
+                    segment: segment,
+                    style: style)
+            }
+        }
+    }
+
+    /// Marks shared by both modes (zero line + selection dot).
+    @ChartContentBuilder
+    var sharedMarks: some ChartContent {
+        RuleMark(y: .value("Zero", 0))
+            .foregroundStyle(config.axis.zeroLineColor)
+            .lineStyle(StrokeStyle(lineWidth: config.axis.zeroLineWidth))
+
+        if selectedTab == .totalTrend, let selectedIndex, visibleData.indices.contains(selectedIndex) {
+            let value = CombinedChartView.ChartMath.lineValue(for: visibleData[selectedIndex], config: config)
+            PointMark(
+                x: .value("Selected Month", visibleData[selectedIndex].xKey),
+                y: .value("Selected Value", value))
+                .foregroundStyle(lineColor(for: value))
+                .symbolSize(config.line.selection.pointSize)
+        }
+
+        if showDebugOverlay {
+            ForEach(visibleData, id: \.id) { item in
+                RuleMark(x: .value("Debug X", item.xKey))
+                    .foregroundStyle(Color.red.opacity(0.6))
+                    .lineStyle(StrokeStyle(lineWidth: 1.0, dash: [2, 3]))
+            }
+        }
+    }
+
+    /// Draw one stacked segment and apply a small gap so segments are visually separated.
+    @ChartContentBuilder
+    func segmentBar(
+        index: Int,
+        segment: CombinedChartView.ChartContainerSegment,
+        style: CombinedChartView.ChartContainerSegmentBarStyle) -> some ChartContent {
+        let bounds = adjustedSegmentBounds(start: segment.start, value: segment.value)
+        BarMark(
+            x: .value("Month", visibleData[index].xKey),
+            yStart: .value("Value", bounds.low),
+            yEnd: .value("Value", bounds.high),
+            width: 40)
+            .cornerRadius(0)
+            .foregroundStyle(segment.color)
+        if style.drawGapMark, style.gap > 0.0001, abs(segment.start) > 0.0001 {
             BarMark(
                 x: .value("Month", visibleData[index].xKey),
-                yStart: .value("Value", bounds.low),
-                yEnd: .value("Value", bounds.high),
+                yStart: .value("Gap", segment.start - style.gap / 2.0),
+                yEnd: .value("Gap", segment.start + style.gap / 2.0),
                 width: 40)
-                .cornerRadius(0)
-                .foregroundStyle(segment.color)
-            if style.drawGapMark, style.gap > 0.0001, abs(segment.start) > 0.0001 {
-                BarMark(
-                    x: .value("Month", visibleData[index].xKey),
-                    yStart: .value("Gap", segment.start - style.gap / 2.0),
-                    yEnd: .value("Gap", segment.start + style.gap / 2.0),
-                    width: 40)
-                    .foregroundStyle(style.gapColor)
-            }
+                .foregroundStyle(style.gapColor)
         }
+    }
 
-        /// Convert a signed segment into a visual bar range with a small gap.
-        private func adjustedSegmentBounds(start: Double, value: Double) -> (low: Double, high: Double) {
-            let end = start + value
-            let rawLow = min(start, end)
-            let rawHigh = max(start, end)
-            return (rawLow, rawHigh)
-        }
+    /// Convert a signed segment into a visual bar range with a small gap.
+    func adjustedSegmentBounds(start: Double, value: Double) -> (low: Double, high: Double) {
+        let end = start + value
+        let rawLow = min(start, end)
+        let rawHigh = max(start, end)
+        return (rawLow, rawHigh)
     }
 }
 
