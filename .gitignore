@@ -1,0 +1,33 @@
+# Xcode user data
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcuserstate
+
+# Build products
+build/
+Build/
+Products/
+*.app
+*.dSYM
+*.dSYM.zip
+*.ipa
+*.xcarchive
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods / Carthage
+Pods/
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+# Common local files
+.DS_Store
