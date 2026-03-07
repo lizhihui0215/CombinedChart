@@ -57,9 +57,10 @@ struct ChartConfig {
             positiveLineColor: Color(red: 0.16, green: 0.30, blue: 0.38),
             negativeLineColor: Color(red: 0.74, green: 0.24, blue: 0.28),
             lineWidth: 2,
-            selectionPointSize: 60,
-            selectionLineColor: Color.gray,
-            selectionFillColor: Color.gray.opacity(0.12)),
+            selection: .init(
+                pointSize: 60,
+                lineColorStrategy: .fixedLine(Color.gray),
+                fillColor: Color.gray.opacity(0.12))),
         axis: ChartAxisConfig(
             xAxisLabel: { $0 },
             yAxisLabel: { value in
@@ -82,9 +83,7 @@ extension ChartConfig {
         let positiveLineColor: Color
         let negativeLineColor: Color
         let lineWidth: CGFloat
-        let selectionPointSize: CGFloat
-        let selectionLineColor: Color
-        let selectionFillColor: Color
+        let selection: SelectionConfig
     }
 
     struct ChartAxisConfig {
@@ -102,6 +101,19 @@ extension ChartConfig.ChartBarConfig {
         let color: Color
         let isNegative: Bool
         let includeInLine: Bool
+    }
+}
+
+extension ChartConfig.ChartLineConfig {
+    struct SelectionConfig {
+        let pointSize: CGFloat
+        let lineColorStrategy: LineColorStrategy
+        let fillColor: Color
+    }
+
+    enum LineColorStrategy {
+        case fixedLine(Color)
+        case color(positive: Color, negative: Color)
     }
 }
 
@@ -559,6 +571,15 @@ extension CombinedChartView {
             value >= 0 ? config.line.positiveLineColor : config.line.negativeLineColor
         }
 
+        private func selectionLineColor(for value: Double) -> Color {
+            switch config.line.selection.lineColorStrategy {
+            case .fixedLine(let color):
+                color
+            case .color(let positive, let negative):
+                value >= 0 ? positive : negative
+            }
+        }
+
         private func gapValue() -> Double {
             guard plotAreaHeight > 0 else { return 0 }
             let domainSpan = yAxisDisplayDomain.upperBound - yAxisDisplayDomain.lowerBound
@@ -748,7 +769,7 @@ extension CombinedChartView {
                                             path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
                                         }
                                         .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                                        .foregroundStyle(lineColor(for: selectedValue))
+                                        .foregroundStyle(selectionLineColor(for: selectedValue))
                                     } else {
                                         let step: CGFloat = {
                                             if selectedIndex + 1 < visibleData.count,
@@ -763,7 +784,7 @@ extension CombinedChartView {
                                         }()
                                         let width = max(step * 0.9, 24)
                                         Rectangle()
-                                            .fill(config.line.selectionFillColor)
+                                            .fill(config.line.selection.fillColor)
                                             .frame(width: width, height: plotRect.height)
                                             .position(x: xPos, y: plotRect.midY)
                                     }
@@ -845,7 +866,7 @@ extension CombinedChartView {
                     x: .value("Selected Month", visibleData[selectedIndex].xKey),
                     y: .value("Selected Value", value))
                     .foregroundStyle(lineColor(for: value))
-                    .symbolSize(config.line.selectionPointSize)
+                    .symbolSize(config.line.selection.pointSize)
             }
 
             if showDebugOverlay {

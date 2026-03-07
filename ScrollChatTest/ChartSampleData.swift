@@ -145,9 +145,10 @@ enum ChartSampleData {
                 positiveLineColor: .red,
                 negativeLineColor: .yellow,
                 lineWidth: 1,
-                selectionPointSize: 20,
-                selectionLineColor: Color.gray,
-                selectionFillColor: Color.gray.opacity(0.12)),
+                selection: .init(
+                    pointSize: 20,
+                    lineColorStrategy: .fixedLine(Color.gray),
+                    fillColor: Color.gray.opacity(0.12))),
             axis: ChartConfig.ChartAxisConfig(
                 xAxisLabel: { $0 },
                 yAxisLabel: { value in
