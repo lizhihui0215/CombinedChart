@@ -585,15 +585,15 @@ extension CombinedChartView {
     private var pagerView: some View {
         let context = PagerContext(
             entries: pagerEntries,
-            highlightedEntryID: (fullyVisibleYearRange ?? currentYearRange)?.id,
+            highlightedEntryID: highlightedPagerEntryID,
             displayStyle: config.pager.displayStyle,
-            canSelectPreviousPage: scrollPage > 0,
-            canSelectNextPage: scrollPage < maxScrollPage,
-            onSelectPreviousPage: { selectPage(scrollPage - 1) },
+            canSelectPreviousPage: currentPage > 0,
+            canSelectNextPage: currentPage < maxScrollPage,
+            onSelectPreviousPage: { selectPage(currentPage - 1) },
             onSelectEntry: { entry in
                 selectPage(entry.page)
             },
-            onSelectNextPage: { selectPage(scrollPage + 1) })
+            onSelectNextPage: { selectPage(currentPage + 1) })
 
         if let pager = viewSlots.pager {
             pager(context)
@@ -625,25 +625,46 @@ extension CombinedChartView {
         var ranges: [YearPageRange] = []
         var cumulativeMonths = 0
         for group in sortedGroups {
-            let startMonthIndex = cumulativeMonths
-            let endMonthIndex = cumulativeMonths + max(group.points.count - 1, 0)
-            let startPage = startMonthIndex / config.monthsPerPage
-            let endPage = endMonthIndex / config.monthsPerPage
             ranges.append(
-                YearPageRange(
-                    displayTitle: group.displayTitle,
-                    groupOrder: group.groupOrder,
-                    startMonthIndex: startMonthIndex,
-                    endMonthIndex: endMonthIndex,
-                    startPage: startPage,
-                    endPage: endPage))
+                yearPageRange(
+                    for: group,
+                    startMonthIndex: cumulativeMonths))
             cumulativeMonths += group.points.count
         }
         return ranges
     }
 
+    private func yearPageRange(
+        for group: ChartDataGroup,
+        startMonthIndex: Int) -> YearPageRange {
+        let endMonthIndex = startMonthIndex + max(group.points.count - 1, 0)
+        let startPage = startMonthIndex / config.monthsPerPage
+        let endPage = endMonthIndex / config.monthsPerPage
+
+        return .init(
+            displayTitle: group.displayTitle,
+            groupOrder: group.groupOrder,
+            startMonthIndex: startMonthIndex,
+            endMonthIndex: endMonthIndex,
+            startPage: startPage,
+            endPage: endPage)
+    }
+
     private var currentYearRange: YearPageRange? {
-        yearPageRanges.first { $0.contains(page: scrollPage) } ?? yearPageRanges.first
+        yearPageRanges.first { $0.contains(page: currentPage) } ?? yearPageRanges.first
+    }
+
+    private var highlightedPagerEntryID: PagerEntry.ID? {
+        (fullyVisibleYearRange ?? currentYearRange)?.id
+    }
+
+    private var currentPage: Int {
+        guard unitWidth > 0 else { return scrollPage }
+        let pageWidth = unitWidth * CGFloat(config.monthsPerPage)
+        guard pageWidth > 0 else { return scrollPage }
+        let offset = max(0, -scrollOffsetX)
+        let derivedPage = Int(round(offset / pageWidth))
+        return clampedPageIndex(for: derivedPage)
     }
 
     private var pagerEntries: [PagerEntry] {
@@ -734,9 +755,18 @@ extension CombinedChartView {
     }
 
     private func selectPage(_ page: Int) {
-        let clampedPage = min(max(page, 0), maxScrollPage)
+        let clampedPage = clampedPageIndex(for: page)
         scrollPage = clampedPage
-        updateSelection(to: min(data.count - 1, clampedPage * config.monthsPerPage))
+        updateSelection(to: selectionIndex(forPage: clampedPage))
+    }
+
+    private func clampedPageIndex(for page: Int) -> Int {
+        min(max(page, 0), maxScrollPage)
+    }
+
+    private func selectionIndex(forPage page: Int) -> Int? {
+        guard !data.isEmpty else { return nil }
+        return min(data.count - 1, page * config.monthsPerPage)
     }
 }
 
@@ -762,7 +792,7 @@ extension CombinedChartView {
                         selectionOverlay: viewSlots.selectionOverlay,
                         yAxisLabel: yAxisLabel(for:),
                         onSelectIndex: updateSelection(to:),
-                        scrollPage: scrollPage)
+                        scrollPage: $scrollPage)
                 } else {
                     viewSlots.emptyState
                 }
@@ -825,7 +855,7 @@ private extension CombinedChartView {
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
         let yAxisLabel: (Double) -> String
         let onSelectIndex: (Int?) -> Void
-        let scrollPage: Int
+        @Binding var scrollPage: Int
 
         var body: some View {
             GeometryReader { geometry in
@@ -899,7 +929,16 @@ private extension CombinedChartView {
                         }
                         .frame(width: computedViewportWidth)
                         .coordinateSpace(name: "ChartScroll")
-                        .onPreferenceChange(ScrollOffsetKey.self) { scrollOffsetX = $0 }
+                        .onPreferenceChange(ScrollOffsetKey.self) { offset in
+                            scrollOffsetX = offset
+                            let pageWidth = computedUnitWidth * CGFloat(config.monthsPerPage)
+                            guard pageWidth > 0 else { return }
+                            let derivedPage = Int(round(max(0, -offset) / pageWidth))
+                            let clampedPage = min(max(derivedPage, 0), maxScrollPage)
+                            if scrollPage != clampedPage {
+                                scrollPage = clampedPage
+                            }
+                        }
                         .onChange(of: scrollPage) { newValue in
                             withAnimation(.easeInOut(duration: 0.25)) {
                                 proxy.scrollTo(newValue, anchor: .leading)
@@ -991,6 +1030,11 @@ private extension CombinedChartView {
         let xPosition: CGFloat
     }
 
+    struct SelectionLayout {
+        let highlightWidth: CGFloat
+        let indicatorFrame: CGRect
+    }
+
     struct AxisRenderContext {
         let monthValues: [String]
         let pointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo]
@@ -1030,26 +1074,8 @@ private extension CombinedChartView {
                 sharedMarks
             }
             .chartXScale(domain: axisContext.monthValues)
-            .chartXAxis {
-                AxisMarks(values: axisContext.monthValues) { value in
-                    AxisValueLabel(centered: true) {
-                        if let key = value.as(String.self) {
-                            Text(config.axis.xAxisLabel(
-                                xAxisLabelContext(
-                                    for: key,
-                                    axisPointByKey: axisContext.pointInfoByKey,
-                                    axisPointInfos: axisContext.pointInfos)))
-                                .font(.caption2)
-                        }
-                    }
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading, values: yAxisTickValues) { _ in
-                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                        .foregroundStyle(.gray)
-                }
-            }
+            .chartXAxis { chartXAxis(axisContext: axisContext) }
+            .chartYAxis { chartYAxis }
             .chartYScale(domain: yAxisDisplayDomain)
             // Removed top padding to align plot area with fixed Y labels and overlays.
             .chartPlotStyle { plot in
@@ -1070,6 +1096,30 @@ private extension CombinedChartView {
                 monthValues: visibleData.map(\.xKey),
                 pointInfos: pointInfos,
                 pointInfoByKey: Dictionary(uniqueKeysWithValues: pointInfos.map { ($0.xKey, $0) }))
+        }
+
+        @AxisContentBuilder
+        private func chartXAxis(axisContext: AxisRenderContext) -> some AxisContent {
+            AxisMarks(values: axisContext.monthValues) { value in
+                AxisValueLabel(centered: true) {
+                    if let key = value.as(String.self) {
+                        Text(config.axis.xAxisLabel(
+                            xAxisLabelContext(
+                                for: key,
+                                axisPointByKey: axisContext.pointInfoByKey,
+                                axisPointInfos: axisContext.pointInfos)))
+                            .font(.caption2)
+                    }
+                }
+            }
+        }
+
+        @AxisContentBuilder
+        private var chartYAxis: some AxisContent {
+            AxisMarks(position: .leading, values: yAxisTickValues) { _ in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                    .foregroundStyle(.gray)
+            }
         }
     }
 }
@@ -1131,14 +1181,8 @@ private extension CombinedChartView.ChartContainer {
                 plotRect: plotRect,
                 proxy: proxy)
 
-            Group {
-                if let selectionOverlay {
-                    selectionOverlay(context)
-                } else {
-                    defaultSelectionOverlay(context: context)
-                }
-            }
-            .mask(plotMask(for: plotRect))
+            selectionOverlayView(context: context)
+                .mask(plotMask(for: plotRect))
         }
     }
 
@@ -1161,51 +1205,70 @@ private extension CombinedChartView.ChartContainer {
     }
 
     @ViewBuilder
+    func selectionOverlayView(context: CombinedChartView.SelectionOverlayContext) -> some View {
+        if let selectionOverlay {
+            selectionOverlay(context)
+        } else {
+            defaultSelectionOverlay(context: context)
+        }
+    }
+
+    @ViewBuilder
     func defaultSelectionOverlay(context: CombinedChartView.SelectionOverlayContext) -> some View {
         if context.indicatorStyle == .line {
-            Path { path in
-                path.move(to: CGPoint(x: context.indicatorFrame.midX, y: context.plotFrame.minY))
-                path.addLine(to: CGPoint(x: context.indicatorFrame.midX, y: context.plotFrame.maxY))
-            }
-            .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-            .foregroundStyle(selectionLineColor(for: context.value))
+            selectionIndicatorLine(context: context)
         } else {
-            Rectangle()
-                .fill(config.line.selection.fillColor)
-                .frame(width: context.indicatorFrame.width, height: context.indicatorFrame.height)
-                .position(x: context.indicatorFrame.midX, y: context.indicatorFrame.midY)
+            selectionIndicatorBand(context: context)
         }
+    }
+
+    func selectionIndicatorLine(context: CombinedChartView.SelectionOverlayContext) -> some View {
+        Path { path in
+            path.move(to: CGPoint(x: context.indicatorFrame.midX, y: context.plotFrame.minY))
+            path.addLine(to: CGPoint(x: context.indicatorFrame.midX, y: context.plotFrame.maxY))
+        }
+        .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+        .foregroundStyle(selectionLineColor(for: context.value))
+    }
+
+    func selectionIndicatorBand(context: CombinedChartView.SelectionOverlayContext) -> some View {
+        Rectangle()
+            .fill(config.line.selection.fillColor)
+            .frame(width: context.indicatorFrame.width, height: context.indicatorFrame.height)
+            .position(x: context.indicatorFrame.midX, y: context.indicatorFrame.midY)
     }
 
     func selectionOverlayContext(
         selectionState: CombinedChartView.ChartSelectionState,
         plotRect: CGRect,
         proxy: ChartProxy) -> CombinedChartView.SelectionOverlayContext {
-        let highlightWidth = selectionHighlightWidth(
-            at: selectionState.index,
-            xPosition: selectionState.xPosition,
-            proxy: proxy)
         let indicatorStyle = selectedTab.mode.selectionIndicatorStyle
-        let indicatorFrame = selectionIndicatorFrame(
+        let layout = selectionLayout(
             for: selectionState,
             plotRect: plotRect,
-            highlightWidth: highlightWidth,
+            proxy: proxy,
             indicatorStyle: indicatorStyle)
 
         return .init(
             point: selectionState.point.source,
             value: selectionState.value,
             plotFrame: plotRect,
-            indicatorFrame: indicatorFrame,
+            indicatorFrame: layout.indicatorFrame,
             indicatorStyle: indicatorStyle)
     }
 
-    func selectionIndicatorFrame(
+    func selectionLayout(
         for selectionState: CombinedChartView.ChartSelectionState,
         plotRect: CGRect,
-        highlightWidth: CGFloat,
-        indicatorStyle: CombinedChartView.ChartPresentationMode.SelectionIndicatorStyle) -> CGRect {
-        switch indicatorStyle {
+        proxy: ChartProxy,
+        indicatorStyle: CombinedChartView.ChartPresentationMode.SelectionIndicatorStyle) -> CombinedChartView
+        .SelectionLayout {
+        let highlightWidth = selectionHighlightWidth(
+            at: selectionState.index,
+            xPosition: selectionState.xPosition,
+            proxy: proxy)
+
+        let indicatorFrame = switch indicatorStyle {
         case .line:
             CGRect(
                 x: selectionState.xPosition,
@@ -1219,6 +1282,10 @@ private extension CombinedChartView.ChartContainer {
                 width: highlightWidth,
                 height: plotRect.height)
         }
+
+        return .init(
+            highlightWidth: highlightWidth,
+            indicatorFrame: indicatorFrame)
     }
 
     @ViewBuilder
