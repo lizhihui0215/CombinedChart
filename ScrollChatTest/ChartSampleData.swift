@@ -127,7 +127,8 @@ enum ChartSampleData {
         }
     }
 
-    static func makeConfig() -> ChartConfig {
+    static func makeConfig(
+        dragScrollMode: ChartConfig.ChartPagerConfig.DragScrollMode = .freeSnapping) -> ChartConfig {
         ChartConfig(
             monthsPerPage: 4,
             chartHeight: 420,
@@ -152,7 +153,9 @@ enum ChartSampleData {
                 zeroLineColor: .black,
                 zeroLineWidth: 1,
                 yAxisWidth: 40),
-            pager: .init(isVisible: true))
+            pager: .init(
+                isVisible: true,
+                dragScrollMode: dragScrollMode))
     }
 
     private static func makeBarConfig() -> ChartConfig.ChartBarConfig {

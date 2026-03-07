@@ -127,14 +127,23 @@ extension ChartConfig {
             case byEntry
         }
 
+        enum DragScrollMode {
+            case byPage
+            case freeSnapping
+            case free
+        }
+
         let isVisible: Bool
         let arrowScrollMode: ArrowScrollMode
+        let dragScrollMode: DragScrollMode
 
         init(
             isVisible: Bool = true,
-            arrowScrollMode: ArrowScrollMode = .byPage) {
+            arrowScrollMode: ArrowScrollMode = .byPage,
+            dragScrollMode: DragScrollMode = .freeSnapping) {
             self.isVisible = isVisible
             self.arrowScrollMode = arrowScrollMode
+            self.dragScrollMode = dragScrollMode
         }
     }
 }
@@ -291,6 +300,7 @@ struct CombinedChartView: View {
     // UI state.
     @State private var selectedIndex: Int? = 0
     @State private var visibleStartMonthIndex: Int = 0
+    @State private var contentOffsetX: CGFloat = 0
     @State private var unitWidth: CGFloat = 0
     @State private var viewportWidth: CGFloat = 0
 
@@ -665,8 +675,10 @@ extension CombinedChartView {
     }
 
     private var visibleMonthRange: ClosedRange<Int>? {
-        guard !data.isEmpty else { return nil }
-        let start = min(max(visibleStartMonthIndex, 0), max(0, data.count - 1))
+        guard !data.isEmpty, unitWidth > 0 else { return nil }
+        let start = min(
+            max(Int(floor(contentOffsetX / unitWidth)), 0),
+            max(0, data.count - 1))
         let visibleCount = max(1, config.monthsPerPage)
         let end = min(data.count - 1, start + visibleCount - 1)
         return start...end
@@ -752,6 +764,9 @@ extension CombinedChartView {
             "clamped=\(clampedMonthIndex)",
             "visibleStartMonthIndex(before)=\(visibleStartMonthIndex)")
         visibleStartMonthIndex = clampedMonthIndex
+        if unitWidth > 0 {
+            contentOffsetX = CGFloat(clampedMonthIndex) * unitWidth
+        }
     }
 
     private func selectPreviousPage() {
@@ -814,6 +829,7 @@ extension CombinedChartView {
                         selectedTab: selectedTab,
                         selectedIndex: $selectedIndex,
                         visibleStartMonthIndex: $visibleStartMonthIndex,
+                        contentOffsetX: $contentOffsetX,
                         unitWidth: $unitWidth,
                         viewportWidth: $viewportWidth,
                         plotAreaInfo: $plotAreaInfo,
@@ -875,6 +891,7 @@ private extension CombinedChartView {
         let selectedTab: ChartTab
         @Binding var selectedIndex: Int?
         @Binding var visibleStartMonthIndex: Int
+        @Binding var contentOffsetX: CGFloat
         @Binding var unitWidth: CGFloat
         @Binding var viewportWidth: CGFloat
         @Binding var plotAreaInfo: PlotAreaInfo?
@@ -893,6 +910,60 @@ private extension CombinedChartView {
             max(0, data.count - config.monthsPerPage)
         }
 
+        private func clampDragTranslation(
+            from translationX: CGFloat,
+            maxLeftDragOffset: CGFloat,
+            maxRightDragOffset: CGFloat) -> CGFloat {
+            min(
+                max(translationX, -maxLeftDragOffset),
+                maxRightDragOffset)
+        }
+
+        private func makeProposedContentOffsetX(
+            from clampedTranslationX: CGFloat,
+            maxContentOffsetX: CGFloat) -> CGFloat {
+            min(
+                max(contentOffsetX - clampedTranslationX, 0),
+                maxContentOffsetX)
+        }
+
+        private func resolveTargetContentOffsetX(
+            from proposedContentOffsetX: CGFloat,
+            clampedTranslationX: CGFloat,
+            computedUnitWidth: CGFloat,
+            computedViewportWidth: CGFloat) -> CGFloat {
+            switch config.pager.dragScrollMode {
+            case .byPage:
+                let threshold = computedViewportWidth * 0.2
+                let pageDelta: Int = if clampedTranslationX <= -threshold {
+                    config.monthsPerPage
+                } else if clampedTranslationX >= threshold {
+                    -config.monthsPerPage
+                } else {
+                    0
+                }
+                let targetMonthIndex = min(
+                    max(visibleStartMonthIndex + pageDelta, 0),
+                    maxStartMonthIndex)
+                return CGFloat(targetMonthIndex) * computedUnitWidth
+            case .freeSnapping:
+                let snappedMonthIndex = min(
+                    max(Int(round(proposedContentOffsetX / computedUnitWidth)), 0),
+                    maxStartMonthIndex)
+                return CGFloat(snappedMonthIndex) * computedUnitWidth
+            case .free:
+                return proposedContentOffsetX
+            }
+        }
+
+        private func targetMonthIndex(
+            for targetContentOffsetX: CGFloat,
+            computedUnitWidth: CGFloat) -> Int {
+            min(
+                max(Int(floor(targetContentOffsetX / computedUnitWidth)), 0),
+                maxStartMonthIndex)
+        }
+
         var body: some View {
             GeometryReader { geometry in
                 let visibleCount = CGFloat(config.monthsPerPage)
@@ -900,12 +971,18 @@ private extension CombinedChartView {
                 let computedUnitWidth = computedViewportWidth / visibleCount
                 let chartWidth = max(computedViewportWidth, computedUnitWidth * CGFloat(data.count))
                 let isDragging = dragTranslationX != 0
-                let maxRightDragOffset = CGFloat(visibleStartMonthIndex) * computedUnitWidth
-                let maxLeftDragOffset = CGFloat(maxStartMonthIndex - visibleStartMonthIndex) * computedUnitWidth
+                let liveDragTranslationX: CGFloat = if config.pager.dragScrollMode == .byPage {
+                    0
+                } else {
+                    dragTranslationX
+                }
+                let maxContentOffsetX = CGFloat(maxStartMonthIndex) * computedUnitWidth
+                let maxRightDragOffset = contentOffsetX
+                let maxLeftDragOffset = maxContentOffsetX - contentOffsetX
                 let clampedDragTranslationX = min(
-                    max(dragTranslationX, -maxLeftDragOffset),
+                    max(liveDragTranslationX, -maxLeftDragOffset),
                     maxRightDragOffset)
-                let contentOffsetX = -CGFloat(visibleStartMonthIndex) * computedUnitWidth + settlingOffsetX +
+                let currentContentOffsetX = -contentOffsetX + settlingOffsetX +
                     clampedDragTranslationX
 
                 HStack(alignment: .top, spacing: 0) {
@@ -953,7 +1030,7 @@ private extension CombinedChartView {
                             .frame(maxHeight: .infinity)
                     }
                     .compositingGroup()
-                    .offset(x: contentOffsetX)
+                    .offset(x: currentContentOffsetX)
                     .frame(width: computedViewportWidth, alignment: .leading)
                     .clipped()
                     .contentShape(Rectangle())
@@ -963,14 +1040,23 @@ private extension CombinedChartView {
                                 state = value.translation.width
                             }
                             .onEnded { value in
-                                let clampedTranslationX = min(
-                                    max(value.translation.width, -maxLeftDragOffset),
-                                    maxRightDragOffset)
-                                let monthDelta = Int(round(-clampedTranslationX / computedUnitWidth))
-                                let targetMonthIndex = min(
-                                    max(visibleStartMonthIndex + monthDelta, 0),
-                                    maxStartMonthIndex)
+                                let clampedTranslationX = clampDragTranslation(
+                                    from: value.translation.width,
+                                    maxLeftDragOffset: maxLeftDragOffset,
+                                    maxRightDragOffset: maxRightDragOffset)
+                                let proposedOffsetX = makeProposedContentOffsetX(
+                                    from: clampedTranslationX,
+                                    maxContentOffsetX: maxContentOffsetX)
+                                let targetOffsetX = resolveTargetContentOffsetX(
+                                    from: proposedOffsetX,
+                                    clampedTranslationX: clampedTranslationX,
+                                    computedUnitWidth: computedUnitWidth,
+                                    computedViewportWidth: computedViewportWidth)
+                                let targetMonthIndex = targetMonthIndex(
+                                    for: targetOffsetX,
+                                    computedUnitWidth: computedUnitWidth)
                                 settlingOffsetX = clampedTranslationX
+                                contentOffsetX = targetOffsetX
                                 visibleStartMonthIndex = targetMonthIndex
                                 settlingOffsetX = 0
                             })
@@ -978,10 +1064,12 @@ private extension CombinedChartView {
                 .onAppear {
                     unitWidth = computedUnitWidth
                     viewportWidth = computedViewportWidth
+                    contentOffsetX = CGFloat(visibleStartMonthIndex) * computedUnitWidth
                 }
                 .onChange(of: geometry.size) { _ in
                     unitWidth = computedUnitWidth
                     viewportWidth = computedViewportWidth
+                    contentOffsetX = CGFloat(visibleStartMonthIndex) * computedUnitWidth
                 }
             }
         }
