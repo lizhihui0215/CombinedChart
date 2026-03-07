@@ -1361,7 +1361,27 @@ private extension CombinedChartView.ChartContainer {
     }
 
     func tapSelectionOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
-        EmptyView()
+        Color.clear
+            .contentShape(Rectangle())
+            .frame(width: plotRect.width, height: plotRect.height)
+            .position(x: plotRect.midX, y: plotRect.midY)
+            .gesture(
+                SpatialTapGesture()
+                    .onEnded { value in
+                        let tapLocation = value.location
+                        guard plotRect.contains(tapLocation) else { return }
+
+                        let nearestIndex = visibleData.enumerated()
+                            .compactMap { index, point -> (Int, CGFloat)? in
+                                guard let xPosition = proxy.position(forX: point.xKey) else { return nil }
+                                return (index, abs(xPosition - tapLocation.x))
+                            }
+                            .min { $0.1 < $1.1 }?
+                            .0
+
+                        guard let nearestIndex else { return }
+                        onSelectIndex(nearestIndex)
+                    })
     }
 
     func yAxisTickPositions(plotRect: CGRect, proxy: ChartProxy) -> [Double: CGFloat] {
