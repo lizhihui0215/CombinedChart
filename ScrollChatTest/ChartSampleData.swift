@@ -104,43 +104,7 @@ enum ChartSampleData {
 
     static func makeConfig() -> ChartConfig {
         ChartConfig(
-            bar: ChartConfig.ChartBarConfig(
-                series: [
-                    ChartConfig.ChartBarConfig.ChartSeriesStyle(
-                        id: "liabilities",
-                        label: "Liabilities",
-                        color: Color(red: 0.82, green: 0.35, blue: 0.42),
-                        isNegative: true,
-                        includeInLine: true),
-                    ChartConfig.ChartBarConfig.ChartSeriesStyle(
-                        id: "saving",
-                        label: "Saving",
-                        color: Color(red: 0.20, green: 0.52, blue: 0.68),
-                        isNegative: false,
-                        includeInLine: true),
-                    ChartConfig.ChartBarConfig.ChartSeriesStyle(
-                        id: "investment",
-                        label: "Investment",
-                        color: Color(red: 0.86, green: 0.43, blue: 0.16),
-                        isNegative: false,
-                        includeInLine: true),
-                    ChartConfig.ChartBarConfig.ChartSeriesStyle(
-                        id: "otherLiquid",
-                        label: "Other Liquid",
-                        color: Color(red: 0.30, green: 0.67, blue: 0.14),
-                        isNegative: false,
-                        includeInLine: true),
-                    ChartConfig.ChartBarConfig.ChartSeriesStyle(
-                        id: "otherNonLiquid",
-                        label: "Other Non-Liquid",
-                        color: Color(red: 0.08, green: 0.28, blue: 0.34),
-                        isNegative: false,
-                        includeInLine: true)
-                ],
-                totalTrendColor: Color.gray.opacity(0.45),
-                useTotalTrendSingleColor: true,
-                segmentGap: 2,
-                segmentGapColor: Color(uiColor: .systemBackground)),
+            bar: makeBarConfig(),
             line: ChartConfig.ChartLineConfig(
                 positiveLineColor: .red,
                 negativeLineColor: .yellow,
@@ -159,5 +123,53 @@ enum ChartSampleData {
                 },
                 zeroLineColor: .black,
                 zeroLineWidth: 1))
+    }
+
+    private static func makeBarConfig() -> ChartConfig.ChartBarConfig {
+        ChartConfig.ChartBarConfig(
+            series: makeBarSeries(),
+            totalTrendColor: Color.gray.opacity(0.45),
+            useTotalTrendSingleColor: true,
+            segmentGap: 2,
+            segmentGapColor: Color(uiColor: .systemBackground))
+    }
+
+    private static func makeBarSeries() -> [ChartConfig.ChartBarConfig.ChartSeriesStyle] {
+        [
+            makeSeriesStyle(
+                id: "liabilities",
+                label: "Liabilities",
+                color: Color(red: 0.82, green: 0.35, blue: 0.42),
+                isNegative: true),
+            makeSeriesStyle(
+                id: "saving",
+                label: "Saving",
+                color: Color(red: 0.20, green: 0.52, blue: 0.68)),
+            makeSeriesStyle(
+                id: "investment",
+                label: "Investment",
+                color: Color(red: 0.86, green: 0.43, blue: 0.16)),
+            makeSeriesStyle(
+                id: "otherLiquid",
+                label: "Other Liquid",
+                color: Color(red: 0.30, green: 0.67, blue: 0.14)),
+            makeSeriesStyle(
+                id: "otherNonLiquid",
+                label: "Other Non-Liquid",
+                color: Color(red: 0.08, green: 0.28, blue: 0.34))
+        ]
+    }
+
+    private static func makeSeriesStyle(
+        id: String,
+        label: String,
+        color: Color,
+        isNegative: Bool = false) -> ChartConfig.ChartBarConfig.ChartSeriesStyle {
+        ChartConfig.ChartBarConfig.ChartSeriesStyle(
+            id: id,
+            label: label,
+            color: color,
+            isNegative: isNegative,
+            includeInLine: true)
     }
 }

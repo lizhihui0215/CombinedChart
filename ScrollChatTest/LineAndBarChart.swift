@@ -179,6 +179,22 @@ extension CombinedChartView {
         var id: String {
             rawValue
         }
+
+        var showsTrendMarks: Bool {
+            self == .totalTrend
+        }
+
+        var showsTrendLineOverlay: Bool {
+            self == .totalTrend
+        }
+
+        var usesTrendSelectionIndicator: Bool {
+            self == .totalTrend
+        }
+
+        var showsSelectedTrendPoint: Bool {
+            self == .totalTrend
+        }
     }
 
     struct ChartPoint: Identifiable {
@@ -624,7 +640,7 @@ private extension CombinedChartView {
             let axisPointByKey = Dictionary(uniqueKeysWithValues: axisPointInfos.map { ($0.xKey, $0) })
 
             Chart {
-                if selectedTab == .totalTrend {
+                if selectedTab.showsTrendMarks {
                     totalTrendMarks
                 } else {
                     breakdownMarks
@@ -685,7 +701,7 @@ private extension CombinedChartView {
                             .onChange(of: positions) { onYAxisTickPositions($0) }
                     }
                     ZStack(alignment: .topLeading) {
-                        if selectedTab == .totalTrend {
+                        if selectedTab.showsTrendLineOverlay {
                             let segments = lineSegmentPaths(proxy: proxy)
                             ForEach(segments) { segment in
                                 segment.path
@@ -703,7 +719,7 @@ private extension CombinedChartView {
                             let selectedKey = visibleData[selectedIndex].xKey
                             if let xPos = proxy.position(forX: selectedKey) {
                                 Group {
-                                    if selectedTab == .totalTrend {
+                                    if selectedTab.usesTrendSelectionIndicator {
                                         let selectedValue = ChartMath.lineValue(
                                             for: visibleData[selectedIndex],
                                             config: config)
@@ -926,7 +942,7 @@ private extension CombinedChartView.ChartContainer {
             .foregroundStyle(config.axis.zeroLineColor)
             .lineStyle(StrokeStyle(lineWidth: config.axis.zeroLineWidth))
 
-        if selectedTab == .totalTrend, let selectedIndex, visibleData.indices.contains(selectedIndex) {
+        if selectedTab.showsSelectedTrendPoint, let selectedIndex, visibleData.indices.contains(selectedIndex) {
             let value = CombinedChartView.ChartMath.lineValue(for: visibleData[selectedIndex], config: config)
             PointMark(
                 x: .value("Selected Month", visibleData[selectedIndex].xKey),
