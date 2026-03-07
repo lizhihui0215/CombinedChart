@@ -5,10 +5,11 @@
 //  Created by Bernard on 2026/2/13.
 //
 
-import SwiftUI
 import Charts
+import SwiftUI
 import UIKit
 
+// swiftlint:disable file_length
 struct ChartConfig {
     let bar: ChartBarConfig
     let line: ChartLineConfig
@@ -17,30 +18,55 @@ struct ChartConfig {
     static let `default` = ChartConfig(
         bar: ChartBarConfig(
             series: [
-                ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "liabilities", label: "Liabilities", color: Color(red: 0.82, green: 0.35, blue: 0.42), isNegative: true, includeInLine: true),
-                ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "saving", label: "Saving", color: Color(red: 0.20, green: 0.52, blue: 0.68), isNegative: false, includeInLine: true),
-                ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "investment", label: "Investment", color: Color(red: 0.86, green: 0.43, blue: 0.16), isNegative: false, includeInLine: true),
-                ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "otherLiquid", label: "Other Liquid", color: Color(red: 0.30, green: 0.67, blue: 0.14), isNegative: false, includeInLine: true),
-                ChartConfig.ChartBarConfig.ChartSeriesStyle(id: "otherNonLiquid", label: "Other Non-Liquid", color: Color(red: 0.08, green: 0.28, blue: 0.34), isNegative: false, includeInLine: true)
+                ChartConfig.ChartBarConfig.ChartSeriesStyle(
+                    id: "liabilities",
+                    label: "Liabilities",
+                    color: Color(red: 0.82, green: 0.35, blue: 0.42),
+                    isNegative: true,
+                    includeInLine: true),
+                ChartConfig.ChartBarConfig.ChartSeriesStyle(
+                    id: "saving",
+                    label: "Saving",
+                    color: Color(red: 0.20, green: 0.52, blue: 0.68),
+                    isNegative: false,
+                    includeInLine: true),
+                ChartConfig.ChartBarConfig.ChartSeriesStyle(
+                    id: "investment",
+                    label: "Investment",
+                    color: Color(red: 0.86, green: 0.43, blue: 0.16),
+                    isNegative: false,
+                    includeInLine: true),
+                ChartConfig.ChartBarConfig.ChartSeriesStyle(
+                    id: "otherLiquid",
+                    label: "Other Liquid",
+                    color: Color(red: 0.30, green: 0.67, blue: 0.14),
+                    isNegative: false,
+                    includeInLine: true),
+                ChartConfig.ChartBarConfig.ChartSeriesStyle(
+                    id: "otherNonLiquid",
+                    label: "Other Non-Liquid",
+                    color: Color(red: 0.08, green: 0.28, blue: 0.34),
+                    isNegative: false,
+                    includeInLine: true)
             ],
             totalTrendColor: Color.gray.opacity(0.45),
             useTotalTrendSingleColor: false,
             segmentGap: 4,
-            segmentGapColor: Color(uiColor: .systemBackground)
-        ),
+            segmentGapColor: Color(uiColor: .systemBackground)),
         line: ChartLineConfig(
             positiveLineColor: Color(red: 0.16, green: 0.30, blue: 0.38),
             negativeLineColor: Color(red: 0.74, green: 0.24, blue: 0.28),
+            lineWidth: 2,
+            selectionPointSize: 60,
             selectionLineColor: Color.gray,
-            selectionFillColor: Color.gray.opacity(0.12)
-        ),
+            selectionFillColor: Color.gray.opacity(0.12)),
         axis: ChartAxisConfig(
             xAxisLabel: { $0 },
             yAxisLabel: { value in
-                value == 0 ? "0" : "\(Int(value / 1_000))K"
-            }
-        )
-    )
+                value == 0 ? "0" : "\(Int(value / 1000))K"
+            },
+            zeroLineColor: .black,
+            zeroLineWidth: 1))
 }
 
 extension ChartConfig {
@@ -55,6 +81,8 @@ extension ChartConfig {
     struct ChartLineConfig {
         let positiveLineColor: Color
         let negativeLineColor: Color
+        let lineWidth: CGFloat
+        let selectionPointSize: CGFloat
         let selectionLineColor: Color
         let selectionFillColor: Color
     }
@@ -62,6 +90,8 @@ extension ChartConfig {
     struct ChartAxisConfig {
         let xAxisLabel: (String) -> String
         let yAxisLabel: (Double) -> String
+        let zeroLineColor: Color
+        let zeroLineWidth: CGFloat
     }
 }
 
@@ -75,39 +105,10 @@ extension ChartConfig.ChartBarConfig {
     }
 }
 
-private struct ScrollOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
 struct CombinedChartView<Payload>: View {
-    // Two display modes for the same dataset.
-    enum ChartTab: String, CaseIterable, Identifiable {
-        case totalTrend = "Total Trend"
-        case breakdown = "Breakdown"
-
-        var id: String { rawValue }
-    }
-
-    struct ChartPoint: Identifiable {
-        let id = UUID()
-        let xKey: String
-        let xLabel: String
-        let values: [String: Double]
-        let payload: Payload
-    }
-
-    struct ChartGroup: Identifiable {
-        let id: String
-        let title: String
-        let sortKey: Int
-        let points: [ChartPoint]
-    }
-
     private let config: ChartConfig
     private let onSelect: ((ChartPoint) -> Void)?
+    private let groups: [ChartGroup]
 
     init(config: ChartConfig = .default, groups: [ChartGroup], onSelect: ((ChartPoint) -> Void)? = nil) {
         self.config = config
@@ -125,12 +126,41 @@ struct CombinedChartView<Payload>: View {
     @State private var unitWidth: CGFloat = 0
     @State private var viewportWidth: CGFloat = 0
 
-    @State private var plotAreaInfo: PlotAreaInfo? = nil
+    @State private var plotAreaInfo: PlotAreaInfo?
     @State private var yTickPositions: [Double: CGFloat] = [:]
-    private let groups: [ChartGroup]
+}
 
-    private struct YearPageRange: Identifiable {
-        var id: String { title }
+extension CombinedChartView {
+    /// Two display modes for the same dataset.
+    enum ChartTab: String, CaseIterable, Identifiable {
+        case totalTrend = "Total Trend"
+        case breakdown = "Breakdown"
+
+        var id: String {
+            rawValue
+        }
+    }
+
+    struct ChartPoint: Identifiable {
+        let id = UUID()
+        let xKey: String
+        let xLabel: String
+        let values: [String: Double]
+        let payload: Payload
+    }
+
+    struct ChartGroup: Identifiable {
+        let id: String
+        let title: String
+        let sortKey: Int
+        let points: [ChartPoint]
+    }
+
+    struct YearPageRange: Identifiable {
+        var id: String {
+            title
+        }
+
         let title: String
         let sortKey: Int
         let startMonthIndex: Int
@@ -143,13 +173,20 @@ struct CombinedChartView<Payload>: View {
         }
     }
 
+    struct PlotAreaInfo: Equatable {
+        let minY: CGFloat
+        let height: CGFloat
+    }
+}
+
+extension CombinedChartView {
     private var sortedGroups: [ChartGroup] {
         groups.sorted { $0.sortKey < $1.sortKey }
     }
 
-    // Data array for all years, ordered by year ascending.
+    /// Data array for all years, ordered by year ascending.
     private var data: [ChartPoint] {
-        sortedGroups.flatMap { $0.points }
+        sortedGroups.flatMap(\.points)
     }
 
     private var yearPageRanges: [YearPageRange] {
@@ -167,9 +204,7 @@ struct CombinedChartView<Payload>: View {
                     startMonthIndex: startMonthIndex,
                     endMonthIndex: endMonthIndex,
                     startPage: startPage,
-                    endPage: endPage
-                )
-            )
+                    endPage: endPage))
             cumulativeMonths += group.points.count
         }
         return ranges
@@ -192,11 +227,11 @@ struct CombinedChartView<Payload>: View {
         guard let visibleRange = visibleMonthRange else { return nil }
         return yearPageRanges.first { range in
             range.startMonthIndex <= visibleRange.lowerBound &&
-            range.endMonthIndex >= visibleRange.upperBound
+                range.endMonthIndex >= visibleRange.upperBound
         }
     }
 
-    // Number of 4-month pages for arrow navigation.
+    /// Number of 4-month pages for arrow navigation.
     private var maxScrollPage: Int {
         max(0, Int(ceil(Double(max(data.count - 4, 0)) / 4.0)))
     }
@@ -209,7 +244,7 @@ struct CombinedChartView<Payload>: View {
         data
     }
 
-    // Dynamic Y range to fit all visible bars/line.
+    /// Dynamic Y range to fit all visible bars/line.
     private var yDomain: ClosedRange<Double> {
         let minValue = data.map { stackedExtents(for: $0).min }.min() ?? -20
         let maxValue = data.map { stackedExtents(for: $0).max }.max() ?? 20
@@ -217,14 +252,14 @@ struct CombinedChartView<Payload>: View {
         return (minValue - padding)...(maxValue + padding)
     }
 
-    // Fixed 11 ticks based on the current Y range.
+    /// Fixed 11 ticks based on the current Y range.
     private var yAxisTickValues: [Double] {
         let halfRange = max(abs(yDomain.lowerBound), abs(yDomain.upperBound))
         let step = max(ceil(halfRange / 5.0), 1.0)
         return (-5...5).map { Double($0) * step }
     }
 
-    // Use tick extremes for the displayed Y domain so labels/grid align.
+    /// Use tick extremes for the displayed Y domain so labels/grid align.
     private var yAxisDisplayDomain: ClosedRange<Double> {
         guard let first = yAxisTickValues.first, let last = yAxisTickValues.last else {
             return yDomain
@@ -262,12 +297,9 @@ struct CombinedChartView<Payload>: View {
         }
         return (negativeTotal, positiveTotal)
     }
+}
 
-    private struct PlotAreaInfo: Equatable {
-        let minY: CGFloat
-        let height: CGFloat
-    }
-
+extension CombinedChartView {
     var body: some View {
         VStack(spacing: 12) {
             tabPicker
@@ -303,13 +335,13 @@ struct CombinedChartView<Payload>: View {
         }
     }
 
-    // Fixed Y-axis labels aligned to the chart's plot area.
-    // Each label is centered on its corresponding grid line.
+    /// Fixed Y-axis labels aligned to the chart's plot area.
+    /// Each label is centered on its corresponding grid line.
     private func yAxisLabels(plotArea: PlotAreaInfo?, tickPositions: [Double: CGFloat]) -> some View {
         let topPadding = plotArea?.minY ?? 12
         let plotHeight = plotArea?.height ?? 320
 
-        return GeometryReader { geometry in
+        return GeometryReader { _ in
             let maxLabelWidth: CGFloat = 44
             ZStack(alignment: .topLeading) {
                 ForEach(yAxisTickValues, id: \.self) { value in
@@ -335,7 +367,7 @@ struct CombinedChartView<Payload>: View {
             .toggleStyle(SwitchToggleStyle(tint: .gray))
     }
 
-    // Main chart area: fixed Y labels + horizontally scrollable chart.
+    /// Main chart area: fixed Y labels + horizontally scrollable chart.
     private var chartSection: some View {
         GeometryReader { geometry in
             let visibleCount: CGFloat = 4
@@ -363,8 +395,7 @@ struct CombinedChartView<Payload>: View {
                                 Color.clear
                                     .preference(
                                         key: ScrollOffsetKey.self,
-                                        value: proxy.frame(in: .named("ChartScroll")).minX
-                                    )
+                                        value: proxy.frame(in: .named("ChartScroll")).minX)
                             }
                             .frame(width: chartWidth, height: 1, alignment: .topLeading)
 
@@ -392,9 +423,8 @@ struct CombinedChartView<Payload>: View {
                                     if yTickPositions != positions {
                                         yTickPositions = positions
                                     }
-                                }
-                            )
-                            .frame(width: chartWidth, height: 420)
+                                })
+                                .frame(width: chartWidth, height: 420)
 
                             HStack(spacing: 0) {
                                 ForEach(0...maxScrollPage, id: \.self) { page in
@@ -477,287 +507,306 @@ struct CombinedChartView<Payload>: View {
     }
 }
 
-// Encapsulates the Chart to keep SwiftUI type-checking fast.
-private struct ChartContainer<Payload>: View {
-    let selectedTab: CombinedChartView<Payload>.ChartTab
-    let visibleData: [CombinedChartView<Payload>.ChartPoint]
-    let yAxisTickValues: [Double]
-    let yAxisDisplayDomain: ClosedRange<Double>
-    let plotAreaHeight: CGFloat
-    let config: ChartConfig
-    let showDebugOverlay: Bool
-    let onSelectIndex: (Int) -> Void
-    let onPlotAreaChange: (CGRect) -> Void
-    let onYAxisTickPositions: ([Double: CGFloat]) -> Void
-    @State private var selectedIndex: Int? = nil
+extension CombinedChartView {
+    private struct ScrollOffsetKey: PreferenceKey {
+        static var defaultValue: CGFloat {
+            0
+        }
 
-    private func signedValue(for point: CombinedChartView<Payload>.ChartPoint, series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
-        let raw = point.values[series.id] ?? 0
-        return series.isNegative ? -abs(raw) : raw
-    }
-
-    private func lineValue(for point: CombinedChartView<Payload>.ChartPoint) -> Double {
-        config.bar.series.reduce(0) { partial, series in
-            guard series.includeInLine else { return partial }
-            let value = signedValue(for: point, series: series)
-            return partial + value
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+            value = nextValue()
         }
     }
 
-    private func lineColor(for value: Double) -> Color {
-        value >= 0 ? config.line.positiveLineColor : config.line.negativeLineColor
-    }
+    /// Encapsulates the Chart to keep SwiftUI type-checking fast.
+    private struct ChartContainer: View {
+        let selectedTab: ChartTab
+        let visibleData: [ChartPoint]
+        let yAxisTickValues: [Double]
+        let yAxisDisplayDomain: ClosedRange<Double>
+        let plotAreaHeight: CGFloat
+        let config: ChartConfig
+        let showDebugOverlay: Bool
+        let onSelectIndex: (Int) -> Void
+        let onPlotAreaChange: (CGRect) -> Void
+        let onYAxisTickPositions: ([Double: CGFloat]) -> Void
+        @State private var selectedIndex: Int?
 
-    private struct Segment: Identifiable {
-        let id = UUID()
-        let start: Double
-        let value: Double
-        let color: Color
-    }
+        private func signedValue(for point: ChartPoint, series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
+            let raw = point.values[series.id] ?? 0
+            return series.isNegative ? -abs(raw) : raw
+        }
 
-    private func gapValue() -> Double {
-        guard plotAreaHeight > 0 else { return 0 }
-        let domainSpan = yAxisDisplayDomain.upperBound - yAxisDisplayDomain.lowerBound
-        let points = Double(config.bar.segmentGap)
-        return max(0, (points / Double(plotAreaHeight)) * domainSpan)
-    }
-
-    private func segments(for point: CombinedChartView<Payload>.ChartPoint, useTotalTrendColor: Bool) -> [Segment] {
-        var positiveStart: Double = 0
-        var negativeStart: Double = 0
-        var result: [Segment] = []
-
-        for series in config.bar.series {
-            let value = signedValue(for: point, series: series)
-            let color = useTotalTrendColor ? config.bar.totalTrendColor : series.color
-            if value >= 0 {
-                result.append(Segment(start: positiveStart, value: value, color: color))
-                positiveStart += value
-            } else {
-                result.append(Segment(start: negativeStart, value: value, color: color))
-                negativeStart += value
+        private func lineValue(for point: ChartPoint) -> Double {
+            config.bar.series.reduce(0) { partial, series in
+                guard series.includeInLine else { return partial }
+                let value = signedValue(for: point, series: series)
+                return partial + value
             }
         }
 
-        return result
-    }
-
-    var body: some View {
-        let monthValues = visibleData.map(\.xKey)
-        let monthLabels = Dictionary(uniqueKeysWithValues: visibleData.map { ($0.xKey, $0.xLabel) })
-
-        Chart {
-            if selectedTab == .totalTrend {
-                totalTrendMarks
-            } else {
-                breakdownMarks
-            }
-            sharedMarks
+        private func lineColor(for value: Double) -> Color {
+            value >= 0 ? config.line.positiveLineColor : config.line.negativeLineColor
         }
-        .chartXScale(domain: monthValues)
-        .chartXAxis {
-            AxisMarks(values: monthValues) { value in
-                AxisValueLabel(centered: true) {
-                    if let key = value.as(String.self) {
-                        Text(config.axis.xAxisLabel(monthLabels[key] ?? ""))
-                            .font(.caption2)
-                    }
+
+        private struct Segment: Identifiable {
+            let id = UUID()
+            let start: Double
+            let value: Double
+            let color: Color
+        }
+
+        private struct SegmentBarStyle {
+            let gap: Double
+            let gapColor: Color
+            let drawGapMark: Bool
+        }
+
+        private func gapValue() -> Double {
+            guard plotAreaHeight > 0 else { return 0 }
+            let domainSpan = yAxisDisplayDomain.upperBound - yAxisDisplayDomain.lowerBound
+            let points = Double(config.bar.segmentGap)
+            return max(0, (points / Double(plotAreaHeight)) * domainSpan)
+        }
+
+        private func segments(for point: ChartPoint, useTotalTrendColor: Bool) -> [Segment] {
+            var positiveStart: Double = 0
+            var negativeStart: Double = 0
+            var result: [Segment] = []
+
+            for series in config.bar.series {
+                let value = signedValue(for: point, series: series)
+                let color = useTotalTrendColor ? config.bar.totalTrendColor : series.color
+                if value >= 0 {
+                    result.append(Segment(start: positiveStart, value: value, color: color))
+                    positiveStart += value
+                } else {
+                    result.append(Segment(start: negativeStart, value: value, color: color))
+                    negativeStart += value
                 }
             }
+
+            return result
         }
-        .chartYAxis {
-            AxisMarks(position: .leading, values: yAxisTickValues) { _ in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                    .foregroundStyle(.gray)
+
+        var body: some View {
+            let monthValues = visibleData.map(\.xKey)
+            let monthLabels = Dictionary(uniqueKeysWithValues: visibleData.map { ($0.xKey, $0.xLabel) })
+
+            Chart {
+                if selectedTab == .totalTrend {
+                    totalTrendMarks
+                } else {
+                    breakdownMarks
+                }
+                sharedMarks
             }
-        }
-        .chartYScale(domain: yAxisDisplayDomain)
-        // Removed top padding to align plot area with fixed Y labels and overlays.
-        .chartPlotStyle { plot in
-            plot
-        }
-        // Tap in plot area to select the nearest month index.
-        .chartOverlay { proxy in
-            GeometryReader { geometry in
-                let plotRect = geometry[proxy.plotAreaFrame]
-                if plotRect.width > 0, plotRect.height > 0 {
-                    let currentRect = plotRect
-                    Color.clear
-                        .onAppear { onPlotAreaChange(currentRect) }
-                        .onChange(of: currentRect) { onPlotAreaChange($0) }
-                }
-                if plotRect.width > 0, plotRect.height > 0 {
-                    let positions: [Double: CGFloat] = Dictionary(
-                        uniqueKeysWithValues: yAxisTickValues.compactMap { value in
-                            if let yPos = proxy.position(forY: value) {
-                                return (value, yPos - plotRect.minY)
-                            }
-                            return nil
-                        }
-                    )
-                    Color.clear
-                        .onAppear { onYAxisTickPositions(positions) }
-                        .onChange(of: positions) { onYAxisTickPositions($0) }
-                }
-                ZStack(alignment: .topLeading) {
-                    if let selectedIndex, visibleData.indices.contains(selectedIndex) {
-                        let selectedKey = visibleData[selectedIndex].xKey
-                        if let xPos = proxy.position(forX: selectedKey) {
-                            Group {
-                                if selectedTab == .totalTrend {
-                                    Path { path in
-                                        path.move(to: CGPoint(x: xPos, y: plotRect.minY))
-                                        path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
-                                    }
-                                    .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                                    .foregroundStyle(config.line.selectionLineColor)
-                                } else {
-                                    let step: CGFloat = {
-                                        if selectedIndex + 1 < visibleData.count,
-                                           let nextX = proxy.position(forX: visibleData[selectedIndex + 1].xKey) {
-                                            return nextX - xPos
-                                        }
-                                        if selectedIndex - 1 >= 0,
-                                           let prevX = proxy.position(forX: visibleData[selectedIndex - 1].xKey) {
-                                            return xPos - prevX
-                                        }
-                                        return 40
-                                    }()
-                                    let width = max(step * 0.9, 24)
-                                    Rectangle()
-                                        .fill(config.line.selectionFillColor)
-                                        .frame(width: width, height: plotRect.height)
-                                        .position(x: xPos, y: plotRect.midY)
-                                }
-                            }
-                            .mask(
-                                Rectangle()
-                                    .frame(width: plotRect.width, height: plotRect.height)
-                                    .position(x: plotRect.midX, y: plotRect.midY)
-                            )
+            .chartXScale(domain: monthValues)
+            .chartXAxis {
+                AxisMarks(values: monthValues) { value in
+                    AxisValueLabel(centered: true) {
+                        if let key = value.as(String.self) {
+                            Text(config.axis.xAxisLabel(monthLabels[key] ?? ""))
+                                .font(.caption2)
                         }
                     }
-
-                    if !visibleData.isEmpty {
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading, values: yAxisTickValues) { _ in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                        .foregroundStyle(.gray)
+                }
+            }
+            .chartYScale(domain: yAxisDisplayDomain)
+            // Removed top padding to align plot area with fixed Y labels and overlays.
+            .chartPlotStyle { plot in
+                plot
+            }
+            // Tap in plot area to select the nearest month index.
+            .chartOverlay { proxy in
+                GeometryReader { geometry in
+                    let plotRect = geometry[proxy.plotAreaFrame]
+                    if plotRect.width > 0, plotRect.height > 0 {
+                        let currentRect = plotRect
                         Color.clear
-                            .contentShape(Rectangle())
-                            .simultaneousGesture(
-                                SpatialTapGesture()
-                                    .onEnded { value in
-                                        let localX = value.location.x - plotRect.minX
-                                        let clampedX = min(max(localX, 0), plotRect.width)
-                                        if let key = proxy.value(atX: clampedX, as: String.self) {
-                                            if let index = visibleData.firstIndex(where: { $0.xKey == key }) {
-                                                selectedIndex = index
-                                                onSelectIndex(index)
-                                            }
+                            .onAppear { onPlotAreaChange(currentRect) }
+                            .onChange(of: currentRect) { onPlotAreaChange($0) }
+                    }
+                    if plotRect.width > 0, plotRect.height > 0 {
+                        let positions: [Double: CGFloat] = Dictionary(
+                            uniqueKeysWithValues: yAxisTickValues.compactMap { value in
+                                if let yPos = proxy.position(forY: value) {
+                                    return (value, yPos - plotRect.minY)
+                                }
+                                return nil
+                            })
+                        Color.clear
+                            .onAppear { onYAxisTickPositions(positions) }
+                            .onChange(of: positions) { onYAxisTickPositions($0) }
+                    }
+                    ZStack(alignment: .topLeading) {
+                        if let selectedIndex, visibleData.indices.contains(selectedIndex) {
+                            let selectedKey = visibleData[selectedIndex].xKey
+                            if let xPos = proxy.position(forX: selectedKey) {
+                                Group {
+                                    if selectedTab == .totalTrend {
+                                        Path { path in
+                                            path.move(to: CGPoint(x: xPos, y: plotRect.minY))
+                                            path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
                                         }
+                                        .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                                        .foregroundStyle(config.line.selectionLineColor)
+                                    } else {
+                                        let step: CGFloat = {
+                                            if selectedIndex + 1 < visibleData.count,
+                                               let nextX = proxy.position(forX: visibleData[selectedIndex + 1].xKey) {
+                                                return nextX - xPos
+                                            }
+                                            if selectedIndex - 1 >= 0,
+                                               let prevX = proxy.position(forX: visibleData[selectedIndex - 1].xKey) {
+                                                return xPos - prevX
+                                            }
+                                            return 40
+                                        }()
+                                        let width = max(step * 0.9, 24)
+                                        Rectangle()
+                                            .fill(config.line.selectionFillColor)
+                                            .frame(width: width, height: plotRect.height)
+                                            .position(x: xPos, y: plotRect.midY)
                                     }
-                            )
+                                }
+                                .mask(
+                                    Rectangle()
+                                        .frame(width: plotRect.width, height: plotRect.height)
+                                        .position(x: plotRect.midX, y: plotRect.midY))
+                            }
+                        }
+
+                        if !visibleData.isEmpty {
+                            Color.clear
+                                .contentShape(Rectangle())
+                                .simultaneousGesture(
+                                    SpatialTapGesture()
+                                        .onEnded { value in
+                                            let localX = value.location.x - plotRect.minX
+                                            let clampedX = min(max(localX, 0), plotRect.width)
+                                            if let key = proxy.value(atX: clampedX, as: String.self) {
+                                                if let index = visibleData.firstIndex(where: { $0.xKey == key }) {
+                                                    selectedIndex = index
+                                                    onSelectIndex(index)
+                                                }
+                                            }
+                                        })
+                        }
                     }
                 }
             }
         }
-    }
 
-    // Total Trend: stacked gray bars plus a line on top.
-    @ChartContentBuilder
-    private var totalTrendMarks: some ChartContent {
-        ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
-            let gap = gapValue()
-            ForEach(segments(for: item, useTotalTrendColor: config.bar.useTotalTrendSingleColor)) { segment in
-                segmentBar(index: index, start: segment.start, value: segment.value, gap: gap, gapColor: config.bar.segmentGapColor, color: segment.color, drawGapMark: true)
-            }
-
-
-        }
-    }
-
-    // Breakdown: colored stacked bars by category.
-    @ChartContentBuilder
-    private var breakdownMarks: some ChartContent {
-        ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
-            let gap = gapValue()
-            ForEach(segments(for: item, useTotalTrendColor: false)) { segment in
-                segmentBar(index: index, start: segment.start, value: segment.value, gap: gap, gapColor: config.bar.segmentGapColor, color: segment.color, drawGapMark: true)
-            }
-        }
-    }
-
-    // Marks shared by both modes (zero line + selection dot).
-    @ChartContentBuilder
-    private var sharedMarks: some ChartContent {
-        RuleMark(y: .value("Zero", 0))
-            .foregroundStyle(.black)
-
-        if selectedTab == .totalTrend {
-            ForEach(visibleData, id: \.id) { item in
-                let value = lineValue(for: item)
-                LineMark(
-                    x: .value("Month", item.xKey),
-                    y: .value("Total", value)
-                )
-                .foregroundStyle(lineColor(for: value))
-                .lineStyle(StrokeStyle(lineWidth: 2))
+        /// Total Trend: stacked gray bars plus a line on top.
+        @ChartContentBuilder
+        private var totalTrendMarks: some ChartContent {
+            ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
+                let gap = gapValue()
+                let style = SegmentBarStyle(
+                    gap: gap,
+                    gapColor: config.bar.segmentGapColor,
+                    drawGapMark: true)
+                ForEach(segments(for: item, useTotalTrendColor: config.bar.useTotalTrendSingleColor)) { segment in
+                    segmentBar(
+                        index: index,
+                        segment: segment,
+                        style: style)
+                }
             }
         }
 
-        if selectedTab == .totalTrend, let selectedIndex, visibleData.indices.contains(selectedIndex) {
-            let value = lineValue(for: visibleData[selectedIndex])
-            PointMark(
-                x: .value("Selected Month", visibleData[selectedIndex].xKey),
-                y: .value("Selected Value", value)
-            )
-            .foregroundStyle(lineColor(for: value))
-            .symbolSize(60)
-        }
-
-        if showDebugOverlay {
-            ForEach(visibleData, id: \.id) { item in
-                RuleMark(x: .value("Debug X", item.xKey))
-                    .foregroundStyle(Color.red.opacity(0.6))
-                    .lineStyle(StrokeStyle(lineWidth: 1.0, dash: [2, 3]))
+        // Breakdown: colored stacked bars by category.
+        @ChartContentBuilder
+        private var breakdownMarks: some ChartContent {
+            ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
+                let gap = gapValue()
+                let style = SegmentBarStyle(
+                    gap: gap,
+                    gapColor: config.bar.segmentGapColor,
+                    drawGapMark: true)
+                ForEach(segments(for: item, useTotalTrendColor: false)) { segment in
+                    segmentBar(
+                        index: index,
+                        segment: segment,
+                        style: style)
+                }
             }
         }
-    }
 
-    // Draw one stacked segment and apply a small gap so segments are visually separated.
-    @ChartContentBuilder
-    private func segmentBar(
-        index: Int,
-        start: Double,
-        value: Double,
-        gap: Double,
-        gapColor: Color,
-        color: Color,
-        drawGapMark: Bool
-    ) -> some ChartContent {
-        let bounds = adjustedSegmentBounds(start: start, value: value, gap: gap)
-        BarMark(
-            x: .value("Month", visibleData[index].xKey),
-            yStart: .value("Value", bounds.low),
-            yEnd: .value("Value", bounds.high),
-            width: 40
-        )
-        .cornerRadius(0)
-        .foregroundStyle(color)
-        if drawGapMark, gap > 0.0001, abs(start) > 0.0001 {
+        /// Marks shared by both modes (zero line + selection dot).
+        @ChartContentBuilder
+        private var sharedMarks: some ChartContent {
+            RuleMark(y: .value("Zero", 0))
+                .foregroundStyle(config.axis.zeroLineColor)
+                .lineStyle(StrokeStyle(lineWidth: config.axis.zeroLineWidth))
+
+            if selectedTab == .totalTrend {
+                ForEach(visibleData, id: \.id) { item in
+                    let value = lineValue(for: item)
+                    LineMark(
+                        x: .value("Month", item.xKey),
+                        y: .value("Total", value))
+                        .foregroundStyle(lineColor(for: value))
+                        .lineStyle(StrokeStyle(lineWidth: config.line.lineWidth))
+                }
+            }
+
+            if selectedTab == .totalTrend, let selectedIndex, visibleData.indices.contains(selectedIndex) {
+                let value = lineValue(for: visibleData[selectedIndex])
+                PointMark(
+                    x: .value("Selected Month", visibleData[selectedIndex].xKey),
+                    y: .value("Selected Value", value))
+                    .foregroundStyle(lineColor(for: value))
+                    .symbolSize(config.line.selectionPointSize)
+            }
+
+            if showDebugOverlay {
+                ForEach(visibleData, id: \.id) { item in
+                    RuleMark(x: .value("Debug X", item.xKey))
+                        .foregroundStyle(Color.red.opacity(0.6))
+                        .lineStyle(StrokeStyle(lineWidth: 1.0, dash: [2, 3]))
+                }
+            }
+        }
+
+        /// Draw one stacked segment and apply a small gap so segments are visually separated.
+        @ChartContentBuilder
+        private func segmentBar(
+            index: Int,
+            segment: Segment,
+            style: SegmentBarStyle) -> some ChartContent {
+            let bounds = adjustedSegmentBounds(start: segment.start, value: segment.value)
             BarMark(
                 x: .value("Month", visibleData[index].xKey),
-                yStart: .value("Gap", start - gap / 2.0),
-                yEnd: .value("Gap", start + gap / 2.0),
-                width: 40
-            )
-            .foregroundStyle(gapColor)
+                yStart: .value("Value", bounds.low),
+                yEnd: .value("Value", bounds.high),
+                width: 40)
+                .cornerRadius(0)
+                .foregroundStyle(segment.color)
+            if style.drawGapMark, style.gap > 0.0001, abs(segment.start) > 0.0001 {
+                BarMark(
+                    x: .value("Month", visibleData[index].xKey),
+                    yStart: .value("Gap", segment.start - style.gap / 2.0),
+                    yEnd: .value("Gap", segment.start + style.gap / 2.0),
+                    width: 40)
+                    .foregroundStyle(style.gapColor)
+            }
         }
-    }
 
-    // Convert a signed segment into a visual bar range with a small gap.
-    private func adjustedSegmentBounds(start: Double, value: Double, gap: Double) -> (low: Double, high: Double) {
-        let end = start + value
-        let rawLow = min(start, end)
-        let rawHigh = max(start, end)
-        return (rawLow, rawHigh)
+        /// Convert a signed segment into a visual bar range with a small gap.
+        private func adjustedSegmentBounds(start: Double, value: Double) -> (low: Double, high: Double) {
+            let end = start + value
+            let rawLow = min(start, end)
+            let rawHigh = max(start, end)
+            return (rawLow, rawHigh)
+        }
     }
 }
 
@@ -768,10 +817,10 @@ private struct LineAndBarChartPreviewHost: View {
     var body: some View {
         CombinedChartView<String>(
             config: config,
-            groups: groups
-        )
+            groups: groups)
     }
 }
+
 #Preview {
     LineAndBarChartPreviewHost()
 }

@@ -15,8 +15,7 @@ struct ContentView: View {
     var body: some View {
         CombinedChartView<String>(
             config: config,
-            groups: groups
-        )
+            groups: groups)
     }
 }
 
