@@ -991,6 +991,12 @@ private extension CombinedChartView {
         let xPosition: CGFloat
     }
 
+    struct AxisRenderContext {
+        let monthValues: [String]
+        let pointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo]
+        let pointInfoByKey: [String: ChartConfig.ChartAxisConfig.AxisPointInfo]
+    }
+
     private struct ScrollOffsetKey: PreferenceKey {
         static var defaultValue: CGFloat {
             0
@@ -1017,26 +1023,22 @@ private extension CombinedChartView {
         let onYAxisTickPositions: ([Double: CGFloat]) -> Void
 
         var body: some View {
-            let monthValues = visibleData.map(\.xKey)
-            let axisPointInfos = visibleData.enumerated().map { index, point in
-                point.axisPointInfo(index: index)
-            }
-            let axisPointByKey = Dictionary(uniqueKeysWithValues: axisPointInfos.map { ($0.xKey, $0) })
+            let axisContext = axisRenderContext
 
             Chart {
                 barMarks(useTrendBarColor: usesTrendBarColor)
                 sharedMarks
             }
-            .chartXScale(domain: monthValues)
+            .chartXScale(domain: axisContext.monthValues)
             .chartXAxis {
-                AxisMarks(values: monthValues) { value in
+                AxisMarks(values: axisContext.monthValues) { value in
                     AxisValueLabel(centered: true) {
                         if let key = value.as(String.self) {
                             Text(config.axis.xAxisLabel(
                                 xAxisLabelContext(
                                     for: key,
-                                    axisPointByKey: axisPointByKey,
-                                    axisPointInfos: axisPointInfos)))
+                                    axisPointByKey: axisContext.pointInfoByKey,
+                                    axisPointInfos: axisContext.pointInfos)))
                                 .font(.caption2)
                         }
                     }
@@ -1058,6 +1060,17 @@ private extension CombinedChartView {
                 chartOverlay(proxy: proxy)
             }
         }
+
+        private var axisRenderContext: AxisRenderContext {
+            let pointInfos = visibleData.enumerated().map { index, point in
+                point.axisPointInfo(index: index)
+            }
+
+            return .init(
+                monthValues: visibleData.map(\.xKey),
+                pointInfos: pointInfos,
+                pointInfoByKey: Dictionary(uniqueKeysWithValues: pointInfos.map { ($0.xKey, $0) }))
+        }
     }
 }
 
@@ -1078,19 +1091,22 @@ private extension CombinedChartView.ChartContainer {
 
     @ViewBuilder
     func syncPlotOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
-        if plotRect.width > 0, plotRect.height > 0 {
+        if hasValidPlotFrame(plotRect) {
             let currentRect = plotRect
+            let positions = yAxisTickPositions(plotRect: plotRect, proxy: proxy)
+
             Color.clear
                 .onAppear { onPlotAreaChange(currentRect) }
                 .onChange(of: currentRect) { onPlotAreaChange($0) }
-        }
 
-        if plotRect.width > 0, plotRect.height > 0 {
-            let positions = yAxisTickPositions(plotRect: plotRect, proxy: proxy)
             Color.clear
                 .onAppear { onYAxisTickPositions(positions) }
                 .onChange(of: positions) { onYAxisTickPositions($0) }
         }
+    }
+
+    func hasValidPlotFrame(_ plotRect: CGRect) -> Bool {
+        plotRect.width > 0 && plotRect.height > 0
     }
 
     @ViewBuilder
