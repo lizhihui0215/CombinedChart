@@ -40,15 +40,13 @@ struct ContentView: View {
                 tabs: tabs,
                 selectedTab: $selectedTab,
                 showDebugOverlay: $showDebugOverlay,
-                customization: .init(
-                    callbacks: .init(
-                        onPointTap: { context in
-                            print(
-                                "Tapped point:",
-                                "groupID=\(context.point.id.groupID)",
-                                "xKey=\(context.point.xKey)",
-                                "index=\(context.index)")
-                        })))
+                onPointTap: { context in
+                    print(
+                        "Tapped point:",
+                        "groupID=\(context.point.id.groupID)",
+                        "xKey=\(context.point.xKey)",
+                        "index=\(context.index)")
+                })
         }
         .padding()
     }
