@@ -6,10 +6,17 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
+    private let groups = ChartSampleData.makeGroups(variance: 0.6)
+    private let config = ChartSampleData.makeConfig()
+
     var body: some View {
-        LineAndBarChart()
+        LineAndBarChart<String>(
+            config: config,
+            groups: groups
+        )
     }
 }
 

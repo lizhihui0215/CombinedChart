@@ -7,16 +7,100 @@
 
 import SwiftUI
 import Charts
+import UIKit
 
-struct LineAndBarChart: View {
+struct ChartSeriesStyle: Identifiable {
+    let id: String
+    let label: String
+    let color: Color
+    let isNegative: Bool
+    let includeInLine: Bool
+}
+
+struct ChartBarConfig {
+    let series: [ChartSeriesStyle]
+    let totalTrendColor: Color
+    let useTotalTrendSingleColor: Bool
+    let segmentGap: CGFloat
+    let segmentGapColor: Color
+}
+
+struct ChartLineConfig {
+    let positiveLineColor: Color
+    let negativeLineColor: Color
+    let selectionLineColor: Color
+    let selectionFillColor: Color
+}
+
+struct ChartAxisConfig {
+    let xAxisLabel: (String) -> String
+    let yAxisLabel: (Double) -> String
+}
+
+struct ChartConfig {
+    let bar: ChartBarConfig
+    let line: ChartLineConfig
+    let axis: ChartAxisConfig
+
+    static let `default` = ChartConfig(
+        bar: ChartBarConfig(
+            series: [
+                ChartSeriesStyle(id: "liabilities", label: "Liabilities", color: Color(red: 0.82, green: 0.35, blue: 0.42), isNegative: true, includeInLine: true),
+                ChartSeriesStyle(id: "saving", label: "Saving", color: Color(red: 0.20, green: 0.52, blue: 0.68), isNegative: false, includeInLine: true),
+                ChartSeriesStyle(id: "investment", label: "Investment", color: Color(red: 0.86, green: 0.43, blue: 0.16), isNegative: false, includeInLine: true),
+                ChartSeriesStyle(id: "otherLiquid", label: "Other Liquid", color: Color(red: 0.30, green: 0.67, blue: 0.14), isNegative: false, includeInLine: true),
+                ChartSeriesStyle(id: "otherNonLiquid", label: "Other Non-Liquid", color: Color(red: 0.08, green: 0.28, blue: 0.34), isNegative: false, includeInLine: true)
+            ],
+            totalTrendColor: Color.gray.opacity(0.45),
+            useTotalTrendSingleColor: false,
+            segmentGap: 4,
+            segmentGapColor: Color(uiColor: .systemBackground)
+        ),
+        line: ChartLineConfig(
+            positiveLineColor: Color(red: 0.16, green: 0.30, blue: 0.38),
+            negativeLineColor: Color(red: 0.74, green: 0.24, blue: 0.28),
+            selectionLineColor: Color.gray,
+            selectionFillColor: Color.gray.opacity(0.12)
+        ),
+        axis: ChartAxisConfig(
+            xAxisLabel: { $0 },
+            yAxisLabel: { value in
+                value == 0 ? "0" : "\(Int(value / 1_000))K"
+            }
+        )
+    )
+}
+
+private struct ScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+struct LineAndBarChart<Payload>: View {
     // Chart + overlay for selection. Uses index-based X axis.
+    let config: ChartConfig
+    let groups: [CombinedChartView<Payload>.ChartGroup]
+    let onSelect: ((CombinedChartView<Payload>.ChartPoint) -> Void)?
+
+    init(
+        config: ChartConfig = .default,
+        groups: [CombinedChartView<Payload>.ChartGroup],
+        onSelect: ((CombinedChartView<Payload>.ChartPoint) -> Void)? = nil
+    ) {
+        self.config = config
+        self.groups = groups
+        self.onSelect = onSelect
+    }
+
     var body: some View {
-        CombinedChartView()
+        CombinedChartView(config: config, groups: groups, onSelect: onSelect)
             .frame(maxWidth: .infinity)
     }
 }
 
-struct CombinedChartView: View {
+struct CombinedChartView<Payload>: View {
     // Two display modes for the same dataset.
     enum ChartTab: String, CaseIterable, Identifiable {
         case totalTrend = "Total Trend"
@@ -25,148 +109,109 @@ struct CombinedChartView: View {
         var id: String { rawValue }
     }
 
-    // Raw monthly data (values are in HKD).
-    struct MonthData: Identifiable {
+    struct ChartPoint: Identifiable {
         let id = UUID()
-        let month: String
-        let saving: Double
-        let invstment: Double
-        let otherLiquidAsset: Double
-        let otherNonLiquidAsset: Double
-        let selfUsedProperty: Double
-        let liabilities: Double
-
-        // Always render liabilities as negative.
-        var liabilitiesValue: Double {
-            -abs(liabilities)
-        }
-
-        // Convert to "K" for axis readability.
-        var savingK: Double { saving / 1_000 }
-        var invstmentK: Double { invstment / 1_000 }
-        var otherLiquidAssetK: Double { otherLiquidAsset / 1_000 }
-        var otherNonLiquidAssetK: Double { otherNonLiquidAsset / 1_000 }
-        var selfUsedPropertyK: Double { selfUsedProperty / 1_000 }
-        var liabilitiesK: Double { liabilitiesValue / 1_000 }
-
-        // Net total (includes liabilities).
-        var totalK: Double {
-            liabilitiesK + savingK + invstmentK + otherLiquidAssetK + otherNonLiquidAssetK + selfUsedPropertyK
-        }
-
-        // Positive-only total for bar height in Total Trend.
-        var positiveTotalK: Double {
-            savingK + invstmentK + otherLiquidAssetK + otherNonLiquidAssetK + selfUsedPropertyK
-        }
+        let xKey: String
+        let xLabel: String
+        let values: [String: Double]
+        let payload: Payload
     }
 
-    // Group a full year of monthly data.
-    struct YearData: Identifiable {
-        var id: Int { year }
-        let year: Int
-        let data: [MonthData]
+    struct ChartGroup: Identifiable {
+        let id: String
+        let title: String
+        let sortKey: Int
+        let points: [ChartPoint]
     }
 
-    // Total Trend uses the same stacked bars but all gray.
-    private let totalTrendPalette: [Color] = [
-        Color.gray.opacity(0.45),
-        Color.gray.opacity(0.45),
-        Color.gray.opacity(0.45),
-        Color.gray.opacity(0.45),
-        Color.gray.opacity(0.45)
-    ]
+    private let config: ChartConfig
+    private let onSelect: ((ChartPoint) -> Void)?
 
-    // Breakdown uses colored stacked segments.
-    private let breakdownPalette: [Color] = [
-        Color(red: 0.82, green: 0.35, blue: 0.42),
-        Color(red: 0.20, green: 0.52, blue: 0.68),
-        Color(red: 0.86, green: 0.43, blue: 0.16),
-        Color(red: 0.30, green: 0.67, blue: 0.14),
-        Color(red: 0.08, green: 0.28, blue: 0.34)
-    ]
+    init(config: ChartConfig = .default, groups: [ChartGroup], onSelect: ((ChartPoint) -> Void)? = nil) {
+        self.config = config
+        self.groups = groups
+        self.onSelect = onSelect
+    }
 
     // UI state.
     @State private var selectedTab: ChartTab = .totalTrend
     @State private var selectedIndex: Int? = 0
     @State private var scrollPage: Int = 0
     @State private var showDebugOverlay: Bool = false
+    @State private var showAllYearsInPager: Bool = true
+    @State private var scrollOffsetX: CGFloat = 0
+    @State private var unitWidth: CGFloat = 0
+    @State private var viewportWidth: CGFloat = 0
 
-    @State private var selectedYearIndex: Int = 0
     @State private var plotAreaInfo: PlotAreaInfo? = nil
     @State private var yTickPositions: [Double: CGFloat] = [:]
-    private let years: [YearData] = Self.makeYearsData()
+    private let groups: [ChartGroup]
 
-    // Demo data (replace with API payload later).
-    private static func makeYearsData() -> [YearData] {
-        [
-            YearData(year: 2020, data: makeYearData(
-                savingBase: 5000,
-                invstmentBase: 10000,
-                otherLiquidBase: 2000,
-                otherNonLiquidBase: 3000,
-                selfUsedPropertyBase: 50000,
-                liabilitiesBase: 15000
-            )),
-            YearData(year: 2021, data: makeYearData(
-                savingBase: 5500,
-                invstmentBase: 11000,
-                otherLiquidBase: 2200,
-                otherNonLiquidBase: 3200,
-                selfUsedPropertyBase: 52000,
-                liabilitiesBase: 15500
-            ))
-        ]
+    private struct YearPageRange: Identifiable {
+        var id: String { title }
+        let title: String
+        let sortKey: Int
+        let startMonthIndex: Int
+        let endMonthIndex: Int
+        let startPage: Int
+        let endPage: Int
+
+        func contains(page: Int) -> Bool {
+            page >= startPage && page <= endPage
+        }
     }
 
-    // Generates 12 months with seasonal variance so bars don't look identical.
-    private static func makeYearData(
-        savingBase: Double,
-        invstmentBase: Double,
-        otherLiquidBase: Double,
-        otherNonLiquidBase: Double,
-        selfUsedPropertyBase: Double,
-        liabilitiesBase: Double
-    ) -> [MonthData] {
-        let months = [
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-        ]
-        var points: [MonthData] = []
-        points.reserveCapacity(months.count)
+    private var sortedGroups: [ChartGroup] {
+        groups.sorted { $0.sortKey < $1.sortKey }
+    }
 
-        for (index, month) in months.enumerated() {
-            let i = Double(index)
-            let waveA = sin(i * 0.52)
-            let waveB = cos(i * 0.41 + 0.7)
-            let waveC = sin(i * 0.33 + 1.6)
-            let waveD = cos(i * 0.27 + 2.2)
-            let waveE = sin(i * 0.19 + 0.9)
-            let waveF = cos(i * 0.23 + 1.3)
+    // Data array for all years, ordered by year ascending.
+    private var data: [ChartPoint] {
+        sortedGroups.flatMap { $0.points }
+    }
 
-            points.append(
-                MonthData(
-                    month: month,
-                    saving: savingBase * (1.0 + waveA * 0.18),
-                    invstment: invstmentBase * (1.0 + waveB * 0.15),
-                    otherLiquidAsset: otherLiquidBase * (1.0 + waveC * 0.22),
-                    otherNonLiquidAsset: otherNonLiquidBase * (1.0 + waveD * 0.20),
-                    selfUsedProperty: selfUsedPropertyBase * (1.0 + waveE * 0.08),
-                    liabilities: liabilitiesBase * (1.0 + waveF * 0.16)
+    private var yearPageRanges: [YearPageRange] {
+        var ranges: [YearPageRange] = []
+        var cumulativeMonths = 0
+        for group in sortedGroups {
+            let startMonthIndex = cumulativeMonths
+            let endMonthIndex = cumulativeMonths + max(group.points.count - 1, 0)
+            let startPage = startMonthIndex / 4
+            let endPage = endMonthIndex / 4
+            ranges.append(
+                YearPageRange(
+                    title: group.title,
+                    sortKey: group.sortKey,
+                    startMonthIndex: startMonthIndex,
+                    endMonthIndex: endMonthIndex,
+                    startPage: startPage,
+                    endPage: endPage
                 )
             )
+            cumulativeMonths += group.points.count
         }
-
-        return points
+        return ranges
     }
 
-    // Current year selection.
-    private var currentYearData: YearData {
-        years[selectedYearIndex]
+    private var currentYearRange: YearPageRange? {
+        yearPageRanges.first { $0.contains(page: scrollPage) } ?? yearPageRanges.first
     }
 
-    // Data array for the selected year.
-    private var data: [MonthData] {
-        currentYearData.data
+    private var visibleMonthRange: ClosedRange<Int>? {
+        guard unitWidth > 0, viewportWidth > 0, !data.isEmpty else { return nil }
+        let offset = max(0, -scrollOffsetX)
+        let start = max(0, Int(floor(offset / unitWidth)))
+        let visibleCount = max(1, Int(round(viewportWidth / unitWidth)))
+        let end = min(data.count - 1, start + visibleCount - 1)
+        return start...end
+    }
+
+    private var fullyVisibleYearRange: YearPageRange? {
+        guard let visibleRange = visibleMonthRange else { return nil }
+        return yearPageRanges.first { range in
+            range.startMonthIndex <= visibleRange.lowerBound &&
+            range.endMonthIndex >= visibleRange.upperBound
+        }
     }
 
     // Number of 4-month pages for arrow navigation.
@@ -174,16 +219,18 @@ struct CombinedChartView: View {
         max(0, Int(ceil(Double(max(data.count - 4, 0)) / 4.0)))
     }
 
-    private var visibleData: [MonthData] {
+    private var hasData: Bool {
+        !data.isEmpty
+    }
+
+    private var visibleData: [ChartPoint] {
         data
     }
 
     // Dynamic Y range to fit all visible bars/line.
     private var yDomain: ClosedRange<Double> {
-        let minValue = data.map(\.liabilitiesK).min() ?? -20
-        let maxValue = data.map {
-            $0.savingK + $0.invstmentK + $0.otherLiquidAssetK + $0.otherNonLiquidAssetK + $0.selfUsedPropertyK
-        }.max() ?? 20
+        let minValue = data.map { stackedExtents(for: $0).min }.min() ?? -20
+        let maxValue = data.map { stackedExtents(for: $0).max }.max() ?? 20
         let padding = max((maxValue - minValue) * 0.1, 2)
         return (minValue - padding)...(maxValue + padding)
     }
@@ -204,7 +251,34 @@ struct CombinedChartView: View {
     }
 
     private func yAxisLabel(for amount: Double) -> String {
-        amount == 0 ? "0" : "\(Int(amount))K"
+        config.axis.yAxisLabel(amount)
+    }
+
+    private func signedValue(for point: ChartPoint, series: ChartSeriesStyle) -> Double {
+        let raw = point.values[series.id] ?? 0
+        return series.isNegative ? -abs(raw) : raw
+    }
+
+    private func lineValue(for point: ChartPoint) -> Double {
+        config.bar.series.reduce(0) { partial, series in
+            guard series.includeInLine else { return partial }
+            let value = signedValue(for: point, series: series)
+            return partial + value
+        }
+    }
+
+    private func stackedExtents(for point: ChartPoint) -> (min: Double, max: Double) {
+        var positiveTotal: Double = 0
+        var negativeTotal: Double = 0
+        for series in config.bar.series {
+            let value = signedValue(for: point, series: series)
+            if value >= 0 {
+                positiveTotal += value
+            } else {
+                negativeTotal += value
+            }
+        }
+        return (negativeTotal, positiveTotal)
     }
 
     private struct PlotAreaInfo: Equatable {
@@ -217,8 +291,15 @@ struct CombinedChartView: View {
             tabPicker
             currencyHeader
             debugToggle
-            chartSection
-            yearPager
+            if hasData {
+                chartSection
+                yearPager
+            } else {
+                Text("No data")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 420)
+            }
         }
         .padding()
     }
@@ -277,9 +358,9 @@ struct CombinedChartView: View {
         GeometryReader { geometry in
             let visibleCount: CGFloat = 4
             let yAxisWidth: CGFloat = 40
-            let viewportWidth = max(geometry.size.width - yAxisWidth, 1)
-            let unitWidth = viewportWidth / visibleCount
-            let chartWidth = max(viewportWidth, unitWidth * CGFloat(visibleData.count))
+            let computedViewportWidth = max(geometry.size.width - yAxisWidth, 1)
+            let computedUnitWidth = computedViewportWidth / visibleCount
+            let chartWidth = max(computedViewportWidth, computedUnitWidth * CGFloat(visibleData.count))
 
             HStack(alignment: .top, spacing: 0) {
                 HStack(alignment: .top, spacing: 8) {
@@ -296,15 +377,29 @@ struct CombinedChartView: View {
                 ScrollViewReader { proxy in
                     ScrollView(.horizontal, showsIndicators: false) {
                         ZStack(alignment: .topLeading) {
+                            GeometryReader { proxy in
+                                Color.clear
+                                    .preference(
+                                        key: ScrollOffsetKey.self,
+                                        value: proxy.frame(in: .named("ChartScroll")).minX
+                                    )
+                            }
+                            .frame(width: chartWidth, height: 1, alignment: .topLeading)
+
                             ChartContainer(
                                 selectedTab: selectedTab,
                                 visibleData: visibleData,
                                 yAxisTickValues: yAxisTickValues,
                                 yAxisDisplayDomain: yAxisDisplayDomain,
-                                totalTrendPalette: totalTrendPalette,
-                                breakdownPalette: breakdownPalette,
+                                plotAreaHeight: plotAreaInfo?.height ?? 0,
+                                config: config,
                                 showDebugOverlay: showDebugOverlay,
-                                onSelectIndex: { selectedIndex = $0 },
+                                onSelectIndex: { index in
+                                    selectedIndex = index
+                                    if visibleData.indices.contains(index) {
+                                        onSelect?(visibleData[index])
+                                    }
+                                },
                                 onPlotAreaChange: { plotRect in
                                     let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
                                     if plotAreaInfo != info {
@@ -322,13 +417,15 @@ struct CombinedChartView: View {
                             HStack(spacing: 0) {
                                 ForEach(0...maxScrollPage, id: \.self) { page in
                                     Color.clear
-                                        .frame(width: unitWidth * 4, height: 1)
+                                        .frame(width: computedUnitWidth * 4, height: 1)
                                         .id(page)
                                 }
                             }
                         }
                     }
-                    .frame(width: viewportWidth)
+                    .frame(width: computedViewportWidth)
+                    .coordinateSpace(name: "ChartScroll")
+                    .onPreferenceChange(ScrollOffsetKey.self) { scrollOffsetX = $0 }
                     .onChange(of: scrollPage) { newValue in
                         withAnimation(.easeInOut(duration: 0.25)) {
                             proxy.scrollTo(newValue, anchor: .leading)
@@ -336,15 +433,28 @@ struct CombinedChartView: View {
                     }
                 }
             }
+            .onAppear {
+                unitWidth = computedUnitWidth
+                viewportWidth = computedViewportWidth
+            }
+            .onChange(of: geometry.size) { _ in
+                unitWidth = computedUnitWidth
+                viewportWidth = computedViewportWidth
+            }
         }
         .frame(height: 420)
     }
 
     private var yearPager: some View {
-        HStack {
+        let ranges = yearPageRanges
+        let current = fullyVisibleYearRange ?? currentYearRange
+        let highlightedTitle = current?.title
+
+        return HStack(spacing: 12) {
             Button {
-                scrollPage = max(0, scrollPage - 1)
-                selectedIndex = 0
+                let newPage = max(0, scrollPage - 1)
+                scrollPage = newPage
+                selectedIndex = max(0, newPage * 4)
             } label: {
                 Image(systemName: "chevron.left")
             }
@@ -352,13 +462,29 @@ struct CombinedChartView: View {
             .disabled(scrollPage == 0)
 
             Spacer()
-            Text("\(currentYearData.year)")
-                .font(.title3.weight(.medium))
+
+            if showAllYearsInPager {
+                HStack(spacing: 16) {
+                    ForEach(ranges) { range in
+                        Text(range.title)
+                            .font(.callout.weight(range.title == highlightedTitle ? .semibold : .regular))
+                            .foregroundStyle(range.title == highlightedTitle ? .primary : .secondary)
+                            .onTapGesture {
+                                scrollPage = range.startPage
+                                selectedIndex = range.startMonthIndex
+                            }
+                    }
+                }
+            } else {
+                Text(highlightedTitle ?? "")
+                    .font(.callout.weight(.semibold))
+            }
+
             Spacer()
 
             Button {
                 scrollPage = min(maxScrollPage, scrollPage + 1)
-                selectedIndex = 0
+                selectedIndex = min(visibleData.count - 1, (scrollPage + 1) * 4)
             } label: {
                 Image(systemName: "chevron.right")
             }
@@ -370,25 +496,73 @@ struct CombinedChartView: View {
 }
 
 // Encapsulates the Chart to keep SwiftUI type-checking fast.
-private struct ChartContainer: View {
-    let selectedTab: CombinedChartView.ChartTab
-    let visibleData: [CombinedChartView.MonthData]
+private struct ChartContainer<Payload>: View {
+    let selectedTab: CombinedChartView<Payload>.ChartTab
+    let visibleData: [CombinedChartView<Payload>.ChartPoint]
     let yAxisTickValues: [Double]
     let yAxisDisplayDomain: ClosedRange<Double>
-    let totalTrendPalette: [Color]
-    let breakdownPalette: [Color]
+    let plotAreaHeight: CGFloat
+    let config: ChartConfig
     let showDebugOverlay: Bool
     let onSelectIndex: (Int) -> Void
     let onPlotAreaChange: (CGRect) -> Void
     let onYAxisTickPositions: ([Double: CGFloat]) -> Void
     @State private var selectedIndex: Int? = nil
 
-    private func yAxisLabel(for amount: Double) -> String {
-        amount == 0 ? "0" : "\(Int(amount))K"
+    private func signedValue(for point: CombinedChartView<Payload>.ChartPoint, series: ChartSeriesStyle) -> Double {
+        let raw = point.values[series.id] ?? 0
+        return series.isNegative ? -abs(raw) : raw
+    }
+
+    private func lineValue(for point: CombinedChartView<Payload>.ChartPoint) -> Double {
+        config.bar.series.reduce(0) { partial, series in
+            guard series.includeInLine else { return partial }
+            let value = signedValue(for: point, series: series)
+            return partial + value
+        }
+    }
+
+    private func lineColor(for value: Double) -> Color {
+        value >= 0 ? config.line.positiveLineColor : config.line.negativeLineColor
+    }
+
+    private struct Segment: Identifiable {
+        let id = UUID()
+        let start: Double
+        let value: Double
+        let color: Color
+    }
+
+    private func gapValue() -> Double {
+        guard plotAreaHeight > 0 else { return 0 }
+        let domainSpan = yAxisDisplayDomain.upperBound - yAxisDisplayDomain.lowerBound
+        let points = Double(config.bar.segmentGap)
+        return max(0, (points / Double(plotAreaHeight)) * domainSpan)
+    }
+
+    private func segments(for point: CombinedChartView<Payload>.ChartPoint, useTotalTrendColor: Bool) -> [Segment] {
+        var positiveStart: Double = 0
+        var negativeStart: Double = 0
+        var result: [Segment] = []
+
+        for series in config.bar.series {
+            let value = signedValue(for: point, series: series)
+            let color = useTotalTrendColor ? config.bar.totalTrendColor : series.color
+            if value >= 0 {
+                result.append(Segment(start: positiveStart, value: value, color: color))
+                positiveStart += value
+            } else {
+                result.append(Segment(start: negativeStart, value: value, color: color))
+                negativeStart += value
+            }
+        }
+
+        return result
     }
 
     var body: some View {
-        let monthValues = visibleData.map(\.month)
+        let monthValues = visibleData.map(\.xKey)
+        let monthLabels = Dictionary(uniqueKeysWithValues: visibleData.map { ($0.xKey, $0.xLabel) })
 
         Chart {
             if selectedTab == .totalTrend {
@@ -401,10 +575,9 @@ private struct ChartContainer: View {
         .chartXScale(domain: monthValues)
         .chartXAxis {
             AxisMarks(values: monthValues) { value in
-                AxisTick()
                 AxisValueLabel(centered: true) {
-                    if let month = value.as(String.self) {
-                        Text(month)
+                    if let key = value.as(String.self) {
+                        Text(config.axis.xAxisLabel(monthLabels[key] ?? ""))
                             .font(.caption2)
                     }
                 }
@@ -446,8 +619,8 @@ private struct ChartContainer: View {
                 }
                 ZStack(alignment: .topLeading) {
                     if let selectedIndex, visibleData.indices.contains(selectedIndex) {
-                        let selectedMonth = visibleData[selectedIndex].month
-                        if let xPos = proxy.position(forX: selectedMonth) {
+                        let selectedKey = visibleData[selectedIndex].xKey
+                        if let xPos = proxy.position(forX: selectedKey) {
                             Group {
                                 if selectedTab == .totalTrend {
                                     Path { path in
@@ -455,22 +628,22 @@ private struct ChartContainer: View {
                                         path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
                                     }
                                     .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                                    .foregroundStyle(.gray)
+                                    .foregroundStyle(config.line.selectionLineColor)
                                 } else {
                                     let step: CGFloat = {
                                         if selectedIndex + 1 < visibleData.count,
-                                           let nextX = proxy.position(forX: visibleData[selectedIndex + 1].month) {
+                                           let nextX = proxy.position(forX: visibleData[selectedIndex + 1].xKey) {
                                             return nextX - xPos
                                         }
                                         if selectedIndex - 1 >= 0,
-                                           let prevX = proxy.position(forX: visibleData[selectedIndex - 1].month) {
+                                           let prevX = proxy.position(forX: visibleData[selectedIndex - 1].xKey) {
                                             return xPos - prevX
                                         }
                                         return 40
                                     }()
                                     let width = max(step * 0.9, 24)
                                     Rectangle()
-                                        .fill(Color.gray.opacity(0.12))
+                                        .fill(config.line.selectionFillColor)
                                         .frame(width: width, height: plotRect.height)
                                         .position(x: xPos, y: plotRect.midY)
                                 }
@@ -483,21 +656,23 @@ private struct ChartContainer: View {
                         }
                     }
 
-                    Color.clear
-                        .contentShape(Rectangle())
-                        .simultaneousGesture(
-                            SpatialTapGesture()
-                                .onEnded { value in
-                                    let localX = value.location.x - plotRect.minX
-                                    let clampedX = min(max(localX, 0), plotRect.width)
-                                    if let month = proxy.value(atX: clampedX, as: String.self) {
-                                        if let index = visibleData.firstIndex(where: { $0.month == month }) {
-                                            selectedIndex = index
-                                            onSelectIndex(index)
+                    if !visibleData.isEmpty {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .simultaneousGesture(
+                                SpatialTapGesture()
+                                    .onEnded { value in
+                                        let localX = value.location.x - plotRect.minX
+                                        let clampedX = min(max(localX, 0), plotRect.width)
+                                        if let key = proxy.value(atX: clampedX, as: String.self) {
+                                            if let index = visibleData.firstIndex(where: { $0.xKey == key }) {
+                                                selectedIndex = index
+                                                onSelectIndex(index)
+                                            }
                                         }
                                     }
-                                }
-                        )
+                            )
+                    }
                 }
             }
         }
@@ -507,19 +682,12 @@ private struct ChartContainer: View {
     @ChartContentBuilder
     private var totalTrendMarks: some ChartContent {
         ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
-            let gap = 0.4
-            segmentBar(index: index, start: 0.0, value: item.liabilitiesK, gap: gap, color: totalTrendPalette[0])
-            segmentBar(index: index, start: 0.0, value: item.savingK, gap: gap, color: totalTrendPalette[1])
-            segmentBar(index: index, start: item.savingK, value: item.invstmentK, gap: gap, color: totalTrendPalette[2])
-            segmentBar(index: index, start: item.savingK + item.invstmentK, value: item.otherLiquidAssetK, gap: gap, color: totalTrendPalette[3])
-            segmentBar(index: index, start: item.savingK + item.invstmentK + item.otherLiquidAssetK, value: item.otherNonLiquidAssetK + item.selfUsedPropertyK, gap: gap, color: totalTrendPalette[4])
+            let gap = gapValue()
+            ForEach(segments(for: item, useTotalTrendColor: config.bar.useTotalTrendSingleColor)) { segment in
+                segmentBar(index: index, start: segment.start, value: segment.value, gap: gap, gapColor: config.bar.segmentGapColor, color: segment.color, drawGapMark: true)
+            }
 
-            LineMark(
-                x: .value("Month", item.month),
-                y: .value("Total", item.positiveTotalK)
-            )
-            .foregroundStyle(Color(red: 0.16, green: 0.30, blue: 0.38))
-            .lineStyle(StrokeStyle(lineWidth: 2))
+
         }
     }
 
@@ -527,12 +695,10 @@ private struct ChartContainer: View {
     @ChartContentBuilder
     private var breakdownMarks: some ChartContent {
         ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
-            let gap = 0.4
-            segmentBar(index: index, start: 0.0, value: item.liabilitiesK, gap: gap, color: breakdownPalette[0])
-            segmentBar(index: index, start: 0.0, value: item.savingK, gap: gap, color: breakdownPalette[1])
-            segmentBar(index: index, start: item.savingK, value: item.invstmentK, gap: gap, color: breakdownPalette[2])
-            segmentBar(index: index, start: item.savingK + item.invstmentK, value: item.otherLiquidAssetK, gap: gap, color: breakdownPalette[3])
-            segmentBar(index: index, start: item.savingK + item.invstmentK + item.otherLiquidAssetK, value: item.otherNonLiquidAssetK + item.selfUsedPropertyK, gap: gap, color: breakdownPalette[4])
+            let gap = gapValue()
+            ForEach(segments(for: item, useTotalTrendColor: false)) { segment in
+                segmentBar(index: index, start: segment.start, value: segment.value, gap: gap, gapColor: config.bar.segmentGapColor, color: segment.color, drawGapMark: true)
+            }
         }
     }
 
@@ -542,18 +708,31 @@ private struct ChartContainer: View {
         RuleMark(y: .value("Zero", 0))
             .foregroundStyle(.black)
 
+        if selectedTab == .totalTrend {
+            ForEach(visibleData, id: \.id) { item in
+                let value = lineValue(for: item)
+                LineMark(
+                    x: .value("Month", item.xKey),
+                    y: .value("Total", value)
+                )
+                .foregroundStyle(lineColor(for: value))
+                .lineStyle(StrokeStyle(lineWidth: 2))
+            }
+        }
+
         if selectedTab == .totalTrend, let selectedIndex, visibleData.indices.contains(selectedIndex) {
+            let value = lineValue(for: visibleData[selectedIndex])
             PointMark(
-                x: .value("Selected Month", visibleData[selectedIndex].month),
-                y: .value("Selected Value", visibleData[selectedIndex].positiveTotalK)
+                x: .value("Selected Month", visibleData[selectedIndex].xKey),
+                y: .value("Selected Value", value)
             )
-            .foregroundStyle(Color(red: 0.10, green: 0.50, blue: 0.66))
+            .foregroundStyle(lineColor(for: value))
             .symbolSize(60)
         }
 
         if showDebugOverlay {
             ForEach(visibleData, id: \.id) { item in
-                RuleMark(x: .value("Debug X", item.month))
+                RuleMark(x: .value("Debug X", item.xKey))
                     .foregroundStyle(Color.red.opacity(0.6))
                     .lineStyle(StrokeStyle(lineWidth: 1.0, dash: [2, 3]))
             }
@@ -561,16 +740,34 @@ private struct ChartContainer: View {
     }
 
     // Draw one stacked segment and apply a small gap so segments are visually separated.
-    private func segmentBar(index: Int, start: Double, value: Double, gap: Double, color: Color) -> some ChartContent {
+    @ChartContentBuilder
+    private func segmentBar(
+        index: Int,
+        start: Double,
+        value: Double,
+        gap: Double,
+        gapColor: Color,
+        color: Color,
+        drawGapMark: Bool
+    ) -> some ChartContent {
         let bounds = adjustedSegmentBounds(start: start, value: value, gap: gap)
-        return BarMark(
-            x: .value("Month", visibleData[index].month),
+        BarMark(
+            x: .value("Month", visibleData[index].xKey),
             yStart: .value("Value", bounds.low),
             yEnd: .value("Value", bounds.high),
             width: 40
         )
         .cornerRadius(0)
         .foregroundStyle(color)
+        if drawGapMark, gap > 0.0001, abs(start) > 0.0001 {
+            BarMark(
+                x: .value("Month", visibleData[index].xKey),
+                yStart: .value("Gap", start - gap / 2.0),
+                yEnd: .value("Gap", start + gap / 2.0),
+                width: 40
+            )
+            .foregroundStyle(gapColor)
+        }
     }
 
     // Convert a signed segment into a visual bar range with a small gap.
@@ -578,16 +775,22 @@ private struct ChartContainer: View {
         let end = start + value
         let rawLow = min(start, end)
         let rawHigh = max(start, end)
-        var displayLow = rawLow + gap / 2.0
-        var displayHigh = rawHigh - gap / 2.0
-        if displayLow > displayHigh {
-            displayLow = rawLow
-            displayHigh = rawHigh
-        }
-        return (displayLow, displayHigh)
+        return (rawLow, rawHigh)
     }
 }
 
-#Preview {
-    LineAndBarChart()
+private struct LineAndBarChartPreviewHost: View {
+    private let groups = ChartSampleData.makeGroups(variance: 0.6)
+    private let config = ChartSampleData.makeConfig()
+
+    var body: some View {
+        LineAndBarChart<String>(
+            config: config,
+            groups: groups
+        )
+    }
 }
+#Preview {
+    LineAndBarChartPreviewHost()
+}
+
