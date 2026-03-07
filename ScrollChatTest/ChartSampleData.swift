@@ -119,10 +119,10 @@ enum ChartSampleData {
                         return max(0, value * factor)
                     }
                     return CombinedChartView.ChartPoint(
+                        id: .init(groupID: group.id, xKey: point.xKey),
                         xKey: point.xKey,
                         xLabel: point.xLabel,
-                        values: randomizedValues,
-                        payload: point.xKey)
+                        values: randomizedValues)
                 })
         }
     }

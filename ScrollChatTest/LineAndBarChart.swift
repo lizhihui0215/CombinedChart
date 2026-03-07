@@ -250,11 +250,6 @@ extension ChartConfig.ChartAxisConfig {
         let xKey: String
         let xLabel: String
         let values: [ChartSeriesKey: Double]
-        let payload: Any
-
-        func payload<T>(as type: T.Type = T.self) -> T? {
-            payload as? T
-        }
     }
 
     struct XAxisLabelContext {
@@ -443,12 +438,16 @@ extension CombinedChartView {
         }
     }
 
+    struct ChartPointID: Hashable {
+        let groupID: String
+        let xKey: String
+    }
+
     struct ChartPoint: Identifiable {
-        let id = UUID()
+        let id: ChartPointID
         let xKey: String
         let xLabel: String
         let values: [ChartSeriesKey: Double]
-        let payload: Any
     }
 
     struct ChartGroup: Identifiable {
@@ -461,7 +460,7 @@ extension CombinedChartView {
     struct ChartDataPoint: Identifiable {
         let source: ChartPoint
 
-        var id: UUID {
+        var id: ChartPointID {
             source.id
         }
 
@@ -475,10 +474,6 @@ extension CombinedChartView {
 
         var values: [ChartSeriesKey: Double] {
             source.values
-        }
-
-        var payload: Any {
-            source.payload
         }
 
         func signedValue(for series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
@@ -510,12 +505,15 @@ extension CombinedChartView {
 
         func axisPointInfo(index: Int) -> ChartConfig.ChartAxisConfig.AxisPointInfo {
             .init(
-                id: id.uuidString,
+                id: axisPointID,
                 index: index,
                 xKey: xKey,
                 xLabel: xLabel,
-                values: values,
-                payload: payload)
+                values: values)
+        }
+
+        var axisPointID: String {
+            "\(id.groupID):\(id.xKey)"
         }
     }
 
@@ -1010,8 +1008,7 @@ private extension CombinedChartView {
                                     index: 0,
                                     xKey: key,
                                     xLabel: key,
-                                    values: [:],
-                                    payload: ()),
+                                    values: [:]),
                                 visiblePoints: axisPointInfos)
                             Text(config.axis.xAxisLabel(labelContext))
                                 .font(.caption2)
