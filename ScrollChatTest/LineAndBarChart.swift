@@ -204,9 +204,7 @@ extension CombinedChartView {
                     startMonthIndex: startMonthIndex,
                     endMonthIndex: endMonthIndex,
                     startPage: startPage,
-                    endPage: endPage
-                )
-            )
+                    endPage: endPage))
             cumulativeMonths += group.points.count
         }
         return ranges
@@ -273,11 +271,10 @@ extension CombinedChartView {
         config.axis.yAxisLabel(amount)
     }
 
-    private struct ChartMath {
+    private enum ChartMath {
         static func signedValue(
             for point: ChartPoint,
-            series: ChartConfig.ChartBarConfig.ChartSeriesStyle
-        ) -> Double {
+            series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
             let raw = point.values[series.id] ?? 0
             return series.isNegative ? -abs(raw) : raw
         }
@@ -515,6 +512,25 @@ extension CombinedChartView {
 }
 
 extension CombinedChartView {
+    private struct ChartContainerSegment: Identifiable {
+        let id = UUID()
+        let start: Double
+        let value: Double
+        let color: Color
+    }
+
+    private struct ChartContainerSegmentBarStyle {
+        let gap: Double
+        let gapColor: Color
+        let drawGapMark: Bool
+    }
+
+    private struct ChartContainerLineSegmentPath: Identifiable {
+        let id = UUID()
+        let path: Path
+        let color: Color
+    }
+
     private struct ScrollOffsetKey: PreferenceKey {
         static var defaultValue: CGFloat {
             0
@@ -543,19 +559,6 @@ extension CombinedChartView {
             value >= 0 ? config.line.positiveLineColor : config.line.negativeLineColor
         }
 
-        private struct Segment: Identifiable {
-            let id = UUID()
-            let start: Double
-            let value: Double
-            let color: Color
-        }
-
-        private struct SegmentBarStyle {
-            let gap: Double
-            let gapColor: Color
-            let drawGapMark: Bool
-        }
-
         private func gapValue() -> Double {
             guard plotAreaHeight > 0 else { return 0 }
             let domainSpan = yAxisDisplayDomain.upperBound - yAxisDisplayDomain.lowerBound
@@ -563,19 +566,97 @@ extension CombinedChartView {
             return max(0, (points / Double(plotAreaHeight)) * domainSpan)
         }
 
-        private func segments(for point: ChartPoint, useTotalTrendColor: Bool) -> [Segment] {
+        /// Build line segments for the overlay so we can color positive and negative parts separately.
+        private func lineSegmentPaths(proxy: ChartProxy) -> [ChartContainerLineSegmentPath] {
+            guard visibleData.count > 1 else { return [] }
+            var segments: [ChartContainerLineSegmentPath] = []
+
+            for index in 0..<(visibleData.count - 1) {
+                let start = visibleData[index]
+                let end = visibleData[index + 1]
+                let startValue = ChartMath.lineValue(for: start, config: config)
+                let endValue = ChartMath.lineValue(for: end, config: config)
+
+                // Convert data points into chart-space points. If any position is missing, skip this pair.
+                guard let startPoint = linePoint(for: start.xKey, value: startValue, proxy: proxy),
+                      let endPoint = linePoint(for: end.xKey, value: endValue, proxy: proxy) else { continue }
+
+                // If both points are on the same side of zero, the segment is single-colored.
+                if isSameSideOrZero(startValue, endValue) {
+                    segments.append(
+                        ChartContainerLineSegmentPath(
+                            path: linePath(from: startPoint, to: endPoint),
+                            color: lineColor(for: startValue)))
+                    continue
+                }
+
+                // Crossing zero: split the segment at the exact intersection point.
+                if let intersection = zeroIntersection(
+                    from: startPoint,
+                    to: endPoint,
+                    startValue: startValue,
+                    endValue: endValue) {
+                    segments.append(
+                        ChartContainerLineSegmentPath(
+                            path: linePath(from: startPoint, to: intersection),
+                            color: lineColor(for: startValue)))
+                    segments.append(
+                        ChartContainerLineSegmentPath(
+                            path: linePath(from: intersection, to: endPoint),
+                            color: lineColor(for: endValue)))
+                }
+            }
+
+            return segments
+        }
+
+        /// Map a data point into the chart's coordinate space.
+        private func linePoint(for xKey: String, value: Double, proxy: ChartProxy) -> CGPoint? {
+            guard let xPos = proxy.position(forX: xKey),
+                  let yPos = proxy.position(forY: value) else { return nil }
+            return CGPoint(x: xPos, y: yPos)
+        }
+
+        /// Determine whether two values are on the same side of zero or touch zero.
+        private func isSameSideOrZero(_ startValue: Double, _ endValue: Double) -> Bool {
+            startValue == 0 || endValue == 0 || (startValue >= 0) == (endValue >= 0)
+        }
+
+        /// Compute intersection point with the zero line by linear interpolation.
+        private func zeroIntersection(
+            from start: CGPoint,
+            to end: CGPoint,
+            startValue: Double,
+            endValue: Double) -> CGPoint? {
+            let denominator = startValue - endValue
+            guard abs(denominator) > 0.000001 else { return nil }
+            let interpolationFactor = startValue / denominator
+            return CGPoint(
+                x: start.x + (end.x - start.x) * interpolationFactor,
+                y: start.y + (end.y - start.y) * interpolationFactor)
+        }
+
+        /// Construct a straight line path between two points.
+        private func linePath(from start: CGPoint, to end: CGPoint) -> Path {
+            var path = Path()
+            path.move(to: start)
+            path.addLine(to: end)
+            return path
+        }
+
+        private func segments(for point: ChartPoint, useTotalTrendColor: Bool) -> [ChartContainerSegment] {
             var positiveStart: Double = 0
             var negativeStart: Double = 0
-            var result: [Segment] = []
+            var result: [ChartContainerSegment] = []
 
             for series in config.bar.series {
                 let value = ChartMath.signedValue(for: point, series: series)
                 let color = useTotalTrendColor ? config.bar.totalTrendColor : series.color
                 if value >= 0 {
-                    result.append(Segment(start: positiveStart, value: value, color: color))
+                    result.append(ChartContainerSegment(start: positiveStart, value: value, color: color))
                     positiveStart += value
                 } else {
-                    result.append(Segment(start: negativeStart, value: value, color: color))
+                    result.append(ChartContainerSegment(start: negativeStart, value: value, color: color))
                     negativeStart += value
                 }
             }
@@ -640,17 +721,34 @@ extension CombinedChartView {
                             .onChange(of: positions) { onYAxisTickPositions($0) }
                     }
                     ZStack(alignment: .topLeading) {
+                        if selectedTab == .totalTrend {
+                            let segments = lineSegmentPaths(proxy: proxy)
+                            ForEach(segments) { segment in
+                                segment.path
+                                    .stroke(
+                                        segment.color,
+                                        style: StrokeStyle(lineWidth: config.line.lineWidth))
+                            }
+                            .mask(
+                                Rectangle()
+                                    .frame(width: plotRect.width, height: plotRect.height)
+                                    .position(x: plotRect.midX, y: plotRect.midY))
+                        }
+
                         if let selectedIndex, visibleData.indices.contains(selectedIndex) {
                             let selectedKey = visibleData[selectedIndex].xKey
                             if let xPos = proxy.position(forX: selectedKey) {
                                 Group {
                                     if selectedTab == .totalTrend {
+                                        let selectedValue = ChartMath.lineValue(
+                                            for: visibleData[selectedIndex],
+                                            config: config)
                                         Path { path in
                                             path.move(to: CGPoint(x: xPos, y: plotRect.minY))
                                             path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
                                         }
                                         .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                                        .foregroundStyle(config.line.selectionLineColor)
+                                        .foregroundStyle(lineColor(for: selectedValue))
                                     } else {
                                         let step: CGFloat = {
                                             if selectedIndex + 1 < visibleData.count,
@@ -703,7 +801,7 @@ extension CombinedChartView {
         private var totalTrendMarks: some ChartContent {
             ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
                 let gap = gapValue()
-                let style = SegmentBarStyle(
+                let style = ChartContainerSegmentBarStyle(
                     gap: gap,
                     gapColor: config.bar.segmentGapColor,
                     drawGapMark: true)
@@ -721,7 +819,7 @@ extension CombinedChartView {
         private var breakdownMarks: some ChartContent {
             ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
                 let gap = gapValue()
-                let style = SegmentBarStyle(
+                let style = ChartContainerSegmentBarStyle(
                     gap: gap,
                     gapColor: config.bar.segmentGapColor,
                     drawGapMark: true)
@@ -740,17 +838,6 @@ extension CombinedChartView {
             RuleMark(y: .value("Zero", 0))
                 .foregroundStyle(config.axis.zeroLineColor)
                 .lineStyle(StrokeStyle(lineWidth: config.axis.zeroLineWidth))
-
-            if selectedTab == .totalTrend {
-                ForEach(visibleData, id: \.id) { item in
-                    let value = ChartMath.lineValue(for: item, config: config)
-                    LineMark(
-                        x: .value("Month", item.xKey),
-                        y: .value("Total", value))
-                        .foregroundStyle(lineColor(for: value))
-                        .lineStyle(StrokeStyle(lineWidth: config.line.lineWidth))
-                }
-            }
 
             if selectedTab == .totalTrend, let selectedIndex, visibleData.indices.contains(selectedIndex) {
                 let value = ChartMath.lineValue(for: visibleData[selectedIndex], config: config)
@@ -774,8 +861,8 @@ extension CombinedChartView {
         @ChartContentBuilder
         private func segmentBar(
             index: Int,
-            segment: Segment,
-            style: SegmentBarStyle) -> some ChartContent {
+            segment: ChartContainerSegment,
+            style: ChartContainerSegmentBarStyle) -> some ChartContent {
             let bounds = adjustedSegmentBounds(start: segment.start, value: segment.value)
             BarMark(
                 x: .value("Month", visibleData[index].xKey),
@@ -811,8 +898,7 @@ private struct LineAndBarChartPreviewHost: View {
     var body: some View {
         CombinedChartView<String>(
             config: config,
-            groups: groups
-        )
+            groups: groups)
     }
 }
 
