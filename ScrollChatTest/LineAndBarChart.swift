@@ -371,7 +371,7 @@ extension CombinedChartView {
         let highlightedTitle: String?
         let scrollPage: Int
         let maxScrollPage: Int
-        let showAllYears: Bool
+        let displayStyle: ChartConfig.ChartPagerConfig.DisplayStyle
         let onSelectPreviousPage: () -> Void
         let onSelectRange: (YearPageRange) -> Void
         let onSelectNextPage: () -> Void
@@ -453,7 +453,7 @@ extension CombinedChartView {
     struct ChartGroup: Identifiable {
         let id: String
         let displayTitle: String
-        let order: Int
+        let groupOrder: Int
         let points: [ChartPoint]
     }
 
@@ -524,12 +524,12 @@ extension CombinedChartView {
             source.id
         }
 
-        var title: String {
+        var displayTitle: String {
             source.displayTitle
         }
 
-        var sortKey: Int {
-            source.order
+        var groupOrder: Int {
+            source.groupOrder
         }
 
         var points: [ChartDataPoint] {
@@ -568,7 +568,7 @@ extension CombinedChartView {
             highlightedTitle: (fullyVisibleYearRange ?? currentYearRange)?.displayTitle,
             scrollPage: scrollPage,
             maxScrollPage: maxScrollPage,
-            showAllYears: config.pager.displayStyle == .allYears,
+            displayStyle: config.pager.displayStyle,
             onSelectPreviousPage: { selectPage(scrollPage - 1) },
             onSelectRange: { range in
                 scrollPage = range.startPage
@@ -584,7 +584,7 @@ extension CombinedChartView {
                 highlightedTitle: context.highlightedTitle,
                 scrollPage: context.scrollPage,
                 maxScrollPage: context.maxScrollPage,
-                showAllYears: context.showAllYears,
+                displayStyle: context.displayStyle,
                 onSelectPreviousPage: context.onSelectPreviousPage,
                 onSelectRange: context.onSelectRange,
                 onSelectNextPage: context.onSelectNextPage)
@@ -594,7 +594,7 @@ extension CombinedChartView {
     private var sortedGroups: [ChartDataGroup] {
         groups
             .map { ChartDataGroup(source: $0) }
-            .sorted { $0.sortKey < $1.sortKey }
+            .sorted { $0.groupOrder < $1.groupOrder }
     }
 
     /// Data array for all years, ordered by year ascending.
@@ -612,8 +612,8 @@ extension CombinedChartView {
             let endPage = endMonthIndex / config.monthsPerPage
             ranges.append(
                 YearPageRange(
-                    displayTitle: group.title,
-                    groupOrder: group.sortKey,
+                    displayTitle: group.displayTitle,
+                    groupOrder: group.groupOrder,
                     startMonthIndex: startMonthIndex,
                     endMonthIndex: endMonthIndex,
                     startPage: startPage,
@@ -892,7 +892,7 @@ private extension CombinedChartView {
         let highlightedTitle: String?
         let scrollPage: Int
         let maxScrollPage: Int
-        let showAllYears: Bool
+        let displayStyle: ChartConfig.ChartPagerConfig.DisplayStyle
         let onSelectPreviousPage: () -> Void
         let onSelectRange: (YearPageRange) -> Void
         let onSelectNextPage: () -> Void
@@ -907,7 +907,7 @@ private extension CombinedChartView {
 
                 Spacer()
 
-                if showAllYears {
+                if displayStyle == .allYears {
                     HStack(spacing: 16) {
                         ForEach(ranges) { range in
                             Text(range.displayTitle)
@@ -935,20 +935,14 @@ private extension CombinedChartView {
         }
     }
 
-    struct ChartContainerSegment: Identifiable {
+    struct BarSegment: Identifiable {
         let id = UUID()
         let start: Double
         let value: Double
         let color: Color
     }
 
-    struct ChartContainerSegmentBarStyle {
-        let gap: Double
-        let gapColor: Color
-        let drawGapMark: Bool
-    }
-
-    struct ChartContainerLineSegmentPath: Identifiable {
+    struct LineSegmentPath: Identifiable {
         let id = UUID()
         let path: Path
         let color: Color
@@ -1223,9 +1217,9 @@ private extension CombinedChartView.ChartContainer {
     }
 
     /// Build line segments for the overlay so we can color positive and negative parts separately.
-    func lineSegmentPaths(proxy: ChartProxy) -> [CombinedChartView.ChartContainerLineSegmentPath] {
+    func lineSegmentPaths(proxy: ChartProxy) -> [CombinedChartView.LineSegmentPath] {
         guard visibleData.count > 1 else { return [] }
-        var segments: [CombinedChartView.ChartContainerLineSegmentPath] = []
+        var segments: [CombinedChartView.LineSegmentPath] = []
 
         for index in 0..<(visibleData.count - 1) {
             let start = visibleData[index]
@@ -1240,7 +1234,7 @@ private extension CombinedChartView.ChartContainer {
             // If both points are on the same side of zero, the segment is single-colored.
             if isSameSideOrZero(startValue, endValue) {
                 segments.append(
-                    CombinedChartView.ChartContainerLineSegmentPath(
+                    CombinedChartView.LineSegmentPath(
                         path: linePath(from: startPoint, to: endPoint),
                         color: lineColor(for: startValue)))
                 continue
@@ -1253,11 +1247,11 @@ private extension CombinedChartView.ChartContainer {
                 startValue: startValue,
                 endValue: endValue) {
                 segments.append(
-                    CombinedChartView.ChartContainerLineSegmentPath(
+                    CombinedChartView.LineSegmentPath(
                         path: linePath(from: startPoint, to: intersection),
                         color: lineColor(for: startValue)))
                 segments.append(
-                    CombinedChartView.ChartContainerLineSegmentPath(
+                    CombinedChartView.LineSegmentPath(
                         path: linePath(from: intersection, to: endPoint),
                         color: lineColor(for: endValue)))
             }
@@ -1302,19 +1296,19 @@ private extension CombinedChartView.ChartContainer {
 
     func segments(
         for point: CombinedChartView.ChartDataPoint,
-        useTrendBarColor: Bool) -> [CombinedChartView.ChartContainerSegment] {
+        useTrendBarColor: Bool) -> [CombinedChartView.BarSegment] {
         var positiveStart: Double = 0
         var negativeStart: Double = 0
-        var result: [CombinedChartView.ChartContainerSegment] = []
+        var result: [CombinedChartView.BarSegment] = []
 
         for series in config.bar.series {
             let value = point.signedValue(for: series)
             let color = trendBarColor(for: series.color, useTrendBarColor: useTrendBarColor)
             if value >= 0 {
-                result.append(CombinedChartView.ChartContainerSegment(start: positiveStart, value: value, color: color))
+                result.append(CombinedChartView.BarSegment(start: positiveStart, value: value, color: color))
                 positiveStart += value
             } else {
-                result.append(CombinedChartView.ChartContainerSegment(start: negativeStart, value: value, color: color))
+                result.append(CombinedChartView.BarSegment(start: negativeStart, value: value, color: color))
                 negativeStart += value
             }
         }
@@ -1336,16 +1330,11 @@ private extension CombinedChartView.ChartContainer {
     @ChartContentBuilder
     func barMarks(useTrendBarColor: Bool) -> some ChartContent {
         ForEach(Array(visibleData.enumerated()), id: \.element.id) { index, item in
-            let gap = gapValue()
-            let style = CombinedChartView.ChartContainerSegmentBarStyle(
-                gap: gap,
-                gapColor: config.bar.segmentGapColor,
-                drawGapMark: true)
             ForEach(segments(for: item, useTrendBarColor: useTrendBarColor)) { segment in
                 segmentBar(
                     index: index,
                     segment: segment,
-                    style: style)
+                    gap: gapValue())
             }
         }
     }
@@ -1380,8 +1369,8 @@ private extension CombinedChartView.ChartContainer {
     @ChartContentBuilder
     func segmentBar(
         index: Int,
-        segment: CombinedChartView.ChartContainerSegment,
-        style: CombinedChartView.ChartContainerSegmentBarStyle) -> some ChartContent {
+        segment: CombinedChartView.BarSegment,
+        gap: Double) -> some ChartContent {
         let bounds = adjustedSegmentBounds(start: segment.start, value: segment.value)
         BarMark(
             x: .value("Month", visibleData[index].xKey),
@@ -1390,13 +1379,13 @@ private extension CombinedChartView.ChartContainer {
             width: .fixed(config.bar.barWidth))
             .cornerRadius(0)
             .foregroundStyle(segment.color)
-        if style.drawGapMark, style.gap > 0.0001, abs(segment.start) > 0.0001 {
+        if gap > 0.0001, abs(segment.start) > 0.0001 {
             BarMark(
                 x: .value("Month", visibleData[index].xKey),
-                yStart: .value("Gap", segment.start - style.gap / 2.0),
-                yEnd: .value("Gap", segment.start + style.gap / 2.0),
+                yStart: .value("Gap", segment.start - gap / 2.0),
+                yEnd: .value("Gap", segment.start + gap / 2.0),
                 width: .fixed(config.bar.barWidth))
-                .foregroundStyle(style.gapColor)
+                .foregroundStyle(config.bar.segmentGapColor)
         }
     }
 

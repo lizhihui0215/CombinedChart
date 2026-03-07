@@ -18,13 +18,13 @@ enum ChartSampleData {
     struct Group: Decodable {
         let id: String
         let displayTitle: String
-        let order: Int
+        let groupOrder: Int
         let points: [Point]
 
         enum CodingKeys: String, CodingKey {
             case id
             case displayTitle = "title"
-            case order = "sortKey"
+            case groupOrder = "sortKey"
             case points
         }
     }
@@ -112,7 +112,7 @@ enum ChartSampleData {
             CombinedChartView.ChartGroup(
                 id: group.id,
                 displayTitle: group.displayTitle,
-                order: group.order,
+                groupOrder: group.groupOrder,
                 points: group.points.map { point in
                     let randomizedValues = point.values.mapValues { value in
                         let factor = Double.random(in: (1.0 - clampedVariance)...(1.0 + clampedVariance))
