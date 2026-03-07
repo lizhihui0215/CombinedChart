@@ -751,9 +751,7 @@ extension CombinedChartView {
             "requested=\(monthIndex)",
             "clamped=\(clampedMonthIndex)",
             "visibleStartMonthIndex(before)=\(visibleStartMonthIndex)")
-        withAnimation(.easeInOut(duration: 0.25)) {
-            visibleStartMonthIndex = clampedMonthIndex
-        }
+        visibleStartMonthIndex = clampedMonthIndex
     }
 
     private func selectPreviousPage() {
@@ -888,7 +886,8 @@ private extension CombinedChartView {
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
         let yAxisLabel: (Double) -> String
         let onSelectIndex: (Int?) -> Void
-        @State private var dragOffsetX: CGFloat = 0
+        @GestureState private var dragTranslationX: CGFloat = 0
+        @State private var settlingOffsetX: CGFloat = 0
 
         private var maxStartMonthIndex: Int {
             max(0, data.count - config.monthsPerPage)
@@ -900,7 +899,14 @@ private extension CombinedChartView {
                 let computedViewportWidth = max(geometry.size.width - config.axis.yAxisWidth, 1)
                 let computedUnitWidth = computedViewportWidth / visibleCount
                 let chartWidth = max(computedViewportWidth, computedUnitWidth * CGFloat(data.count))
-                let contentOffsetX = -CGFloat(visibleStartMonthIndex) * computedUnitWidth + dragOffsetX
+                let isDragging = dragTranslationX != 0
+                let maxRightDragOffset = CGFloat(visibleStartMonthIndex) * computedUnitWidth
+                let maxLeftDragOffset = CGFloat(maxStartMonthIndex - visibleStartMonthIndex) * computedUnitWidth
+                let clampedDragTranslationX = min(
+                    max(dragTranslationX, -maxLeftDragOffset),
+                    maxRightDragOffset)
+                let contentOffsetX = -CGFloat(visibleStartMonthIndex) * computedUnitWidth + settlingOffsetX +
+                    clampedDragTranslationX
 
                 HStack(alignment: .top, spacing: 0) {
                     HStack(alignment: .top, spacing: 8) {
@@ -931,12 +937,14 @@ private extension CombinedChartView {
                             selectionOverlay: selectionOverlay,
                             onSelectIndex: onSelectIndex,
                             onPlotAreaChange: { plotRect in
+                                guard !isDragging else { return }
                                 let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
                                 if plotAreaInfo != info {
                                     plotAreaInfo = info
                                 }
                             },
                             onYAxisTickPositions: { positions in
+                                guard !isDragging else { return }
                                 if yTickPositions != positions {
                                     yTickPositions = positions
                                 }
@@ -944,24 +952,27 @@ private extension CombinedChartView {
                             .frame(width: chartWidth)
                             .frame(maxHeight: .infinity)
                     }
+                    .compositingGroup()
                     .offset(x: contentOffsetX)
                     .frame(width: computedViewportWidth, alignment: .leading)
                     .clipped()
                     .contentShape(Rectangle())
                     .gesture(
                         DragGesture()
-                            .onChanged { value in
-                                dragOffsetX = value.translation.width
+                            .updating($dragTranslationX) { value, state, _ in
+                                state = value.translation.width
                             }
                             .onEnded { value in
-                                let monthDelta = Int(round(-value.translation.width / computedUnitWidth))
+                                let clampedTranslationX = min(
+                                    max(value.translation.width, -maxLeftDragOffset),
+                                    maxRightDragOffset)
+                                let monthDelta = Int(round(-clampedTranslationX / computedUnitWidth))
                                 let targetMonthIndex = min(
                                     max(visibleStartMonthIndex + monthDelta, 0),
                                     maxStartMonthIndex)
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                    visibleStartMonthIndex = targetMonthIndex
-                                    dragOffsetX = 0
-                                }
+                                settlingOffsetX = clampedTranslationX
+                                visibleStartMonthIndex = targetMonthIndex
+                                settlingOffsetX = 0
                             })
                 }
                 .onAppear {
