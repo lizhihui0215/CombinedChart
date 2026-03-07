@@ -16,6 +16,7 @@ struct ChartConfig {
     let bar: ChartBarConfig
     let line: ChartLineConfig
     let axis: ChartAxisConfig
+    let pager: ChartPagerConfig
 
     static let `default` = ChartConfig(
         monthsPerPage: 4,
@@ -76,7 +77,8 @@ struct ChartConfig {
             },
             zeroLineColor: .black,
             zeroLineWidth: 1,
-            yAxisWidth: 40))
+            yAxisWidth: 40),
+        pager: ChartPagerConfig())
 }
 
 extension ChartConfig {
@@ -107,9 +109,30 @@ extension ChartConfig {
         let zeroLineWidth: CGFloat
         let yAxisWidth: CGFloat
     }
+
+    struct ChartPagerConfig {
+        enum DisplayStyle {
+            case allYears
+            case highlightedYear
+        }
+
+        let isVisible: Bool
+        let displayStyle: DisplayStyle
+
+        init(
+            isVisible: Bool = true,
+            displayStyle: DisplayStyle = .allYears) {
+            self.isVisible = isVisible
+            self.displayStyle = displayStyle
+        }
+    }
 }
 
 extension ChartConfig.ChartBarConfig {
+    var trendLineSeries: [ChartSeriesStyle] {
+        series.filter(\.contributesToTrendLine)
+    }
+
     struct ChartSeriesStyle: Identifiable {
         enum TrendLineInclusion {
             case included
@@ -211,7 +234,6 @@ struct CombinedChartView<Payload>: View {
     // UI state.
     @State private var selectedIndex: Int? = 0
     @State private var scrollPage: Int = 0
-    @State private var showsAllYearsInPager: Bool = true
     @State private var scrollOffsetX: CGFloat = 0
     @State private var unitWidth: CGFloat = 0
     @State private var viewportWidth: CGFloat = 0
@@ -271,6 +293,33 @@ extension CombinedChartView {
         let xLabel: String
         let values: [String: Double]
         let payload: Payload
+
+        func signedValue(for series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
+            let rawValue = values[series.id] ?? 0
+            return series.signedValue(for: rawValue)
+        }
+
+        func trendLineValue(using config: ChartConfig) -> Double {
+            config.bar.trendLineSeries.reduce(0) { partial, series in
+                partial + signedValue(for: series)
+            }
+        }
+
+        func stackedExtents(using config: ChartConfig) -> (min: Double, max: Double) {
+            var positiveTotal: Double = 0
+            var negativeTotal: Double = 0
+
+            for series in config.bar.series {
+                let value = signedValue(for: series)
+                if value >= 0 {
+                    positiveTotal += value
+                } else {
+                    negativeTotal += value
+                }
+            }
+
+            return (negativeTotal, positiveTotal)
+        }
     }
 
     struct ChartGroup: Identifiable {
@@ -369,10 +418,10 @@ extension CombinedChartView {
     /// Dynamic Y range to fit all visible bars/line.
     private var yDomain: ClosedRange<Double> {
         let minValue = data
-            .map { ChartMath.stackedExtents(for: $0, config: config).min }
+            .map { $0.stackedExtents(using: config).min }
             .min() ?? -20
         let maxValue = data
-            .map { ChartMath.stackedExtents(for: $0, config: config).max }
+            .map { $0.stackedExtents(using: config).max }
             .max() ?? 20
         let padding = max((maxValue - minValue) * 0.1, 2)
         return (minValue - padding)...(maxValue + padding)
@@ -423,37 +472,6 @@ extension CombinedChartView {
         scrollPage = clampedPage
         updateSelection(to: min(data.count - 1, clampedPage * config.monthsPerPage))
     }
-
-    fileprivate enum ChartMath {
-        static func signedValue(
-            for point: ChartPoint,
-            series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
-            let raw = point.values[series.id] ?? 0
-            return series.signedValue(for: raw)
-        }
-
-        static func lineValue(for point: ChartPoint, config: ChartConfig) -> Double {
-            config.bar.series.reduce(0) { partial, series in
-                guard series.contributesToTrendLine else { return partial }
-                let value = signedValue(for: point, series: series)
-                return partial + value
-            }
-        }
-
-        static func stackedExtents(for point: ChartPoint, config: ChartConfig) -> (min: Double, max: Double) {
-            var positiveTotal: Double = 0
-            var negativeTotal: Double = 0
-            for series in config.bar.series {
-                let value = signedValue(for: point, series: series)
-                if value >= 0 {
-                    positiveTotal += value
-                } else {
-                    negativeTotal += value
-                }
-            }
-            return (negativeTotal, positiveTotal)
-        }
-    }
 }
 
 extension CombinedChartView {
@@ -486,18 +504,20 @@ extension CombinedChartView {
                 }
             }
 
-            CombinedChartPager(
-                ranges: yearPageRanges,
-                highlightedTitle: (fullyVisibleYearRange ?? currentYearRange)?.title,
-                scrollPage: scrollPage,
-                maxScrollPage: maxScrollPage,
-                showAllYears: showsAllYearsInPager,
-                onSelectPreviousPage: { selectPage(scrollPage - 1) },
-                onSelectRange: { range in
-                    scrollPage = range.startPage
-                    updateSelection(to: range.startMonthIndex)
-                },
-                onSelectNextPage: { selectPage(scrollPage + 1) })
+            if config.pager.isVisible {
+                CombinedChartPager(
+                    ranges: yearPageRanges,
+                    highlightedTitle: (fullyVisibleYearRange ?? currentYearRange)?.title,
+                    scrollPage: scrollPage,
+                    maxScrollPage: maxScrollPage,
+                    showAllYears: config.pager.displayStyle == .allYears,
+                    onSelectPreviousPage: { selectPage(scrollPage - 1) },
+                    onSelectRange: { range in
+                        scrollPage = range.startPage
+                        updateSelection(to: range.startMonthIndex)
+                    },
+                    onSelectNextPage: { selectPage(scrollPage + 1) })
+            }
         }
         .frame(height: config.chartHeight)
     }
@@ -909,7 +929,7 @@ private extension CombinedChartView.ChartContainer {
             return nil
         }
 
-        let value = CombinedChartView.ChartMath.lineValue(for: visibleData[selectedIndex], config: config)
+        let value = visibleData[selectedIndex].trendLineValue(using: config)
         return (selectedIndex, value, xPos)
     }
 
@@ -969,8 +989,8 @@ private extension CombinedChartView.ChartContainer {
         for index in 0..<(visibleData.count - 1) {
             let start = visibleData[index]
             let end = visibleData[index + 1]
-            let startValue = CombinedChartView.ChartMath.lineValue(for: start, config: config)
-            let endValue = CombinedChartView.ChartMath.lineValue(for: end, config: config)
+            let startValue = start.trendLineValue(using: config)
+            let endValue = end.trendLineValue(using: config)
 
             // Convert data points into chart-space points. If any position is missing, skip this pair.
             guard let startPoint = linePoint(for: start.xKey, value: startValue, proxy: proxy),
@@ -1047,7 +1067,7 @@ private extension CombinedChartView.ChartContainer {
         var result: [CombinedChartView.ChartContainerSegment] = []
 
         for series in config.bar.series {
-            let value = CombinedChartView.ChartMath.signedValue(for: point, series: series)
+            let value = point.signedValue(for: series)
             let color = trendBarColor(for: series.color, useTrendBarColor: useTrendBarColor)
             if value >= 0 {
                 result.append(CombinedChartView.ChartContainerSegment(start: positiveStart, value: value, color: color))
@@ -1098,7 +1118,7 @@ private extension CombinedChartView.ChartContainer {
 
         if selectedTab.behavior.showsSelectedPoint, let selectedIndex,
            visibleData.indices.contains(selectedIndex) {
-            let value = CombinedChartView.ChartMath.lineValue(for: visibleData[selectedIndex], config: config)
+            let value = visibleData[selectedIndex].trendLineValue(using: config)
             PointMark(
                 x: .value("Selected Month", visibleData[selectedIndex].xKey),
                 y: .value("Selected Value", value))
