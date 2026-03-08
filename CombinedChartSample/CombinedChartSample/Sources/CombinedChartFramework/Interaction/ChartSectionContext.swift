@@ -16,7 +16,9 @@ extension CombinedChartView {
             plotSyncState: PlotSyncState) -> YAxisLabelsContext {
             plotSyncState.makeYAxisLabelsContext(
                 yAxisTickValues: yAxisTickValues,
-                labelText: yAxisLabel)
+                labelText: yAxisLabel,
+                labelFont: config.axis.yAxisLabelFont,
+                labelColor: config.axis.yAxisLabelColor)
         }
 
         func makeRenderContext(

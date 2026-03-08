@@ -13,20 +13,27 @@ extension CombinedChartView {
                 Button(action: context.onSelectPreviousPage) {
                     Image(systemName: "chevron.left")
                 }
-                .foregroundStyle(context.canSelectPreviousPage ? .primary : .secondary)
+                .foregroundStyle(
+                    context.canSelectPreviousPage
+                        ? context.config.pager.activeControlColor
+                        : context.config.pager.inactiveControlColor)
                 .disabled(!context.canSelectPreviousPage)
 
                 Spacer()
 
                 Text(highlightedEntryTitle ?? "")
-                    .font(.callout.weight(.semibold))
+                    .font(context.config.pager.titleFont)
+                    .foregroundStyle(context.config.pager.titleColor)
 
                 Spacer()
 
                 Button(action: context.onSelectNextPage) {
                     Image(systemName: "chevron.right")
                 }
-                .foregroundStyle(context.canSelectNextPage ? .primary : .secondary)
+                .foregroundStyle(
+                    context.canSelectNextPage
+                        ? context.config.pager.activeControlColor
+                        : context.config.pager.inactiveControlColor)
                 .disabled(!context.canSelectNextPage)
             }
             .padding(.horizontal, 8)

@@ -7,6 +7,8 @@ extension CombinedChartView {
         let plotAreaMinY: CGFloat?
         let plotAreaHeight: CGFloat
         let labelText: (Double) -> String
+        let labelFont: Font
+        let labelColor: Color
     }
 
     struct ChartYAxisLabels: View {
@@ -22,8 +24,8 @@ extension CombinedChartView {
                     ForEach(context.yAxisTickValues, id: \.self) { value in
                         if let yPos = context.tickPositions[value] {
                             Text(context.labelText(value))
-                                .font(.caption2)
-                                .foregroundStyle(.gray)
+                                .font(context.labelFont)
+                                .foregroundStyle(context.labelColor)
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: maxLabelWidth, alignment: .trailing)
                                 .fixedSize(horizontal: false, vertical: true)

@@ -119,6 +119,7 @@ public extension CombinedChartView {
 
     /// Context passed to a custom pager.
     struct PagerContext {
+        public let config: ChartConfig
         public let entries: [PagerEntry]
         public let highlightedEntry: PagerEntry?
         public let canSelectPreviousPage: Bool
@@ -129,6 +130,7 @@ public extension CombinedChartView {
 
         /// Creates pager context.
         public init(
+            config: ChartConfig,
             entries: [PagerEntry],
             highlightedEntry: PagerEntry?,
             canSelectPreviousPage: Bool,
@@ -136,6 +138,7 @@ public extension CombinedChartView {
             onSelectPreviousPage: @escaping () -> Void,
             onSelectEntry: @escaping (PagerEntry) -> Void,
             onSelectNextPage: @escaping () -> Void) {
+            self.config = config
             self.entries = entries
             self.highlightedEntry = highlightedEntry
             self.canSelectPreviousPage = canSelectPreviousPage

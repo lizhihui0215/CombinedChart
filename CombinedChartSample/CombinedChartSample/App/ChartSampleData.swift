@@ -12,6 +12,47 @@ import UIKit
 // swiftlint:disable line_length
 
 enum ChartSampleData {
+    enum SampleAppearance {
+        enum Colors {
+            static let surface = Color(uiColor: .secondarySystemBackground)
+            static let secondaryText = Color.secondary
+            static let checklistBullet = Color.blue.opacity(0.8)
+        }
+
+        enum Typography {
+            static let screenTitle = Font.headline
+            static let cardTitle = Font.subheadline.weight(.semibold)
+            static let bodyCaption = Font.caption
+            static let valueCaption = Font.caption.monospacedDigit()
+            static let statValue = Font.headline.monospaced()
+            static let sectionTitle = Font.subheadline.weight(.semibold)
+        }
+    }
+
+    enum Palette {
+        static let liabilities = Color(red: 0.82, green: 0.35, blue: 0.42)
+        static let saving = Color(red: 0.20, green: 0.52, blue: 0.68)
+        static let investment = Color(red: 0.86, green: 0.43, blue: 0.16)
+        static let otherLiquid = Color(red: 0.30, green: 0.67, blue: 0.14)
+        static let otherNonLiquid = Color(red: 0.08, green: 0.28, blue: 0.34)
+        static let trendBar = Color.gray.opacity(0.45)
+        static let positiveLine = Color.red
+        static let negativeLine = Color.yellow
+        static let selectionLine = Color.gray
+        static let selectionFill = Color.gray.opacity(0.12)
+        static let zeroLine = Color.black
+        static let segmentGap = Color(uiColor: .systemBackground)
+    }
+
+    enum DatasetOption: String, CaseIterable, Identifiable {
+        case current = "Current"
+        case positiveDominant = "Positive Dominant"
+
+        var id: Self {
+            self
+        }
+    }
+
     struct Response: Decodable {
         let groups: [Group]
     }
@@ -99,7 +140,9 @@ enum ChartSampleData {
     }
     """
 
-    static func makeGroups(variance: Double = 0.5) -> [CombinedChartView.DataGroup] {
+    static func makeGroups(
+        dataset: DatasetOption = .current,
+        variance: Double = 0.5) -> [CombinedChartView.DataGroup] {
         let decoder = JSONDecoder()
         guard let data = json.data(using: .utf8),
               let decoded = try? decoder.decode(Response.self, from: data)
@@ -127,7 +170,9 @@ enum ChartSampleData {
                         id: .init(groupID: group.id, xKey: point.xKey),
                         xKey: point.xKey,
                         xLabel: point.xLabel,
-                        values: randomizedValues)
+                        values: adjustedValues(
+                            for: dataset,
+                            values: randomizedValues))
                 })
         }
     }
@@ -142,13 +187,13 @@ enum ChartSampleData {
             chartHeight: chartHeight,
             bar: makeBarConfig(barWidth: barWidth),
             line: CombinedChartView.Config.Line(
-                positiveLineColor: .red,
-                negativeLineColor: .yellow,
+                positiveLineColor: Palette.positiveLine,
+                negativeLineColor: Palette.negativeLine,
                 lineWidth: 1,
                 selection: .init(
                     pointSize: 20,
-                    selectionLineColorStrategy: .fixedLine(Color.gray),
-                    fillColor: Color.gray.opacity(0.12),
+                    selectionLineColorStrategy: .fixedLine(Palette.selectionLine),
+                    fillColor: Palette.selectionFill,
                     minimumSelectionWidth: 24)),
             axis: CombinedChartView.Config.Axis(
                 xAxisLabel: { context in
@@ -158,7 +203,7 @@ enum ChartSampleData {
                     let value = context.value
                     return value == 0 ? "0" : "\(Int(value / 1000))K"
                 },
-                zeroLineColor: .black,
+                zeroLineColor: Palette.zeroLine,
                 zeroLineWidth: 1,
                 yAxisWidth: 40),
             pager: .init(
@@ -170,9 +215,9 @@ enum ChartSampleData {
     private static func makeBarConfig(barWidth: CGFloat) -> CombinedChartView.Config.Bar {
         CombinedChartView.Config.Bar(
             series: makeBarSeries(),
-            trendBarColorStyle: .unified(Color.gray.opacity(0.45)),
+            trendBarColorStyle: .unified(Palette.trendBar),
             segmentGap: 2,
-            segmentGapColor: Color(uiColor: .systemBackground),
+            segmentGapColor: Palette.segmentGap,
             barWidth: barWidth)
     }
 
@@ -181,24 +226,24 @@ enum ChartSampleData {
             makeSeriesStyle(
                 id: ChartSeriesKey.liabilities,
                 label: "Liabilities",
-                color: Color(red: 0.82, green: 0.35, blue: 0.42),
+                color: Palette.liabilities,
                 valuePolarity: .forcedSign(.negative)),
             makeSeriesStyle(
                 id: ChartSeriesKey.saving,
                 label: "Saving",
-                color: Color(red: 0.20, green: 0.52, blue: 0.68)),
+                color: Palette.saving),
             makeSeriesStyle(
                 id: ChartSeriesKey.investment,
                 label: "Investment",
-                color: Color(red: 0.86, green: 0.43, blue: 0.16)),
+                color: Palette.investment),
             makeSeriesStyle(
                 id: ChartSeriesKey.otherLiquid,
                 label: "Other Liquid",
-                color: Color(red: 0.30, green: 0.67, blue: 0.14)),
+                color: Palette.otherLiquid),
             makeSeriesStyle(
                 id: ChartSeriesKey.otherNonLiquid,
                 label: "Other Non-Liquid",
-                color: Color(red: 0.08, green: 0.28, blue: 0.34))
+                color: Palette.otherNonLiquid)
         ]
     }
 
@@ -232,5 +277,22 @@ enum ChartSampleData {
         let lowerBound = 1.0 - variance
         let upperBound = 1.0 + variance
         return lowerBound + ((upperBound - lowerBound) * normalized)
+    }
+
+    private static func adjustedValues(
+        for dataset: DatasetOption,
+        values: [ChartSeriesKey: Double]) -> [ChartSeriesKey: Double] {
+        switch dataset {
+        case .current:
+            return values
+        case .positiveDominant:
+            var adjusted = values
+            adjusted[.saving] = (values[.saving] ?? 0) * 1.8
+            adjusted[.investment] = (values[.investment] ?? 0) * 2.2
+            adjusted[.otherLiquid] = (values[.otherLiquid] ?? 0) * 1.9
+            adjusted[.otherNonLiquid] = (values[.otherNonLiquid] ?? 0) * 1.7
+            adjusted[.liabilities] = (values[.liabilities] ?? 0) * 0.22
+            return adjusted
+        }
     }
 }
