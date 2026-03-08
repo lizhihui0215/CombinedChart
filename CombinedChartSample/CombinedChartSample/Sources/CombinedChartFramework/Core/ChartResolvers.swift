@@ -31,6 +31,22 @@ extension CombinedChartView {
 
             return dataPointIDs.firstIndex(of: selection.pointID)
         }
+
+        static func reconciledSelection(
+            _ selection: VisibleSelection?,
+            dataPointIDs: [ChartPointID]) -> VisibleSelection? {
+            guard let selection,
+                  let resolvedVisibleIndex = resolvedVisibleIndex(
+                      for: selection,
+                      dataPointIDs: dataPointIDs)
+            else {
+                return nil
+            }
+
+            return .init(
+                visibleIndex: resolvedVisibleIndex,
+                pointID: dataPointIDs[resolvedVisibleIndex])
+        }
     }
 
     enum LineSegmentResolver {

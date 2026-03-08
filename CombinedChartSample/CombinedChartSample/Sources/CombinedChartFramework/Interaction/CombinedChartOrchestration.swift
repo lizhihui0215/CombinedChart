@@ -143,14 +143,18 @@ extension CombinedChartView {
     }
 
     private func apply(_ mutation: InteractionMutation) {
+        let dataPointIDs = data.map(\.id)
+
         switch mutation {
         case .selection(let visibleSelection, let emitsPointTap):
-            self.visibleSelection = visibleSelection
+            self.visibleSelection = CombinedChartView.SelectionResolver.reconciledSelection(
+                visibleSelection,
+                dataPointIDs: dataPointIDs)
             guard emitsPointTap,
-                  let visibleSelection,
+                  let visibleSelection = self.visibleSelection,
                   let resolvedIndex = CombinedChartView.SelectionResolver.resolvedVisibleIndex(
                       for: visibleSelection,
-                      dataPointIDs: data.map(\.id))
+                      dataPointIDs: dataPointIDs)
             else { return }
             let point = data[resolvedIndex].source
             onPointTap?(
@@ -162,6 +166,9 @@ extension CombinedChartView {
             if let nextContentOffsetX {
                 contentOffsetX = nextContentOffsetX
             }
+            visibleSelection = CombinedChartView.SelectionResolver.reconciledSelection(
+                visibleSelection,
+                dataPointIDs: dataPointIDs)
         }
     }
 }

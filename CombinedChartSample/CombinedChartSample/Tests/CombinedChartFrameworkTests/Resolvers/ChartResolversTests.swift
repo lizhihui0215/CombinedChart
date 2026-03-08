@@ -79,4 +79,35 @@ final class ChartResolversTests: XCTestCase {
 
         XCTAssertEqual(resolvedIndex, 2)
     }
+
+    func testSelectionResolverReconcilesSelectionToUpdatedVisibleIndex() {
+        let reconciledSelection = CombinedChartView.SelectionResolver.reconciledSelection(
+            .init(
+                visibleIndex: 0,
+                pointID: .init(groupID: "2024", xKey: "2024-03")),
+            dataPointIDs: [
+                .init(groupID: "2024", xKey: "2024-01"),
+                .init(groupID: "2024", xKey: "2024-02"),
+                .init(groupID: "2024", xKey: "2024-03")
+            ])
+
+        XCTAssertEqual(
+            reconciledSelection,
+            .init(
+                visibleIndex: 2,
+                pointID: .init(groupID: "2024", xKey: "2024-03")))
+    }
+
+    func testSelectionResolverDropsSelectionWhenPointIsMissing() {
+        let reconciledSelection = CombinedChartView.SelectionResolver.reconciledSelection(
+            .init(
+                visibleIndex: 1,
+                pointID: .init(groupID: "2024", xKey: "2024-99")),
+            dataPointIDs: [
+                .init(groupID: "2024", xKey: "2024-01"),
+                .init(groupID: "2024", xKey: "2024-02")
+            ])
+
+        XCTAssertNil(reconciledSelection)
+    }
 }
