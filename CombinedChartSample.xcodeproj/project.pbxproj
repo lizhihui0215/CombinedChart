@@ -83,6 +83,7 @@
 		26E3FCD82F5D12C9004D2007 /* CombinedChartInternalData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedChartInternalData.swift; sourceTree = "<group>"; };
 		26E3FCDA2F5D1440004D2007 /* CombinedChartViewBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedChartViewBody.swift; sourceTree = "<group>"; };
 		26E3FCF42F5D1AEF004D2007 /* CombinedChartInteractionReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedChartInteractionReducer.swift; sourceTree = "<group>"; };
+		26E3FCF62F5D1D63004D2007 /* CombinedChartSample.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = file; path = CombinedChartSample.xctestplan; sourceTree = "<group>"; };
 		A10000000000000000000001 /* CombinedChartFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CombinedChartFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -140,6 +141,7 @@
 		26785B792F3F0AC900541A34 = {
 			isa = PBXGroup;
 			children = (
+				26E3FCF62F5D1D63004D2007 /* CombinedChartSample.xctestplan */,
 				26785B842F3F0AC900541A34 /* CombinedChartSample */,
 				26785B922F3F0AC900541A34 /* CombinedChartSampleTests */,
 				26785B9C2F3F0AC900541A34 /* CombinedChartSampleUITests */,

@@ -316,6 +316,7 @@ extension CombinedChartView {
     enum ViewAction {
         case selectPoint(index: Int?, emitsPointTap: Bool = true)
         case selectMonthWindow(startMonthIndex: Int)
+        case settleDrag(targetMonthIndex: Int, targetContentOffsetX: CGFloat)
         case selectPreviousPage
         case selectNextPage
     }
@@ -340,6 +341,7 @@ extension CombinedChartView {
         let config: ChartConfig
         let showDebugOverlay: Bool
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
+        let selectedIndex: Int?
     }
 
     struct ChartSelectionState {

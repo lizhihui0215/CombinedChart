@@ -25,6 +25,11 @@ extension CombinedChartView {
                 [.selection(index: index, emitsPointTap: emitsPointTap)]
             case .selectMonthWindow(let startMonthIndex):
                 [monthWindowMutation(startMonthIndex: startMonthIndex, state: state)]
+            case .settleDrag(let targetMonthIndex, let targetContentOffsetX):
+                [settledDragMutation(
+                    targetMonthIndex: targetMonthIndex,
+                    targetContentOffsetX: targetContentOffsetX,
+                    state: state)]
             case .selectPreviousPage:
                 monthWindowMutations(for: -1, state: state)
             case .selectNextPage:
@@ -63,6 +68,19 @@ extension CombinedChartView {
             return .monthWindow(
                 startMonthIndex: clampedStartMonthIndex,
                 contentOffsetX: nextContentOffsetX)
+        }
+
+        private static func settledDragMutation(
+            targetMonthIndex: Int,
+            targetContentOffsetX: CGFloat,
+            state: InteractionState) -> InteractionMutation {
+            let clampedStartMonthIndex = min(max(targetMonthIndex, 0), state.maxStartMonthIndex)
+            let maximumContentOffsetX = CGFloat(state.maxStartMonthIndex) * state.unitWidth
+            let clampedContentOffsetX = min(max(targetContentOffsetX, 0), maximumContentOffsetX)
+
+            return .monthWindow(
+                startMonthIndex: clampedStartMonthIndex,
+                contentOffsetX: clampedContentOffsetX)
         }
     }
 }

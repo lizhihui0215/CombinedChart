@@ -14,14 +14,14 @@ public extension CombinedChartView {
                 if hasData {
                     CombinedChartSection(
                         context: sectionContext,
-                        selectedIndex: $selectedIndex,
+                        selectedIndex: selectedIndex,
                         visibleStartMonthIndex: $visibleStartMonthIndex,
                         contentOffsetX: $contentOffsetX,
                         unitWidth: $unitWidth,
                         viewportWidth: $viewportWidth,
                         plotAreaInfo: $plotAreaInfo,
                         yTickPositions: $yTickPositions,
-                        onSelectIndex: { dispatch(.selectPoint(index: $0)) })
+                        onDispatchAction: dispatch)
                 } else {
                     viewSlots.emptyState
                 }

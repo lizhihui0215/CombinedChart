@@ -3,14 +3,14 @@ import SwiftUI
 extension CombinedChartView {
     struct CombinedChartSection: View {
         let context: SectionContext
-        @Binding var selectedIndex: Int?
+        let selectedIndex: Int?
         @Binding var visibleStartMonthIndex: Int
         @Binding var contentOffsetX: CGFloat
         @Binding var unitWidth: CGFloat
         @Binding var viewportWidth: CGFloat
         @Binding var plotAreaInfo: PlotAreaInfo?
         @Binding var yTickPositions: [Double: CGFloat]
-        let onSelectIndex: (Int?) -> Void
+        let onDispatchAction: (ViewAction) -> Void
         @GestureState private var dragTranslationX: CGFloat = 0
         @State private var settlingOffsetX: CGFloat = 0
 
@@ -38,8 +38,7 @@ extension CombinedChartView {
                     ZStack(alignment: .topLeading) {
                         ChartContainer(
                             context: renderContext,
-                            selectedIndex: $selectedIndex,
-                            onSelectIndex: onSelectIndex,
+                            onSelectIndex: { onDispatchAction(.selectPoint(index: $0)) },
                             onPlotAreaChange: { plotRect in
                                 syncPlotArea(plotRect, isDragging: isDragging)
                             },
@@ -123,7 +122,8 @@ private extension CombinedChartView.CombinedChartSection {
             plotAreaHeight: plotAreaInfo?.height ?? 0,
             config: context.config,
             showDebugOverlay: context.showDebugOverlay,
-            selectionOverlay: context.selectionOverlay)
+            selectionOverlay: context.selectionOverlay,
+            selectedIndex: selectedIndex)
     }
 
     func dragGesture(metrics: CombinedChartView.ChartLayoutMetrics) -> some Gesture {
@@ -143,8 +143,10 @@ private extension CombinedChartView.CombinedChartSection {
                     for: targetOffsetX,
                     computedUnitWidth: metrics.unitWidth)
                 settlingOffsetX = clampedTranslationX
-                contentOffsetX = targetOffsetX
-                visibleStartMonthIndex = targetMonthIndex
+                onDispatchAction(
+                    .settleDrag(
+                        targetMonthIndex: targetMonthIndex,
+                        targetContentOffsetX: targetOffsetX))
                 settlingOffsetX = 0
             }
     }

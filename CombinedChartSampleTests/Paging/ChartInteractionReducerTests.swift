@@ -77,6 +77,44 @@ struct ChartInteractionReducerTests {
         #expect(contentOffsetX == 800)
     }
 
+    @Test func reducerPreservesFreeDragSettledOffset() {
+        let mutations = CombinedChartView.InteractionReducer.mutations(
+            for: .settleDrag(targetMonthIndex: 3, targetContentOffsetX: 365),
+            state: makeState(
+                visibleStartMonthIndex: 0,
+                unitWidth: 100,
+                monthsPerPage: 4,
+                maxStartMonthIndex: 8,
+                arrowScrollMode: .byPage))
+
+        #expect(mutations.count == 1)
+        guard case .monthWindow(let startMonthIndex, let contentOffsetX) = mutations[0] else {
+            Issue.record("Expected monthWindow mutation")
+            return
+        }
+        #expect(startMonthIndex == 3)
+        #expect(contentOffsetX == 365)
+    }
+
+    @Test func reducerClampsSettledDragOffsetToMaximumRange() {
+        let mutations = CombinedChartView.InteractionReducer.mutations(
+            for: .settleDrag(targetMonthIndex: 99, targetContentOffsetX: 9999),
+            state: makeState(
+                visibleStartMonthIndex: 0,
+                unitWidth: 100,
+                monthsPerPage: 4,
+                maxStartMonthIndex: 8,
+                arrowScrollMode: .byPage))
+
+        #expect(mutations.count == 1)
+        guard case .monthWindow(let startMonthIndex, let contentOffsetX) = mutations[0] else {
+            Issue.record("Expected monthWindow mutation")
+            return
+        }
+        #expect(startMonthIndex == 8)
+        #expect(contentOffsetX == 800)
+    }
+
     private func makeState(
         visibleStartMonthIndex: Int,
         unitWidth: CGFloat,

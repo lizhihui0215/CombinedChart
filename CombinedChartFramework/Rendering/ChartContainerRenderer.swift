@@ -5,7 +5,6 @@ extension CombinedChartView {
     /// Encapsulates the Chart to keep SwiftUI type-checking fast.
     struct ChartContainer: View {
         let context: ChartRenderContext
-        @Binding var selectedIndex: Int?
         let onSelectIndex: (Int) -> Void
         let onPlotAreaChange: (CGRect) -> Void
         let onYAxisTickPositions: ([Double: CGFloat]) -> Void
@@ -48,7 +47,7 @@ extension CombinedChartView {
                 plotAreaHeight: context.plotAreaHeight,
                 config: context.config,
                 showDebugOverlay: context.showDebugOverlay,
-                selectedIndex: selectedIndex)
+                selectedIndex: context.selectedIndex)
         }
 
         var overlayContext: OverlayRenderContext {
@@ -58,7 +57,7 @@ extension CombinedChartView {
                 yAxisTickValues: context.yAxisTickValues,
                 config: context.config,
                 selectionOverlay: context.selectionOverlay,
-                selectedIndex: selectedIndex)
+                selectedIndex: context.selectedIndex)
         }
     }
 }
