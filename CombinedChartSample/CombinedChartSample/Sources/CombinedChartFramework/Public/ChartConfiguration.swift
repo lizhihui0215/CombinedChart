@@ -275,18 +275,6 @@ public extension ChartConfig.Bar {
 
         /// Value semantics for a series.
         public struct ValueBehavior {
-            /// Whether the series contributes to the derived trend line.
-            public enum TrendLineInclusion {
-                case included
-                case excluded
-            }
-
-            /// A forced sign used when remapping incoming values.
-            public enum Sign {
-                case positive
-                case negative
-            }
-
             /// How incoming values should be interpreted before rendering.
             public enum ValuePolarity {
                 case preserveSign
@@ -369,6 +357,20 @@ public extension ChartConfig.Bar {
         public var contributesToTrendLine: Bool {
             valueBehavior.contributesToTrendLine
         }
+    }
+}
+
+public extension ChartConfig.Bar.SeriesStyle.ValueBehavior {
+    /// Whether the series contributes to the derived trend line.
+    enum TrendLineInclusion {
+        case included
+        case excluded
+    }
+
+    /// A forced sign used when remapping incoming values.
+    enum Sign {
+        case positive
+        case negative
     }
 }
 
