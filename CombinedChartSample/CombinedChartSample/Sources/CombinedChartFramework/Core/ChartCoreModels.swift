@@ -249,12 +249,16 @@ extension CombinedChartView {
 
     struct ChartDerivedState {
         let hasData: Bool
-        let visibleStartLabel: String?
         let axisPointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo]
         let yDomain: ClosedRange<Double>
         let yAxisTickValues: [Double]
         let yAxisDisplayDomain: ClosedRange<Double>
-        let pagerState: PagerState
+        let viewport: ChartViewportDerivedState
+
+        struct ChartViewportDerivedState {
+            let visibleStartLabel: String?
+            let pagerState: PagerState
+        }
 
         init(
             config: ChartConfig,
@@ -264,9 +268,6 @@ extension CombinedChartView {
             contentOffsetX: CGFloat,
             unitWidth: CGFloat) {
             hasData = !data.isEmpty
-            visibleStartLabel = data.indices.contains(startIndex)
-                ? data[startIndex].xLabel
-                : nil
             axisPointInfos = data.enumerated().map { index, point in
                 point.axisPointInfo(index: index)
             }
@@ -291,13 +292,17 @@ extension CombinedChartView {
                 yAxisDisplayDomain = yDomain
             }
 
-            pagerState = .init(
-                sortedGroups: sortedGroups,
-                dataCount: data.count,
-                monthsPerPage: config.monthsPerPage,
-                startIndex: startIndex,
-                contentOffsetX: contentOffsetX,
-                unitWidth: unitWidth)
+            viewport = .init(
+                visibleStartLabel: data.indices.contains(startIndex)
+                    ? data[startIndex].xLabel
+                    : nil,
+                pagerState: .init(
+                    sortedGroups: sortedGroups,
+                    dataCount: data.count,
+                    monthsPerPage: config.monthsPerPage,
+                    startIndex: startIndex,
+                    contentOffsetX: contentOffsetX,
+                    unitWidth: unitWidth))
         }
     }
 

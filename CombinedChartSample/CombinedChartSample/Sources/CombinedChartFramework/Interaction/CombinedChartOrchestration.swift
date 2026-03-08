@@ -38,7 +38,7 @@ extension CombinedChartView {
     }
 
     private var pagerState: PagerState {
-        derivedState.pagerState
+        derivedState.viewport.pagerState
     }
 
     private var yearPageRanges: [YearPageRange] {
@@ -74,7 +74,7 @@ extension CombinedChartView {
     }
 
     var visibleStartLabel: String? {
-        derivedState.visibleStartLabel
+        derivedState.viewport.visibleStartLabel
     }
 
     var yAxisTickValues: [Double] {

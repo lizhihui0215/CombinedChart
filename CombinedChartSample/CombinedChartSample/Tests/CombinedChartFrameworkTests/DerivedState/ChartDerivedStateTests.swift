@@ -68,7 +68,7 @@ final class ChartDerivedStateTests: XCTestCase {
             unitWidth: 100)
 
         XCTAssertTrue(derivedState.hasData)
-        XCTAssertEqual(derivedState.visibleStartLabel, "Feb")
+        XCTAssertEqual(derivedState.viewport.visibleStartLabel, "Feb")
         XCTAssertEqual(derivedState.axisPointInfos.count, 2)
         XCTAssertEqual(derivedState.yDomain.lowerBound, -13.5)
         XCTAssertEqual(derivedState.yDomain.upperBound, 28.5)
