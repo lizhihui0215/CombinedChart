@@ -379,6 +379,14 @@ extension CombinedChartView {
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
     }
 
+    struct SectionRuntimeContext {
+        let pagingContext: PagingContext
+        let maxStartMonthIndex: Int
+        let dragPagingState: DragPagingState
+        let layoutMetrics: ChartLayoutMetrics
+        let renderContext: ChartRenderContext
+    }
+
     struct YAxisLabelsContext {
         let yAxisTickValues: [Double]
         let tickPositions: [Double: CGFloat]
@@ -401,6 +409,14 @@ extension CombinedChartView {
     struct VisibleSelection: Equatable {
         let visibleIndex: Int
         let pointID: ChartPointID
+    }
+
+    struct PagingContext {
+        let monthsPerPage: Int
+        let maxStartMonthIndex: Int
+        let arrowScrollMode: ChartConfig.ChartPagerConfig.ArrowScrollMode
+        let currentYearRangeIndex: Int?
+        let yearPageRanges: [YearPageRange]
     }
 
     struct ChartSelectionState {

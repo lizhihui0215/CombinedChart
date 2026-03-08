@@ -13,7 +13,7 @@ extension CombinedChartView {
 
         var body: some View {
             GeometryReader { geometry in
-                let metrics = layoutMetrics(for: geometry)
+                let runtimeContext = makeRuntimeContext(for: geometry)
                 let isDragging = dragTranslationX != 0
 
                 HStack(alignment: .top, spacing: 0) {
@@ -32,7 +32,7 @@ extension CombinedChartView {
 
                     ZStack(alignment: .topLeading) {
                         ChartContainer(
-                            context: renderContext,
+                            context: runtimeContext.renderContext,
                             onSelectIndex: { onDispatchAction(.selectPoint(index: $0)) },
                             onPlotAreaChange: { plotRect in
                                 syncPlotArea(plotRect, isDragging: isDragging)
@@ -40,21 +40,21 @@ extension CombinedChartView {
                             onYAxisTickPositions: { positions in
                                 syncYAxisTickPositions(positions, isDragging: isDragging)
                             })
-                            .frame(width: metrics.chartWidth)
+                            .frame(width: runtimeContext.layoutMetrics.chartWidth)
                             .frame(maxHeight: .infinity)
                     }
                     .compositingGroup()
-                    .offset(x: metrics.currentContentOffsetX)
-                    .frame(width: metrics.viewportWidth, alignment: .leading)
+                    .offset(x: runtimeContext.layoutMetrics.currentContentOffsetX)
+                    .frame(width: runtimeContext.layoutMetrics.viewportWidth, alignment: .leading)
                     .clipped()
                     .contentShape(Rectangle())
-                    .gesture(dragGesture(metrics: metrics))
+                    .gesture(dragGesture(runtimeContext: runtimeContext))
                 }
                 .onAppear {
-                    syncViewport(metrics: metrics)
+                    syncViewport(metrics: runtimeContext.layoutMetrics)
                 }
                 .onChange(of: geometry.size) { _ in
-                    syncViewport(metrics: metrics)
+                    syncViewport(metrics: runtimeContext.layoutMetrics)
                 }
             }
         }
@@ -62,29 +62,39 @@ extension CombinedChartView {
 }
 
 private extension CombinedChartView.CombinedChartSection {
-    var maxStartMonthIndex: Int {
-        max(0, context.renderContext.data.count - context.renderContext.config.monthsPerPage)
-    }
-
-    var dragPagingState: CombinedChartView.DragPagingState {
-        .init(
+    func makeRuntimeContext(for geometry: GeometryProxy) -> CombinedChartView.SectionRuntimeContext {
+        let pagingContext = CombinedChartView.PagingContext(
+            monthsPerPage: context.renderContext.config.monthsPerPage,
+            maxStartMonthIndex: max(
+                0,
+                context.renderContext.data.count - context.renderContext.config.monthsPerPage),
+            arrowScrollMode: context.renderContext.config.pager.arrowScrollMode,
+            currentYearRangeIndex: nil,
+            yearPageRanges: [])
+        let dragPagingState = CombinedChartView.DragPagingState(
             contentOffsetX: viewportState.contentOffsetX,
             visibleStartMonthIndex: viewportState.visibleStartMonthIndex,
-            monthsPerPage: context.renderContext.config.monthsPerPage,
-            maxStartMonthIndex: maxStartMonthIndex,
+            monthsPerPage: pagingContext.monthsPerPage,
+            maxStartMonthIndex: pagingContext.maxStartMonthIndex,
             dragScrollMode: context.renderContext.config.pager.dragScrollMode)
-    }
-
-    func layoutMetrics(for geometry: GeometryProxy) -> CombinedChartView.ChartLayoutMetrics {
-        .init(
+        let layoutMetrics = CombinedChartView.ChartLayoutMetrics(
             availableWidth: geometry.size.width,
             axisWidth: context.renderContext.config.axis.yAxisWidth,
-            monthsPerPage: context.renderContext.config.monthsPerPage,
+            monthsPerPage: pagingContext.monthsPerPage,
             dataCount: context.renderContext.data.count,
             dragPagingState: dragPagingState,
             dragTranslationX: dragTranslationX,
             settlingOffsetX: settlingOffsetX,
-            maxStartMonthIndex: maxStartMonthIndex)
+            maxStartMonthIndex: pagingContext.maxStartMonthIndex)
+
+        return .init(
+            pagingContext: pagingContext,
+            maxStartMonthIndex: pagingContext.maxStartMonthIndex,
+            dragPagingState: dragPagingState,
+            layoutMetrics: layoutMetrics,
+            renderContext: context.makeRenderContext(
+                plotAreaHeight: plotSyncState.plotAreaInfo?.height ?? 0,
+                visibleSelection: visibleSelection))
     }
 
     func syncPlotArea(_ plotRect: CGRect, isDragging: Bool) {
@@ -109,28 +119,22 @@ private extension CombinedChartView.CombinedChartSection {
         viewportState.contentOffsetX = CGFloat(viewportState.visibleStartMonthIndex) * metrics.unitWidth
     }
 
-    var renderContext: CombinedChartView.ChartRenderContext {
-        context.makeRenderContext(
-            plotAreaHeight: plotSyncState.plotAreaInfo?.height ?? 0,
-            visibleSelection: visibleSelection)
-    }
-
-    func dragGesture(metrics: CombinedChartView.ChartLayoutMetrics) -> some Gesture {
+    func dragGesture(runtimeContext: CombinedChartView.SectionRuntimeContext) -> some Gesture {
         DragGesture()
             .updating($dragTranslationX) { value, state, _ in
                 state = value.translation.width
             }
             .onEnded { value in
-                let clampedTranslationX = dragPagingState.clampedDisplayTranslationX(
+                let clampedTranslationX = runtimeContext.dragPagingState.clampedDisplayTranslationX(
                     from: value.translation.width,
-                    maxContentOffsetX: metrics.maxContentOffsetX)
-                let targetOffsetX = dragPagingState.targetOffsetX(
+                    maxContentOffsetX: runtimeContext.layoutMetrics.maxContentOffsetX)
+                let targetOffsetX = runtimeContext.dragPagingState.targetOffsetX(
                     for: value.translation.width,
-                    computedUnitWidth: metrics.unitWidth,
-                    computedViewportWidth: metrics.viewportWidth)
-                let targetMonthIndex = dragPagingState.targetMonthIndex(
+                    computedUnitWidth: runtimeContext.layoutMetrics.unitWidth,
+                    computedViewportWidth: runtimeContext.layoutMetrics.viewportWidth)
+                let targetMonthIndex = runtimeContext.dragPagingState.targetMonthIndex(
                     for: targetOffsetX,
-                    computedUnitWidth: metrics.unitWidth)
+                    computedUnitWidth: runtimeContext.layoutMetrics.unitWidth)
                 settlingOffsetX = clampedTranslationX
                 onDispatchAction(
                     .settleDrag(

@@ -6,11 +6,7 @@ extension CombinedChartView {
         let visiblePointIDs: [ChartPointID]
         let viewport: ViewportState
         let unitWidth: CGFloat
-        let monthsPerPage: Int
-        let maxStartMonthIndex: Int
-        let arrowScrollMode: ChartConfig.ChartPagerConfig.ArrowScrollMode
-        let currentYearRangeIndex: Int?
-        let yearPageRanges: [YearPageRange]
+        let pagingContext: PagingContext
     }
 
     enum InteractionMutation {
@@ -69,19 +65,20 @@ extension CombinedChartView {
         private static func monthWindowMutations(
             for direction: Int,
             state: InteractionState) -> [InteractionMutation] {
-            switch state.arrowScrollMode {
+            switch state.pagingContext.arrowScrollMode {
             case .byPage:
                 return [monthWindowMutation(
-                    startMonthIndex: state.viewport.visibleStartMonthIndex + (direction * state.monthsPerPage),
+                    startMonthIndex: state.viewport
+                        .visibleStartMonthIndex + (direction * state.pagingContext.monthsPerPage),
                     state: state)]
             case .byEntry:
-                guard let currentYearRangeIndex = state.currentYearRangeIndex else { return [] }
+                guard let currentYearRangeIndex = state.pagingContext.currentYearRangeIndex else { return [] }
                 let targetIndex = min(
                     max(currentYearRangeIndex + direction, 0),
-                    max(state.yearPageRanges.count - 1, 0))
-                guard state.yearPageRanges.indices.contains(targetIndex) else { return [] }
+                    max(state.pagingContext.yearPageRanges.count - 1, 0))
+                guard state.pagingContext.yearPageRanges.indices.contains(targetIndex) else { return [] }
                 return [monthWindowMutation(
-                    startMonthIndex: state.yearPageRanges[targetIndex].startMonthIndex,
+                    startMonthIndex: state.pagingContext.yearPageRanges[targetIndex].startMonthIndex,
                     state: state)]
             }
         }
@@ -89,7 +86,7 @@ extension CombinedChartView {
         private static func monthWindowMutation(
             startMonthIndex: Int,
             state: InteractionState) -> InteractionMutation {
-            let clampedStartMonthIndex = min(max(startMonthIndex, 0), state.maxStartMonthIndex)
+            let clampedStartMonthIndex = min(max(startMonthIndex, 0), state.pagingContext.maxStartMonthIndex)
             let nextContentOffsetX = state.unitWidth > 0
                 ? CGFloat(clampedStartMonthIndex) * state.unitWidth
                 : nil
@@ -103,8 +100,8 @@ extension CombinedChartView {
             targetMonthIndex: Int,
             targetContentOffsetX: CGFloat,
             state: InteractionState) -> InteractionMutation {
-            let clampedStartMonthIndex = min(max(targetMonthIndex, 0), state.maxStartMonthIndex)
-            let maximumContentOffsetX = CGFloat(state.maxStartMonthIndex) * state.unitWidth
+            let clampedStartMonthIndex = min(max(targetMonthIndex, 0), state.pagingContext.maxStartMonthIndex)
+            let maximumContentOffsetX = CGFloat(state.pagingContext.maxStartMonthIndex) * state.unitWidth
             let clampedContentOffsetX = min(max(targetContentOffsetX, 0), maximumContentOffsetX)
 
             return .monthWindow(

@@ -127,6 +127,11 @@ extension CombinedChartView {
             visiblePointIDs: data.map(\.id),
             viewport: viewportState,
             unitWidth: layoutState.unitWidth,
+            pagingContext: pagingContext)
+    }
+
+    private var pagingContext: PagingContext {
+        .init(
             monthsPerPage: config.monthsPerPage,
             maxStartMonthIndex: maxStartMonthIndex,
             arrowScrollMode: config.pager.arrowScrollMode,
