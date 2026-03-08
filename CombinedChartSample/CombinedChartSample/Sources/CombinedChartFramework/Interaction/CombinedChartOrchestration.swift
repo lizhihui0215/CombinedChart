@@ -6,7 +6,7 @@ extension CombinedChartView {
     @ViewBuilder
     var pagerView: some View {
         if let pagerContext {
-            if let pager = viewSlots.pager {
+            if let pager = slots.pager {
                 pager(pagerContext)
             } else {
                 CombinedChartPager(context: pagerContext)
@@ -115,7 +115,7 @@ extension CombinedChartView {
             yAxisTickValues: yAxisTickValues,
             yAxisDisplayDomain: yAxisDisplayDomain,
             showDebugOverlay: showDebugOverlay,
-            selectionOverlay: viewSlots.selectionOverlay,
+            selectionOverlay: slots.selectionOverlay,
             pagingContext: pagingContext,
             yAxisLabel: yAxisLabel(for:))
     }

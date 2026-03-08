@@ -3,8 +3,8 @@ import SwiftUI
 private struct CombinedChartPreviewHost: View {
     private let groups = CombinedChartPreviewData.groups
     private let config = CombinedChartPreviewData.config
-    private let tabs = CombinedChartView.ChartTab.defaults
-    @State private var selectedTab: CombinedChartView.ChartTab = .totalTrend
+    private let tabs = CombinedChartView.Tab.defaults
+    @State private var selectedTab: CombinedChartView.Tab = .totalTrend
     @State private var showDebugOverlay = false
 
     var body: some View {
@@ -49,7 +49,7 @@ private struct CombinedChartPreviewHost: View {
 }
 
 private enum CombinedChartPreviewData {
-    static let groups: [CombinedChartView.ChartGroup] = [
+    static let groups: [CombinedChartView.DataGroup] = [
         .init(
             id: "2020",
             displayTitle: "2020",
@@ -128,7 +128,7 @@ private enum CombinedChartPreviewData {
             ])
     ]
 
-    static let config = ChartConfig(
+    static let config = CombinedChartView.Config(
         monthsPerPage: 4,
         chartHeight: 420,
         bar: .init(
@@ -195,7 +195,7 @@ private enum CombinedChartPreviewData {
         investment: Double,
         otherLiquid: Double,
         otherNonLiquid: Double,
-        liabilities: Double) -> CombinedChartView.ChartPoint {
+        liabilities: Double) -> CombinedChartView.Point {
         .init(
             id: .init(groupID: groupID, xKey: xKey),
             xKey: xKey,

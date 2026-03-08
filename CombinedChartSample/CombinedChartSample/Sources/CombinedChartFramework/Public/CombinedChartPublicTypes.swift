@@ -1,15 +1,18 @@
 import SwiftUI
 
 public extension CombinedChartView {
+    // Preferred consumer-facing shorthands.
     typealias Config = ChartConfig
-    typealias Mode = ChartPresentationMode
     typealias Tab = ChartTab
     typealias DataGroup = ChartGroup
     typealias Point = ChartPoint
-    typealias PointID = ChartPointID
     typealias Slots = ViewSlots
-    typealias PagerItem = PagerEntry
     typealias Selection = SelectionContext
+
+    // Specialized shorthands for advanced customization surfaces.
+    typealias Mode = ChartPresentationMode
+    typealias PointID = ChartPointID
+    typealias PagerItem = PagerEntry
     typealias SelectionOverlay = SelectionOverlayContext
 
     struct DefaultEmptyStateView: View {

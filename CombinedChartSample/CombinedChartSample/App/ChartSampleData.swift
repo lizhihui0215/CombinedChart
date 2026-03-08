@@ -99,7 +99,7 @@ enum ChartSampleData {
     }
     """
 
-    static func makeGroups(variance: Double = 0.5) -> [CombinedChartView.ChartGroup] {
+    static func makeGroups(variance: Double = 0.5) -> [CombinedChartView.DataGroup] {
         let decoder = JSONDecoder()
         guard let data = json.data(using: .utf8),
               let decoded = try? decoder.decode(Response.self, from: data)
@@ -110,7 +110,7 @@ enum ChartSampleData {
         let clampedVariance = max(0, min(variance, 0.9))
 
         return decoded.groups.map { group in
-            CombinedChartView.ChartGroup(
+            CombinedChartView.DataGroup(
                 id: group.id,
                 displayTitle: group.displayTitle,
                 groupOrder: group.groupOrder,
@@ -123,7 +123,7 @@ enum ChartSampleData {
                             variance: clampedVariance)
                         partial[entry.key] = max(0, entry.value * factor)
                     }
-                    return CombinedChartView.ChartPoint(
+                    return CombinedChartView.Point(
                         id: .init(groupID: group.id, xKey: point.xKey),
                         xKey: point.xKey,
                         xLabel: point.xLabel,
@@ -133,13 +133,13 @@ enum ChartSampleData {
     }
 
     static func makeConfig(
-        dragScrollMode: ChartConfig.Pager.DragScrollMode = .freeSnapping,
-        chartHeight: CGFloat = 420) -> ChartConfig {
-        ChartConfig(
+        dragScrollMode: CombinedChartView.Config.Pager.DragScrollMode = .freeSnapping,
+        chartHeight: CGFloat = 420) -> CombinedChartView.Config {
+        CombinedChartView.Config(
             monthsPerPage: 4,
             chartHeight: chartHeight,
             bar: makeBarConfig(),
-            line: ChartConfig.Line(
+            line: CombinedChartView.Config.Line(
                 positiveLineColor: .red,
                 negativeLineColor: .yellow,
                 lineWidth: 1,
@@ -148,7 +148,7 @@ enum ChartSampleData {
                     selectionLineColorStrategy: .fixedLine(Color.gray),
                     fillColor: Color.gray.opacity(0.12),
                     minimumSelectionWidth: 24)),
-            axis: ChartConfig.Axis(
+            axis: CombinedChartView.Config.Axis(
                 xAxisLabel: { context in
                     context.point.xLabel
                 },
@@ -164,8 +164,8 @@ enum ChartSampleData {
                 dragScrollMode: dragScrollMode))
     }
 
-    private static func makeBarConfig() -> ChartConfig.Bar {
-        ChartConfig.Bar(
+    private static func makeBarConfig() -> CombinedChartView.Config.Bar {
+        CombinedChartView.Config.Bar(
             series: makeBarSeries(),
             trendBarColorStyle: .unified(Color.gray.opacity(0.45)),
             segmentGap: 2,
@@ -173,7 +173,7 @@ enum ChartSampleData {
             barWidth: 40)
     }
 
-    private static func makeBarSeries() -> [ChartConfig.Bar.SeriesStyle] {
+    private static func makeBarSeries() -> [CombinedChartView.Config.Bar.SeriesStyle] {
         [
             makeSeriesStyle(
                 id: ChartSeriesKey.liabilities,
@@ -203,10 +203,10 @@ enum ChartSampleData {
         id: ChartSeriesKey,
         label: String,
         color: Color,
-        valuePolarity: ChartConfig.Bar.SeriesStyle.ValueBehavior
-            .ValuePolarity = .preserveSign) -> ChartConfig
+        valuePolarity: CombinedChartView.Config.Bar.SeriesStyle.ValueBehavior
+            .ValuePolarity = .preserveSign) -> CombinedChartView.Config
                 .Bar.SeriesStyle {
-        ChartConfig.Bar.SeriesStyle(
+        CombinedChartView.Config.Bar.SeriesStyle(
             id: id,
             label: label,
             color: color,

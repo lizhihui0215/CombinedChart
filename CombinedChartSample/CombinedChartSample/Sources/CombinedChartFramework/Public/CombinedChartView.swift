@@ -1,26 +1,26 @@
 import SwiftUI
 
 public struct CombinedChartView: View {
-    let config: ChartConfig
-    let groups: [ChartGroup]
-    let tabs: [ChartTab]
-    let viewSlots: ViewSlots
-    let onPointTap: ((SelectionContext) -> Void)?
-    @Binding var selectedTab: ChartTab
+    let config: Config
+    let groups: [DataGroup]
+    let tabs: [Tab]
+    let slots: Slots
+    let onPointTap: ((Selection) -> Void)?
+    @Binding var selectedTab: Tab
     @Binding var showDebugOverlay: Bool
 
     public init(
-        config: ChartConfig = .default,
-        groups: [ChartGroup],
-        tabs: [ChartTab] = ChartTab.defaults,
-        selectedTab: Binding<ChartTab> = .constant(.totalTrend),
+        config: Config = .default,
+        groups: [DataGroup],
+        tabs: [Tab] = Tab.defaults,
+        selectedTab: Binding<Tab> = .constant(.totalTrend),
         showDebugOverlay: Binding<Bool> = .constant(false),
-        viewSlots: ViewSlots = .default,
-        onPointTap: ((SelectionContext) -> Void)? = nil) {
+        slots: Slots = .default,
+        onPointTap: ((Selection) -> Void)? = nil) {
         self.config = config
         self.groups = groups
         self.tabs = tabs
-        self.viewSlots = viewSlots
+        self.slots = slots
         self.onPointTap = onPointTap
         _selectedTab = selectedTab
         _showDebugOverlay = showDebugOverlay
@@ -30,6 +30,25 @@ public struct CombinedChartView: View {
                     index: 0,
                     pointID: $0.id)
             })
+    }
+
+    @available(*, deprecated, renamed: "init(config:groups:tabs:selectedTab:showDebugOverlay:slots:onPointTap:)")
+    public init(
+        config: Config = .default,
+        groups: [DataGroup],
+        tabs: [Tab] = Tab.defaults,
+        selectedTab: Binding<Tab> = .constant(.totalTrend),
+        showDebugOverlay: Binding<Bool> = .constant(false),
+        viewSlots: Slots,
+        onPointTap: ((Selection) -> Void)? = nil) {
+        self.init(
+            config: config,
+            groups: groups,
+            tabs: tabs,
+            selectedTab: selectedTab,
+            showDebugOverlay: showDebugOverlay,
+            slots: viewSlots,
+            onPointTap: onPointTap)
     }
 
     // UI state.

@@ -20,7 +20,7 @@ public extension CombinedChartView {
                         plotSyncState: $plotSyncState,
                         onDispatchAction: dispatch)
                 } else {
-                    viewSlots.emptyState
+                    slots.emptyState
                 }
             }
 

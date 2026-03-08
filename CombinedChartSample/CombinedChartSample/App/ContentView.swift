@@ -19,7 +19,7 @@ struct ContentView: View {
             self
         }
 
-        var dragScrollMode: ChartConfig.Pager.DragScrollMode {
+        var dragScrollMode: CombinedChartView.Config.Pager.DragScrollMode {
             switch self {
             case .byPage:
                 .byPage
@@ -73,8 +73,8 @@ struct ContentView: View {
     }
 
     private let groups = ChartSampleData.makeGroups(variance: 0.6)
-    private let tabs = CombinedChartView.ChartTab.defaults
-    @State private var selectedTab: CombinedChartView.ChartTab
+    private let tabs = CombinedChartView.Tab.defaults
+    @State private var selectedTab: CombinedChartView.Tab
     @State private var showDebugOverlay: Bool
     @State private var dragMode: DragModeOption
     @State private var chartHeight: CGFloat
@@ -87,7 +87,7 @@ struct ContentView: View {
         _chartHeight = State(initialValue: launchConfiguration.chartHeight)
     }
 
-    private var config: ChartConfig {
+    private var config: CombinedChartView.Config {
         ChartSampleData.makeConfig(
             dragScrollMode: dragMode.dragScrollMode,
             chartHeight: chartHeight)
