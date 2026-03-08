@@ -359,14 +359,20 @@ extension CombinedChartView {
     // MARK: - Section Contexts
 
     struct SectionContext {
-        let renderContext: SectionRenderContext
+        let config: ChartConfig
+        let selectedTab: ChartTab
+        let data: [ChartDataPoint]
+        let yAxisTickValues: [Double]
+        let yAxisDisplayDomain: ClosedRange<Double>
+        let showDebugOverlay: Bool
+        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
         let pagingContext: PagingContext
         let yAxisLabel: (Double) -> String
 
         func makeYAxisLabelsContext(
             plotSyncState: PlotSyncState) -> YAxisLabelsContext {
             .init(
-                yAxisTickValues: renderContext.yAxisTickValues,
+                yAxisTickValues: yAxisTickValues,
                 tickPositions: plotSyncState.yTickPositions,
                 plotArea: plotSyncState.plotAreaInfo,
                 labelText: yAxisLabel)
@@ -376,26 +382,16 @@ extension CombinedChartView {
             plotAreaHeight: CGFloat,
             visibleSelection: VisibleSelection?) -> ChartRenderContext {
             .init(
-                selectedTab: renderContext.selectedTab,
-                visibleData: renderContext.data,
-                yAxisTickValues: renderContext.yAxisTickValues,
-                yAxisDisplayDomain: renderContext.yAxisDisplayDomain,
+                selectedTab: selectedTab,
+                visibleData: data,
+                yAxisTickValues: yAxisTickValues,
+                yAxisDisplayDomain: yAxisDisplayDomain,
                 plotAreaHeight: plotAreaHeight,
-                config: renderContext.config,
-                showDebugOverlay: renderContext.showDebugOverlay,
-                selectionOverlay: renderContext.selectionOverlay,
+                config: config,
+                showDebugOverlay: showDebugOverlay,
+                selectionOverlay: selectionOverlay,
                 visibleSelection: visibleSelection)
         }
-    }
-
-    struct SectionRenderContext {
-        let config: ChartConfig
-        let selectedTab: ChartTab
-        let data: [ChartDataPoint]
-        let yAxisTickValues: [Double]
-        let yAxisDisplayDomain: ClosedRange<Double>
-        let showDebugOverlay: Bool
-        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
     }
 
     struct SectionRuntimeContext {

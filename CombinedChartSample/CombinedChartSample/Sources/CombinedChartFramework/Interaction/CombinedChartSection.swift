@@ -70,12 +70,12 @@ private extension CombinedChartView.CombinedChartSection {
             visibleStartMonthIndex: viewportState.visibleStartMonthIndex,
             monthsPerPage: context.pagingContext.monthsPerPage,
             maxStartMonthIndex: context.pagingContext.maxStartMonthIndex,
-            dragScrollMode: context.renderContext.config.pager.dragScrollMode)
+            dragScrollMode: context.config.pager.dragScrollMode)
         let layoutMetrics = CombinedChartView.ChartLayoutMetrics(
             availableWidth: geometry.size.width,
-            axisWidth: context.renderContext.config.axis.yAxisWidth,
+            axisWidth: context.config.axis.yAxisWidth,
             monthsPerPage: context.pagingContext.monthsPerPage,
-            dataCount: context.renderContext.data.count,
+            dataCount: context.data.count,
             dragPagingState: dragPagingState,
             dragTranslationX: dragTranslationX,
             settlingOffsetX: settlingOffsetX,
