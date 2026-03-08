@@ -94,8 +94,8 @@ extension CombinedChartView {
         return .init(
             entries: pagerEntries,
             highlightedEntry: highlightedPagerEntry,
-            canSelectPreviousPage: viewportState.visibleStartMonthIndex > 0,
-            canSelectNextPage: viewportState.visibleStartMonthIndex < maxStartMonthIndex,
+            canSelectPreviousPage: viewportState.startIndex > 0,
+            canSelectNextPage: viewportState.startIndex < maxStartMonthIndex,
             onSelectPreviousPage: { dispatch(.selectPreviousPage) },
             onSelectEntry: { entry in
                 dispatch(.selectMonthWindow(startMonthIndex: entry.startMonthIndex))
@@ -161,7 +161,7 @@ extension CombinedChartView {
             reconcileVisibleSelection(visibleSelection)
             guard emitsPointTap else { return }
         case .viewportUpdate(let context):
-            viewportState.visibleStartMonthIndex = context.startMonthIndex
+            viewportState.startIndex = context.startMonthIndex
             if let nextContentOffsetX = context.contentOffsetX {
                 viewportState.contentOffsetX = nextContentOffsetX
             }
@@ -224,7 +224,7 @@ private extension CombinedChartView {
                 config: config,
                 sortedGroups: sortedGroups,
                 data: data,
-                visibleStartMonthIndex: viewportState.visibleStartMonthIndex,
+                visibleStartMonthIndex: viewportState.startIndex,
                 contentOffsetX: viewportState.contentOffsetX,
                 unitWidth: layoutState.unitWidth)
         }

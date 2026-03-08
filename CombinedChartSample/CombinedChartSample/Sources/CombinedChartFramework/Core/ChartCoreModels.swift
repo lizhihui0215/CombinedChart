@@ -331,6 +331,11 @@ extension CombinedChartView {
     struct ViewportState: Equatable {
         var visibleStartMonthIndex: Int
         var contentOffsetX: CGFloat
+
+        var startIndex: Int {
+            get { visibleStartMonthIndex }
+            set { visibleStartMonthIndex = newValue }
+        }
     }
 
     // MARK: - Section Contexts

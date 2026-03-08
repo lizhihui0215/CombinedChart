@@ -4,7 +4,7 @@ public extension CombinedChartView {
     var body: some View {
         VStack(spacing: 12) {
             if showDebugOverlay, let visibleStartMonthLabel {
-                Text("Visible start month: \(viewportState.visibleStartMonthIndex) (\(visibleStartMonthLabel))")
+                Text("Visible start index: \(viewportState.startIndex) (\(visibleStartMonthLabel))")
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)

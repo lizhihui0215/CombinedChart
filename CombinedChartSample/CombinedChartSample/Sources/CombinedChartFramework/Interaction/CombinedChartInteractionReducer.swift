@@ -99,7 +99,7 @@ extension CombinedChartView {
             state: InteractionState) -> Int? {
             switch state.pagingContext.arrowScrollMode {
             case .byPage:
-                return state.viewport.visibleStartMonthIndex + (direction * state.pagingContext.monthsPerPage)
+                return state.viewport.startIndex + (direction * state.pagingContext.monthsPerPage)
             case .byEntry:
                 guard let currentYearRangeIndex = state.pagingContext.currentYearRangeIndex else {
                     return nil

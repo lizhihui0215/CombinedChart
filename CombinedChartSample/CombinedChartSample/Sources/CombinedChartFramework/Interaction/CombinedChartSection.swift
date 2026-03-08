@@ -67,7 +67,7 @@ private extension CombinedChartView.CombinedChartSection {
     func makeRuntimeContext(for geometry: GeometryProxy) -> CombinedChartView.SectionRuntimeContext {
         let dragPagingState = CombinedChartView.DragPagingState(
             contentOffsetX: viewportState.contentOffsetX,
-            visibleStartMonthIndex: viewportState.visibleStartMonthIndex,
+            visibleStartMonthIndex: viewportState.startIndex,
             monthsPerPage: context.pagingContext.monthsPerPage,
             maxStartMonthIndex: context.pagingContext.maxStartMonthIndex,
             dragScrollMode: context.config.pager.dragScrollMode)
@@ -106,7 +106,7 @@ private extension CombinedChartView.CombinedChartSection {
         _layoutState.wrappedValue.update(
             viewportWidth: metrics.viewportWidth,
             unitWidth: metrics.unitWidth)
-        viewportState.contentOffsetX = CGFloat(viewportState.visibleStartMonthIndex) * metrics.unitWidth
+        viewportState.contentOffsetX = CGFloat(viewportState.startIndex) * metrics.unitWidth
     }
 
     // MARK: - Gesture
