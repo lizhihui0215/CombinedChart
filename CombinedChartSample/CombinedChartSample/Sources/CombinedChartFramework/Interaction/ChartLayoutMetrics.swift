@@ -13,7 +13,7 @@ extension CombinedChartView {
             axisWidth: CGFloat,
             monthsPerPage: Int,
             dataCount: Int,
-            dragState: DragViewportState,
+            dragState: ChartDragState,
             dragTranslationX: CGFloat,
             settlingOffsetX: CGFloat,
             maxStartMonthIndex: Int) {

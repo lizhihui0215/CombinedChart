@@ -3,7 +3,7 @@ import SwiftUI
 
 extension CombinedChartView {
     /// Encapsulates the Chart to keep SwiftUI type-checking fast.
-    struct ChartContainer: View {
+    struct ChartRenderer: View {
         let context: ChartRenderContext
         let onSelectIndex: (Int) -> Void
         let onPlotAreaChange: (CGRect) -> Void
@@ -55,7 +55,7 @@ extension CombinedChartView {
     }
 }
 
-private extension CombinedChartView.ChartContainer {
+private extension CombinedChartView.ChartRenderer {
     struct BarMarkItem: Identifiable {
         enum Kind {
             case segment

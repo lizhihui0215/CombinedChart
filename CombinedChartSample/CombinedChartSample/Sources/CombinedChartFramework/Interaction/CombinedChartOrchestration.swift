@@ -35,7 +35,7 @@ extension CombinedChartView {
 
     func makeSectionContext(
         snapshot: CombinedChartViewOrchestrationSnapshot,
-        axisPointInfos: [ChartConfig.Axis.PointInfo]) -> SectionContext {
+        axisPointInfos: [ChartConfig.Axis.PointInfo]) -> ChartSectionContext {
         snapshot.makeSectionContext(
             config: config,
             selectedTab: selectedTab,

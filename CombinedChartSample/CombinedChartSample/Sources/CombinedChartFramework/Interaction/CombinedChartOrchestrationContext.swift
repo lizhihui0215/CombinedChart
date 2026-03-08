@@ -67,7 +67,7 @@ extension CombinedChartView {
             selectedTab: ChartTab,
             showDebugOverlay: Bool,
             selectionOverlay: ((SelectionOverlayContext) -> AnyView)?,
-            yAxisLabel: @escaping (Double) -> String) -> SectionContext {
+            yAxisLabel: @escaping (Double) -> String) -> ChartSectionContext {
             .init(
                 config: config,
                 selectedTab: selectedTab,

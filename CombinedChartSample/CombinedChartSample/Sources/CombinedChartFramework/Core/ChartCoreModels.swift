@@ -51,7 +51,7 @@ extension CombinedChartView {
         }
     }
 
-    struct DragViewportState {
+    struct ChartDragState {
         let contentOffsetX: CGFloat
         let startIndex: Int
         let monthsPerPage: Int
@@ -196,100 +196,10 @@ extension CombinedChartView {
         }
     }
 
-    // MARK: - Section Contexts
-
-    struct SectionContext {
-        let config: ChartConfig
-        let selectedTab: ChartTab
-        let data: [ChartDataPoint]
-        let yAxisTickValues: [Double]
-        let yAxisDisplayDomain: ClosedRange<Double>
-        let showDebugOverlay: Bool
-        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
-        let pagingContext: PagingContext
-        let yAxisLabel: (Double) -> String
-
-        func makeYAxisLabelsContext(
-            plotSyncState: PlotSyncState) -> YAxisLabelsContext {
-            plotSyncState.makeYAxisLabelsContext(
-                yAxisTickValues: yAxisTickValues,
-                labelText: yAxisLabel)
-        }
-
-        func makeRenderContext(
-            plotAreaHeight: CGFloat,
-            visibleSelection: VisibleSelection?) -> ChartRenderContext {
-            .init(
-                selectedTab: selectedTab,
-                visibleData: data,
-                yAxisTickValues: yAxisTickValues,
-                yAxisDisplayDomain: yAxisDisplayDomain,
-                plotAreaHeight: plotAreaHeight,
-                config: config,
-                showDebugOverlay: showDebugOverlay,
-                selectionOverlay: selectionOverlay,
-                visibleSelection: visibleSelection)
-        }
-    }
-
-    // MARK: - Rendering Contexts
-
-    struct ChartRenderContext {
-        let selectedTab: ChartTab
-        let visibleData: [ChartDataPoint]
-        let yAxisTickValues: [Double]
-        let yAxisDisplayDomain: ClosedRange<Double>
-        let plotAreaHeight: CGFloat
-        let config: ChartConfig
-        let showDebugOverlay: Bool
-        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
-        let visibleSelection: VisibleSelection?
-    }
-
     // MARK: - Rendering Models
 
     struct VisibleSelection: Equatable {
         let index: Int
         let pointID: ChartPointID
-    }
-
-    // MARK: - Render Output Models
-
-    struct BarSegment: Identifiable {
-        let id = UUID()
-        let start: Double
-        let value: Double
-        let color: Color
-    }
-
-    struct LineSegmentPath: Identifiable {
-        let id: String
-        let path: Path
-        let color: Color
-    }
-
-    struct AxisRenderContext {
-        let monthValues: [String]
-        let pointInfos: [ChartConfig.Axis.PointInfo]
-        let pointInfoByKey: [String: ChartConfig.Axis.PointInfo]
-    }
-
-    struct MarksRenderContext {
-        let selectedTab: ChartTab
-        let visibleData: [ChartDataPoint]
-        let yAxisDisplayDomain: ClosedRange<Double>
-        let plotAreaHeight: CGFloat
-        let config: ChartConfig
-        let showDebugOverlay: Bool
-        let visibleSelection: VisibleSelection?
-    }
-
-    struct OverlayRenderContext {
-        let selectedTab: ChartTab
-        let visibleData: [ChartDataPoint]
-        let yAxisTickValues: [Double]
-        let config: ChartConfig
-        let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
-        let visibleSelection: VisibleSelection?
     }
 }

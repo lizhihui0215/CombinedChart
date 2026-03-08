@@ -4,7 +4,7 @@ import XCTest
 
 final class DragViewportStateTests: XCTestCase {
     func testByPageDragUsesRealTranslationForPaging() {
-        let state = CombinedChartView.DragViewportState(
+        let state = CombinedChartView.ChartDragState(
             contentOffsetX: 0,
             startIndex: 0,
             monthsPerPage: 4,
@@ -20,7 +20,7 @@ final class DragViewportStateTests: XCTestCase {
     }
 
     func testByPageDragBelowThresholdDoesNotPage() {
-        let state = CombinedChartView.DragViewportState(
+        let state = CombinedChartView.ChartDragState(
             contentOffsetX: 0,
             startIndex: 0,
             monthsPerPage: 4,
@@ -36,7 +36,7 @@ final class DragViewportStateTests: XCTestCase {
     }
 
     func testFreeSnappingRoundsToNearestMonth() {
-        let state = CombinedChartView.DragViewportState(
+        let state = CombinedChartView.ChartDragState(
             contentOffsetX: 130,
             startIndex: 1,
             monthsPerPage: 4,
@@ -52,7 +52,7 @@ final class DragViewportStateTests: XCTestCase {
     }
 
     func testTargetMonthIndexClampsToValidRange() {
-        let state = CombinedChartView.DragViewportState(
+        let state = CombinedChartView.ChartDragState(
             contentOffsetX: 0,
             startIndex: 0,
             monthsPerPage: 4,

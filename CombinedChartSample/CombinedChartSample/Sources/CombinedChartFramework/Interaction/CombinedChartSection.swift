@@ -2,7 +2,7 @@ import SwiftUI
 
 extension CombinedChartView {
     struct CombinedChartSection: View {
-        let context: SectionContext
+        let context: ChartSectionContext
         let visibleSelection: VisibleSelection?
         @Binding var viewportState: ViewportState
         @Binding var layoutState: LayoutState
@@ -13,9 +13,6 @@ extension CombinedChartView {
 
         var body: some View {
             GeometryReader { geometry in
-                let renderContext = context.makeRenderContext(
-                    plotAreaHeight: plotSyncState.plotAreaHeight,
-                    visibleSelection: visibleSelection)
                 let scrollState = makeScrollState(for: geometry)
                 let isDragging = dragTranslationX != 0
 
@@ -33,8 +30,8 @@ extension CombinedChartView {
                         }
                     }
 
-                    ChartContainer(
-                        context: renderContext,
+                    ChartRenderer(
+                        context: scrollState.renderContext,
                         onSelectIndex: { onDispatchAction(.selectPoint(index: $0)) },
                         onPlotAreaChange: { plotRect in
                             syncPlotArea(plotRect, isDragging: isDragging)
@@ -64,10 +61,12 @@ extension CombinedChartView {
 private extension CombinedChartView.CombinedChartSection {
     // MARK: - Scroll State
 
-    func makeScrollState(for geometry: GeometryProxy) -> CombinedChartView.SectionScrollState {
+    func makeScrollState(for geometry: GeometryProxy) -> CombinedChartView.ChartScrollState {
         .init(
             context: context,
             viewportState: viewportState,
+            plotAreaHeight: plotSyncState.plotAreaHeight,
+            visibleSelection: visibleSelection,
             availableWidth: geometry.size.width,
             dragTranslationX: dragTranslationX,
             settlingOffsetX: settlingOffsetX)
@@ -85,7 +84,7 @@ private extension CombinedChartView.CombinedChartSection {
         plotSyncState.updateYAxisTickPositions(positions)
     }
 
-    func syncViewport(scrollState: CombinedChartView.SectionScrollState) {
+    func syncViewport(scrollState: CombinedChartView.ChartScrollState) {
         scrollState.syncViewport(
             layoutState: &_layoutState.wrappedValue,
             viewportState: &viewportState)
@@ -93,7 +92,7 @@ private extension CombinedChartView.CombinedChartSection {
 
     // MARK: - Gesture
 
-    func dragGesture(scrollState: CombinedChartView.SectionScrollState) -> some Gesture {
+    func dragGesture(scrollState: CombinedChartView.ChartScrollState) -> some Gesture {
         DragGesture()
             .updating($dragTranslationX) { value, state, _ in
                 state = value.translation.width
