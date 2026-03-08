@@ -18,67 +18,9 @@ extension CombinedChartView {
         static let empty = Self(plotAreaInfo: nil, yTickPositions: [:])
     }
 
-    struct CombinedChartViewOrchestrationContext {
-        let config: ChartConfig
-        let groups: [ChartGroup]
-        let selectedTab: ChartTab
-        let showDebugOverlay: Bool
-        let viewSlots: ViewSlots
-        let viewportState: ViewportState
-        let layoutState: LayoutState
-
-        var sortedGroups: [ChartDataGroup] {
-            groups
-                .map { ChartDataGroup(source: $0) }
-                .sorted { $0.groupOrder < $1.groupOrder }
-        }
-
-        var data: [ChartDataPoint] {
-            sortedGroups.flatMap(\.points)
-        }
-
-        var derivedState: ChartDerivedState {
-            .init(
-                config: config,
-                sortedGroups: sortedGroups,
-                data: data,
-                visibleStartMonthIndex: viewportState.visibleStartMonthIndex,
-                contentOffsetX: viewportState.contentOffsetX,
-                unitWidth: layoutState.unitWidth)
-        }
-    }
-
     struct PlotAreaInfo: Equatable {
         let minY: CGFloat
         let height: CGFloat
-    }
-
-    struct ChartLayoutMetrics {
-        let viewportWidth: CGFloat
-        let unitWidth: CGFloat
-        let chartWidth: CGFloat
-        let maxContentOffsetX: CGFloat
-        let currentContentOffsetX: CGFloat
-
-        init(
-            availableWidth: CGFloat,
-            axisWidth: CGFloat,
-            monthsPerPage: Int,
-            dataCount: Int,
-            dragPagingState: DragPagingState,
-            dragTranslationX: CGFloat,
-            settlingOffsetX: CGFloat,
-            maxStartMonthIndex: Int) {
-            let visibleCount = CGFloat(monthsPerPage)
-            viewportWidth = max(availableWidth - axisWidth, 1)
-            unitWidth = viewportWidth / visibleCount
-            chartWidth = max(viewportWidth, unitWidth * CGFloat(dataCount))
-            maxContentOffsetX = CGFloat(maxStartMonthIndex) * unitWidth
-            currentContentOffsetX = dragPagingState.currentContentOffsetX(
-                dragTranslationX: dragTranslationX,
-                settlingOffsetX: settlingOffsetX,
-                maxContentOffsetX: maxContentOffsetX)
-        }
     }
 
     struct DragPagingState {
@@ -392,13 +334,6 @@ extension CombinedChartView {
                 selectionOverlay: selectionOverlay,
                 visibleSelection: visibleSelection)
         }
-    }
-
-    struct SectionRuntimeContext {
-        let pagingContext: PagingContext
-        let dragPagingState: DragPagingState
-        let layoutMetrics: ChartLayoutMetrics
-        let renderContext: ChartRenderContext
     }
 
     // MARK: - Rendering Contexts
