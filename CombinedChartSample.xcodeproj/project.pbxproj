@@ -24,7 +24,6 @@
 		26E3FCD52F5D122C004D2007 /* ChartConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCD42F5D122C004D2007 /* ChartConfiguration.swift */; };
 		26E3FCD72F5D124F004D2007 /* CombinedChartPublicTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCD62F5D124F004D2007 /* CombinedChartPublicTypes.swift */; };
 		26E3FCD92F5D12C9004D2007 /* CombinedChartInternalData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCD82F5D12C9004D2007 /* CombinedChartInternalData.swift */; };
-		26E3FCDB2F5D1440004D2007 /* CombinedChartViewBody.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCDA2F5D1440004D2007 /* CombinedChartViewBody.swift */; };
 		26E3FCF52F5D1AEF004D2007 /* CombinedChartInteractionReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCF42F5D1AEF004D2007 /* CombinedChartInteractionReducer.swift */; };
 		26E3FD012F5D5000004D2007 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 26E3FD022F5D5000004D2007 /* SnapshotTesting */; };
 		A1000000000000000000000D /* CombinedChartFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* CombinedChartFramework.framework */; };
@@ -90,7 +89,6 @@
 		26E3FCD42F5D122C004D2007 /* ChartConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartConfiguration.swift; sourceTree = "<group>"; };
 		26E3FCD62F5D124F004D2007 /* CombinedChartPublicTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedChartPublicTypes.swift; sourceTree = "<group>"; };
 		26E3FCD82F5D12C9004D2007 /* CombinedChartInternalData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedChartInternalData.swift; sourceTree = "<group>"; };
-		26E3FCDA2F5D1440004D2007 /* CombinedChartViewBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedChartViewBody.swift; sourceTree = "<group>"; };
 		26E3FCF42F5D1AEF004D2007 /* CombinedChartInteractionReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedChartInteractionReducer.swift; sourceTree = "<group>"; };
 		26E3FCF62F5D1D63004D2007 /* CombinedChartSample.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = CombinedChartSample.xctestplan; sourceTree = "<group>"; };
 		A10000000000000000000001 /* CombinedChartFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CombinedChartFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -191,7 +189,6 @@
 			isa = PBXGroup;
 			children = (
 				26E3FC4D2F5CE7CB004D2007 /* CombinedChartView.swift */,
-				26E3FCDA2F5D1440004D2007 /* CombinedChartViewBody.swift */,
 				26E3FCD62F5D124F004D2007 /* CombinedChartPublicTypes.swift */,
 				26E3FCD42F5D122C004D2007 /* ChartConfiguration.swift */,
 			);
@@ -484,7 +481,6 @@
 				26E3FCD52F5D122C004D2007 /* ChartConfiguration.swift in Sources */,
 				26E3FCCF2F5D0E80004D2007 /* CombinedChartOrchestration.swift in Sources */,
 				26E3FCCD2F5D0C48004D2007 /* CombinedChartSection.swift in Sources */,
-				26E3FCDB2F5D1440004D2007 /* CombinedChartViewBody.swift in Sources */,
 				26E3FCD92F5D12C9004D2007 /* CombinedChartInternalData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
