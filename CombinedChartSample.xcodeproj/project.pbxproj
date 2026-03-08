@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		26B2B2CA2F5D4A5E003B7D89 /* ChartViewportDerivedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2C92F5D4A5E003B7D89 /* ChartViewportDerivedState.swift */; };
 		26E3FC552F5CE7CB004D2007 /* CombinedChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FC4D2F5CE7CB004D2007 /* CombinedChartView.swift */; };
 		26E3FCC32F5D0893004D2007 /* ChartCoreModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCC22F5D0893004D2007 /* ChartCoreModels.swift */; };
 		26E3FCC52F5D0893004D2007 /* ChartResolvers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCC42F5D0893004D2007 /* ChartResolvers.swift */; };
@@ -69,6 +70,7 @@
 		26785B822F3F0AC900541A34 /* CombinedChartSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CombinedChartSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		26785B8F2F3F0AC900541A34 /* CombinedChartSampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CombinedChartSampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		26785B992F3F0AC900541A34 /* CombinedChartSampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CombinedChartSampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		26B2B2C92F5D4A5E003B7D89 /* ChartViewportDerivedState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartViewportDerivedState.swift; sourceTree = "<group>"; };
 		26E3FC4D2F5CE7CB004D2007 /* CombinedChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedChartView.swift; sourceTree = "<group>"; };
 		26E3FCC22F5D0893004D2007 /* ChartCoreModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartCoreModels.swift; sourceTree = "<group>"; };
 		26E3FCC42F5D0893004D2007 /* ChartResolvers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartResolvers.swift; sourceTree = "<group>"; };
@@ -196,6 +198,7 @@
 				26E3FCC22F5D0893004D2007 /* ChartCoreModels.swift */,
 				26E3FCD82F5D12C9004D2007 /* CombinedChartInternalData.swift */,
 				26E3FCC42F5D0893004D2007 /* ChartResolvers.swift */,
+				26B2B2C92F5D4A5E003B7D89 /* ChartViewportDerivedState.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -455,6 +458,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				26B2B2CA2F5D4A5E003B7D89 /* ChartViewportDerivedState.swift in Sources */,
 				26E3FCD72F5D124F004D2007 /* CombinedChartPublicTypes.swift in Sources */,
 				26E3FCCB2F5D0B50004D2007 /* ChartContainerOverlayRenderer.swift in Sources */,
 				26E3FCD32F5D10F9004D2007 /* CombinedChartPreview.swift in Sources */,
