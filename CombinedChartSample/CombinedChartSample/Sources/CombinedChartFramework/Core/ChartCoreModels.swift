@@ -330,9 +330,14 @@ extension CombinedChartView {
     enum ViewAction {
         case selectPoint(index: Int?, emitsPointTap: Bool = true)
         case selectMonthWindow(startMonthIndex: Int)
-        case settleDrag(targetMonthIndex: Int, targetContentOffsetX: CGFloat)
+        case settleDrag(DragSettleContext)
         case selectPreviousPage
         case selectNextPage
+    }
+
+    struct DragSettleContext: Equatable {
+        let targetMonthIndex: Int
+        let targetContentOffsetX: CGFloat
     }
 
     struct ViewportState: Equatable {

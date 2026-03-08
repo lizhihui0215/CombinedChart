@@ -129,8 +129,9 @@ private extension CombinedChartView.CombinedChartSection {
                 settlingOffsetX = clampedTranslationX
                 onDispatchAction(
                     .settleDrag(
-                        targetMonthIndex: targetMonthIndex,
-                        targetContentOffsetX: targetOffsetX))
+                        .init(
+                            targetMonthIndex: targetMonthIndex,
+                            targetContentOffsetX: targetOffsetX)))
                 settlingOffsetX = 0
             }
     }
