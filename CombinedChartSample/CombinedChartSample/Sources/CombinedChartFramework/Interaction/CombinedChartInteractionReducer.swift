@@ -83,32 +83,55 @@ extension CombinedChartView {
         private static func monthWindowMutation(
             startMonthIndex: Int,
             state: InteractionState) -> InteractionMutation {
-            let clampedStartMonthIndex = min(max(startMonthIndex, 0), state.pagingContext.maxStartMonthIndex)
-            let nextContentOffsetX = state.unitWidth > 0
-                ? CGFloat(clampedStartMonthIndex) * state.unitWidth
-                : nil
-
-            return .monthWindow(
-                .init(
-                    startMonthIndex: clampedStartMonthIndex,
-                    contentOffsetX: nextContentOffsetX))
+            .monthWindow(
+                makeMonthWindowContext(
+                    startMonthIndex: startMonthIndex,
+                    contentOffsetX: nil,
+                    state: state))
         }
 
         private static func settledDragMutation(
             context: DragSettleContext,
             state: InteractionState) -> InteractionMutation {
-            let clampedStartMonthIndex = min(
-                max(context.targetMonthIndex, 0),
-                state.pagingContext.maxStartMonthIndex)
-            let maximumContentOffsetX = CGFloat(state.pagingContext.maxStartMonthIndex) * state.unitWidth
-            let clampedContentOffsetX = min(
-                max(context.targetContentOffsetX, 0),
-                maximumContentOffsetX)
+            .monthWindow(
+                makeMonthWindowContext(
+                    startMonthIndex: context.targetMonthIndex,
+                    contentOffsetX: context.targetContentOffsetX,
+                    state: state))
+        }
 
-            return .monthWindow(
-                .init(
-                    startMonthIndex: clampedStartMonthIndex,
-                    contentOffsetX: clampedContentOffsetX))
+        private static func makeMonthWindowContext(
+            startMonthIndex: Int,
+            contentOffsetX: CGFloat?,
+            state: InteractionState) -> MonthWindowContext {
+            let clampedStartMonthIndex = clampedStartMonthIndex(
+                startMonthIndex,
+                state: state)
+
+            let resolvedContentOffsetX: CGFloat? = if let contentOffsetX {
+                clampedContentOffsetX(contentOffsetX, state: state)
+            } else if state.unitWidth > 0 {
+                CGFloat(clampedStartMonthIndex) * state.unitWidth
+            } else {
+                nil
+            }
+
+            return .init(
+                startMonthIndex: clampedStartMonthIndex,
+                contentOffsetX: resolvedContentOffsetX)
+        }
+
+        private static func clampedStartMonthIndex(
+            _ startMonthIndex: Int,
+            state: InteractionState) -> Int {
+            min(max(startMonthIndex, 0), state.pagingContext.maxStartMonthIndex)
+        }
+
+        private static func clampedContentOffsetX(
+            _ contentOffsetX: CGFloat,
+            state: InteractionState) -> CGFloat {
+            let maximumContentOffsetX = CGFloat(state.pagingContext.maxStartMonthIndex) * state.unitWidth
+            return min(max(contentOffsetX, 0), maximumContentOffsetX)
         }
     }
 }
