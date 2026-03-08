@@ -113,90 +113,155 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("HKD")
-                    .font(.headline)
-                Spacer()
-            }
-
-            Picker("", selection: $selectedTab) {
-                ForEach(tabs) { tab in
-                    Text(tab.title).tag(tab)
-                }
-            }
-            .pickerStyle(.segmented)
-
-            Toggle("Debug axis alignment", isOn: $showDebugOverlay)
-                .font(.caption)
-                .toggleStyle(SwitchToggleStyle(tint: .gray))
-
-            Picker("Drag Mode", selection: $dragMode) {
-                ForEach(DragModeOption.allCases) { option in
-                    Text(option.rawValue).tag(option)
-                }
-            }
-            .pickerStyle(.menu)
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(spacing: 6) {
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(spacing: 16) {
                 HStack {
-                    Text("Chart Height")
-                        .font(.caption)
+                    Text("HKD")
+                        .font(.headline)
                     Spacer()
-                    Text("\(Int(chartHeight)) pt")
-                        .font(.caption.monospacedDigit())
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Scroll Debug Playground")
+                        .font(.subheadline.weight(.semibold))
+                    Text(
+                        "Use this page to verify horizontal chart scrolling inside a longer vertically scrollable screen.")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
 
-                Slider(value: $chartHeight, in: 240...720, step: 10)
-                    .accessibilityIdentifier("chart-height-slider")
-            }
+                Picker("", selection: $selectedTab) {
+                    ForEach(tabs) { tab in
+                        Text(tab.title).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
 
-            VStack(spacing: 6) {
-                HStack {
-                    Text("Visible Start Threshold")
-                        .font(.caption)
-                    Spacer()
-                    Text(String(format: "%.2f", visibleStartThreshold))
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                Toggle("Debug axis alignment", isOn: $showDebugOverlay)
+                    .font(.caption)
+                    .toggleStyle(SwitchToggleStyle(tint: .gray))
+
+                Picker("Drag Mode", selection: $dragMode) {
+                    ForEach(DragModeOption.allCases) { option in
+                        Text(option.rawValue).tag(option)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                VStack(spacing: 6) {
+                    HStack {
+                        Text("Chart Height")
+                            .font(.caption)
+                        Spacer()
+                        Text("\(Int(chartHeight)) pt")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Slider(value: $chartHeight, in: 240...720, step: 10)
+                        .accessibilityIdentifier("chart-height-slider")
                 }
 
-                Slider(value: $visibleStartThreshold, in: 0...1, step: 0.01)
-                    .accessibilityIdentifier("visible-start-threshold-slider")
-            }
+                VStack(spacing: 6) {
+                    HStack {
+                        Text("Visible Start Threshold")
+                            .font(.caption)
+                        Spacer()
+                        Text(String(format: "%.2f", visibleStartThreshold))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
 
-            VStack(spacing: 6) {
-                HStack {
-                    Text("Bar Width")
-                        .font(.caption)
-                    Spacer()
-                    Text("\(Int(barWidth)) pt")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                    Slider(value: $visibleStartThreshold, in: 0...1, step: 0.01)
+                        .accessibilityIdentifier("visible-start-threshold-slider")
                 }
 
-                Slider(value: $barWidth, in: 8...80, step: 1)
-                    .accessibilityIdentifier("bar-width-slider")
-            }
+                VStack(spacing: 6) {
+                    HStack {
+                        Text("Bar Width")
+                            .font(.caption)
+                        Spacer()
+                        Text("\(Int(barWidth)) pt")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
 
-            CombinedChartView(
-                config: config,
-                groups: groups,
-                tabs: tabs,
-                selectedTab: $selectedTab,
-                showDebugOverlay: $showDebugOverlay,
-                onPointTap: { context in
-                    print(
-                        "Tapped point:",
-                        "groupID=\(context.point.id.groupID)",
-                        "xKey=\(context.point.xKey)",
-                        "index=\(context.index)")
-                })
+                    Slider(value: $barWidth, in: 8...80, step: 1)
+                        .accessibilityIdentifier("bar-width-slider")
+                }
+
+                statCards
+
+                CombinedChartView(
+                    config: config,
+                    groups: groups,
+                    tabs: tabs,
+                    selectedTab: $selectedTab,
+                    showDebugOverlay: $showDebugOverlay,
+                    onPointTap: { context in
+                        print(
+                            "Tapped point:",
+                            "groupID=\(context.point.id.groupID)",
+                            "xKey=\(context.point.xKey)",
+                            "index=\(context.index)")
+                    })
+
+                debugChecklist(title: "Interaction Checks")
+                debugChecklist(title: "Rendering Checks")
+                debugChecklist(title: "Pager Checks")
+            }
+            .padding()
         }
-        .padding()
         .accessibilityIdentifier("combined-chart-root")
+    }
+}
+
+private extension ContentView {
+    var statCards: some View {
+        HStack(spacing: 12) {
+            statCard(title: "Viewport", value: selectedTab.title)
+            statCard(title: "Drag", value: dragMode.rawValue)
+            statCard(title: "Height", value: "\(Int(chartHeight))pt")
+        }
+    }
+
+    func statCard(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.headline.monospaced())
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    func debugChecklist(title: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+            ForEach(0..<4, id: \.self) { index in
+                HStack(alignment: .top, spacing: 10) {
+                    Circle()
+                        .fill(Color.blue.opacity(0.8))
+                        .frame(width: 8, height: 8)
+                        .padding(.top, 5)
+                    Text(
+                        "Debug note \(index + 1): verify horizontal chart dragging stays responsive while the page continues to scroll vertically.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
