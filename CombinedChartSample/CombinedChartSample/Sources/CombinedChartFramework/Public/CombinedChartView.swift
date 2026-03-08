@@ -1,5 +1,25 @@
 import SwiftUI
 
+/// A reusable combined bar-and-line chart view.
+///
+/// Use ``CombinedChartView`` as the primary entry point to render grouped chart data,
+/// configure presentation, and provide custom slot content such as an empty state,
+/// selection overlay, or pager UI.
+///
+/// The view manages paging, selection, and chart interaction internally. Most callers
+/// only need to provide a configuration, the input groups, and an optional selected tab binding.
+///
+/// Example:
+/// ```swift
+/// CombinedChartView(
+///     config: .default,
+///     groups: groups,
+///     selectedTab: $selectedTab,
+///     slots: .init {
+///         Text("No chart data")
+///     }
+/// )
+/// ```
 public struct CombinedChartView: View {
     let config: Config
     let groups: [DataGroup]
@@ -9,6 +29,20 @@ public struct CombinedChartView: View {
     @Binding var selectedTab: Tab
     @Binding var showDebugOverlay: Bool
 
+    /// Creates a combined chart view using the preferred public API surface.
+    ///
+    /// Use this initializer for new call sites. It accepts the view-scoped shorthand
+    /// types defined under ``CombinedChartView``, such as ``CombinedChartView/Config``,
+    /// ``CombinedChartView/DataGroup``, and ``CombinedChartView/Slots``.
+    ///
+    /// - Parameters:
+    ///   - config: Visual and interaction configuration for the chart.
+    ///   - groups: The grouped data rendered by the chart.
+    ///   - tabs: Presentation modes the user can switch between.
+    ///   - selectedTab: The currently selected tab.
+    ///   - showDebugOverlay: A binding that controls whether internal debug overlays are visible.
+    ///   - slots: Optional custom content for empty state, selection overlay, and pager rendering.
+    ///   - onPointTap: A callback invoked when the user selects a resolved chart point.
     public init(
         config: Config = .default,
         groups: [DataGroup],
@@ -32,6 +66,20 @@ public struct CombinedChartView: View {
             })
     }
 
+    /// Creates a combined chart view using the legacy `viewSlots` label.
+    ///
+    /// This initializer remains available for source compatibility. Prefer the
+    /// ``init(config:groups:tabs:selectedTab:showDebugOverlay:slots:onPointTap:)``
+    /// overload for new code.
+    ///
+    /// - Parameters:
+    ///   - config: Visual and interaction configuration for the chart.
+    ///   - groups: The grouped data rendered by the chart.
+    ///   - tabs: Presentation modes the user can switch between.
+    ///   - selectedTab: The currently selected tab.
+    ///   - showDebugOverlay: A binding that controls whether internal debug overlays are visible.
+    ///   - viewSlots: Optional custom content for empty state, selection overlay, and pager rendering.
+    ///   - onPointTap: A callback invoked when the user selects a resolved chart point.
     @available(*, deprecated, renamed: "init(config:groups:tabs:selectedTab:showDebugOverlay:slots:onPointTap:)")
     public init(
         config: Config = .default,

@@ -1,5 +1,9 @@
 import SwiftUI
 
+/// Stable identifiers for series rendered by the chart.
+///
+/// Use these keys to provide values for each ``ChartConfig/Bar/SeriesStyle`` and to map
+/// incoming business data into ``CombinedChartView/Point`` values.
 public enum ChartSeriesKey: String, CaseIterable, Hashable, Identifiable {
     case liabilities
     case saving
@@ -7,11 +11,35 @@ public enum ChartSeriesKey: String, CaseIterable, Hashable, Identifiable {
     case otherLiquid
     case otherNonLiquid
 
+    /// The stable identity of the series key.
     public var id: Self {
         self
     }
 }
 
+/// Configuration for rendering and interacting with ``CombinedChartView``.
+///
+/// ``ChartConfig`` groups the major configuration domains of the chart:
+///
+/// - bar styling
+/// - line styling
+/// - axis formatting
+/// - pager behavior
+///
+/// The configuration is value-based, so you can construct variants for previews,
+/// tests, and runtime feature flags without relying on mutable shared state.
+///
+/// Example:
+/// ```swift
+/// let config = CombinedChartView.Config(
+///     monthsPerPage: 4,
+///     chartHeight: 420,
+///     bar: .init(...),
+///     line: .init(...),
+///     axis: .init(...),
+///     pager: .init()
+/// )
+/// ```
 public struct ChartConfig {
     public let monthsPerPage: Int
     public let chartHeight: CGFloat
@@ -20,6 +48,7 @@ public struct ChartConfig {
     public let axis: Axis
     public let pager: Pager
 
+    /// A ready-to-use configuration tuned for the sample combined chart experience.
     public static let `default` = ChartConfig(
         monthsPerPage: 4,
         chartHeight: 420,
@@ -82,6 +111,15 @@ public struct ChartConfig {
             yAxisWidth: 40),
         pager: Pager())
 
+    /// Creates a chart configuration.
+    ///
+    /// - Parameters:
+    ///   - monthsPerPage: The number of x-axis points visible in one page-sized viewport.
+    ///   - chartHeight: The overall height of the composed chart view.
+    ///   - bar: Configuration for the stacked or grouped bar marks.
+    ///   - line: Configuration for the trend line and selection appearance.
+    ///   - axis: Configuration for axis formatting and zero-line rendering.
+    ///   - pager: Configuration for pager visibility and scrolling behavior.
     public init(
         monthsPerPage: Int,
         chartHeight: CGFloat,
@@ -99,7 +137,9 @@ public struct ChartConfig {
 }
 
 public extension ChartConfig {
+    /// Configuration for bar rendering.
     struct Bar {
+        /// Strategy used to color bars in modes that expose trend context.
         public enum TrendBarColorStyle {
             case seriesColor
             case unified(Color)
@@ -111,6 +151,14 @@ public extension ChartConfig {
         public let segmentGapColor: Color
         public let barWidth: CGFloat
 
+        /// Creates bar configuration.
+        ///
+        /// - Parameters:
+        ///   - series: Series definitions used to render the bar stacks.
+        ///   - trendBarColorStyle: Color strategy for trend-context rendering.
+        ///   - segmentGap: Visual spacing between stacked segments.
+        ///   - segmentGapColor: Fill color used for the segment gap.
+        ///   - barWidth: Width of each bar.
         public init(
             series: [SeriesStyle],
             trendBarColorStyle: TrendBarColorStyle,
@@ -125,12 +173,14 @@ public extension ChartConfig {
         }
     }
 
+    /// Configuration for trend line rendering and line-based selection styling.
     struct Line {
         public let positiveLineColor: Color
         public let negativeLineColor: Color
         public let lineWidth: CGFloat
         public let selection: Selection
 
+        /// Creates line configuration.
         public init(
             positiveLineColor: Color,
             negativeLineColor: Color,
@@ -143,6 +193,7 @@ public extension ChartConfig {
         }
     }
 
+    /// Configuration for axis labels and zero-line rendering.
     struct Axis {
         public let xAxisLabel: (XLabelContext) -> String
         public let yAxisLabel: (YLabelContext) -> String
@@ -150,6 +201,14 @@ public extension ChartConfig {
         public let zeroLineWidth: CGFloat
         public let yAxisWidth: CGFloat
 
+        /// Creates axis configuration.
+        ///
+        /// - Parameters:
+        ///   - xAxisLabel: Formats labels for visible x-axis points.
+        ///   - yAxisLabel: Formats labels for visible y-axis values.
+        ///   - zeroLineColor: The color of the zero-value reference line.
+        ///   - zeroLineWidth: The width of the zero-value reference line.
+        ///   - yAxisWidth: Reserved width for the y-axis label column.
         public init(
             xAxisLabel: @escaping (XLabelContext) -> String,
             yAxisLabel: @escaping (YLabelContext) -> String,
@@ -164,12 +223,15 @@ public extension ChartConfig {
         }
     }
 
+    /// Configuration for pager visibility and navigation behavior.
     struct Pager {
+        /// Describes how pager arrows advance through the dataset.
         public enum ArrowScrollMode {
             case byPage
             case byEntry
         }
 
+        /// Describes how drag gestures settle the viewport.
         public enum DragScrollMode {
             case byPage
             case freeSnapping
@@ -180,6 +242,7 @@ public extension ChartConfig {
         public let arrowScrollMode: ArrowScrollMode
         public let dragScrollMode: DragScrollMode
 
+        /// Creates pager configuration.
         public init(
             isVisible: Bool = true,
             arrowScrollMode: ArrowScrollMode = .byPage,
@@ -192,11 +255,14 @@ public extension ChartConfig {
 }
 
 public extension ChartConfig.Bar {
+    /// Series that currently contribute to the derived trend line.
     var trendLineSeries: [SeriesStyle] {
         series.filter(\.contributesToTrendLine)
     }
 
+    /// Styling and semantic behavior for one bar series.
     struct SeriesStyle: Identifiable {
+        /// Visual styling for a series.
         public struct Appearance {
             public let label: String
             public let color: Color
@@ -207,17 +273,21 @@ public extension ChartConfig.Bar {
             }
         }
 
+        /// Value semantics for a series.
         public struct ValueBehavior {
+            /// Whether the series contributes to the derived trend line.
             public enum TrendLineInclusion {
                 case included
                 case excluded
             }
 
+            /// A forced sign used when remapping incoming values.
             public enum Sign {
                 case positive
                 case negative
             }
 
+            /// How incoming values should be interpreted before rendering.
             public enum ValuePolarity {
                 case preserveSign
                 case forcedSign(Sign)
@@ -226,6 +296,7 @@ public extension ChartConfig.Bar {
             public let valuePolarity: ValuePolarity
             public let trendLineInclusion: TrendLineInclusion
 
+            /// Creates value behavior for a series.
             public init(
                 valuePolarity: ValuePolarity,
                 trendLineInclusion: TrendLineInclusion) {
@@ -233,6 +304,7 @@ public extension ChartConfig.Bar {
                 self.trendLineInclusion = trendLineInclusion
             }
 
+            /// Returns the value after sign normalization.
             public func signedValue(for rawValue: Double) -> Double {
                 switch valuePolarity {
                 case .preserveSign:
@@ -244,6 +316,7 @@ public extension ChartConfig.Bar {
                 }
             }
 
+            /// Indicates whether this series should be included in the derived trend line.
             public var contributesToTrendLine: Bool {
                 trendLineInclusion == .included
             }
@@ -253,6 +326,7 @@ public extension ChartConfig.Bar {
         public let appearance: Appearance
         public let valueBehavior: ValueBehavior
 
+        /// Creates a series style.
         public init(
             id: ChartSeriesKey,
             label: String,
@@ -266,26 +340,32 @@ public extension ChartConfig.Bar {
                 trendLineInclusion: trendLineInclusion)
         }
 
+        /// The label shown for the series in legends or custom UI.
         public var label: String {
             appearance.label
         }
 
+        /// The primary color used to render the series.
         public var color: Color {
             appearance.color
         }
 
+        /// The configured value polarity strategy.
         public var valuePolarity: ValueBehavior.ValuePolarity {
             valueBehavior.valuePolarity
         }
 
+        /// Whether this series contributes to the derived trend line.
         public var trendLineInclusion: ValueBehavior.TrendLineInclusion {
             valueBehavior.trendLineInclusion
         }
 
+        /// Returns the series value after applying configured sign behavior.
         public func signedValue(for rawValue: Double) -> Double {
             valueBehavior.signedValue(for: rawValue)
         }
 
+        /// Indicates whether the series participates in trend line derivation.
         public var contributesToTrendLine: Bool {
             valueBehavior.contributesToTrendLine
         }
@@ -293,12 +373,14 @@ public extension ChartConfig.Bar {
 }
 
 public extension ChartConfig.Line {
+    /// Styling for line-based selection affordances.
     struct Selection {
         public let pointSize: CGFloat
         public let selectionLineColorStrategy: LineColorStrategy
         public let fillColor: Color
         public let minimumSelectionWidth: CGFloat
 
+        /// Creates selection styling for the line layer.
         public init(
             pointSize: CGFloat,
             selectionLineColorStrategy: LineColorStrategy,
@@ -311,6 +393,7 @@ public extension ChartConfig.Line {
         }
     }
 
+    /// Strategy used to determine the selection line color.
     enum LineColorStrategy {
         case fixedLine(Color)
         case color(positive: Color, negative: Color)
@@ -318,6 +401,7 @@ public extension ChartConfig.Line {
 }
 
 public extension ChartConfig.Axis {
+    /// A visible point projected into the axis formatting domain.
     struct PointInfo: Identifiable {
         public let id: String
         public let index: Int
@@ -325,6 +409,7 @@ public extension ChartConfig.Axis {
         public let xLabel: String
         public let values: [ChartSeriesKey: Double]
 
+        /// Creates an axis point descriptor.
         public init(
             id: String,
             index: Int,
@@ -339,20 +424,24 @@ public extension ChartConfig.Axis {
         }
     }
 
+    /// Context passed to the x-axis label formatter.
     struct XLabelContext {
         public let point: PointInfo
         public let visiblePoints: [PointInfo]
 
+        /// Creates x-axis label context.
         public init(point: PointInfo, visiblePoints: [PointInfo]) {
             self.point = point
             self.visiblePoints = visiblePoints
         }
     }
 
+    /// Context passed to the y-axis label formatter.
     struct YLabelContext {
         public let value: Double
         public let visiblePoints: [PointInfo]
 
+        /// Creates y-axis label context.
         public init(value: Double, visiblePoints: [PointInfo]) {
             self.value = value
             self.visiblePoints = visiblePoints

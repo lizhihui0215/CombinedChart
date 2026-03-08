@@ -15,9 +15,11 @@ public extension CombinedChartView {
     typealias PagerItem = PagerEntry
     typealias SelectionOverlay = SelectionOverlayContext
 
+    /// A default empty-state view used when no groups are available.
     struct DefaultEmptyStateView: View {
         public init() {}
 
+        /// The default empty-state rendering.
         public var body: some View {
             Text("No data")
                 .font(.callout)
@@ -26,11 +28,13 @@ public extension CombinedChartView {
         }
     }
 
+    /// A pager item representing one selectable viewport anchor.
     struct PagerEntry: Identifiable, Hashable {
         public let id: String
         public let displayTitle: String
         public let startMonthIndex: Int
 
+        /// Creates a pager item.
         public init(id: String, displayTitle: String, startMonthIndex: Int) {
             self.id = id
             self.displayTitle = displayTitle
@@ -38,15 +42,29 @@ public extension CombinedChartView {
         }
     }
 
+    /// Custom content slots for ``CombinedChartView``.
+    ///
+    /// Use slots to replace the default empty state, selection overlay, or pager UI
+    /// without reimplementing the chart itself.
+    ///
+    /// Example:
+    /// ```swift
+    /// let slots = CombinedChartView.Slots(
+    ///     emptyState: { Text("No chart data") },
+    ///     pager: { context in Text(context.highlightedEntry?.displayTitle ?? "-") }
+    /// )
+    /// ```
     struct ViewSlots {
         public let emptyState: AnyView
         public let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
         public let pager: ((PagerContext) -> AnyView)?
 
+        /// The default slot configuration.
         public static var `default`: ViewSlots {
             .init()
         }
 
+        /// Creates slots using concrete `AnyView` instances.
         public init(
             emptyState: AnyView = AnyView(DefaultEmptyStateView()),
             selectionOverlay: ((SelectionOverlayContext) -> AnyView)? = nil,
@@ -56,6 +74,7 @@ public extension CombinedChartView {
             self.pager = pager
         }
 
+        /// Creates slots with a custom empty state and optional concrete closures for other slots.
         public init(
             @ViewBuilder emptyState: () -> some View,
             selectionOverlay: ((SelectionOverlayContext) -> AnyView)? = nil,
@@ -66,6 +85,7 @@ public extension CombinedChartView {
                 pager: pager)
         }
 
+        /// Creates slots with only a custom empty state.
         public init(@ViewBuilder emptyState: () -> some View) {
             self.init(
                 emptyState: AnyView(emptyState()),
@@ -73,6 +93,7 @@ public extension CombinedChartView {
                 pager: nil)
         }
 
+        /// Creates slots with custom empty state, selection overlay, and pager content.
         public init(
             @ViewBuilder emptyState: () -> some View = { DefaultEmptyStateView() },
             @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View,
@@ -83,6 +104,7 @@ public extension CombinedChartView {
                 pager: { context in AnyView(pager(context)) })
         }
 
+        /// Creates slots with a custom selection overlay and the default pager.
         public init(
             @ViewBuilder emptyState: () -> some View = { DefaultEmptyStateView() },
             @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View) {
@@ -92,6 +114,7 @@ public extension CombinedChartView {
                 pager: nil)
         }
 
+        /// Creates slots with a custom pager and the default selection overlay behavior.
         public init(
             @ViewBuilder emptyState: () -> some View = { DefaultEmptyStateView() },
             @ViewBuilder pager: @escaping (PagerContext) -> some View) {
@@ -102,6 +125,7 @@ public extension CombinedChartView {
         }
     }
 
+    /// Context passed to a custom selection overlay.
     struct SelectionOverlayContext {
         public let point: ChartPoint
         public let value: Double
@@ -109,6 +133,7 @@ public extension CombinedChartView {
         public let indicatorFrame: CGRect
         public let indicatorStyle: ChartPresentationMode.SelectionIndicatorStyle
 
+        /// Creates selection overlay context.
         public init(
             point: ChartPoint,
             value: Double,
@@ -123,6 +148,7 @@ public extension CombinedChartView {
         }
     }
 
+    /// Context passed to a custom pager.
     struct PagerContext {
         public let entries: [PagerEntry]
         public let highlightedEntry: PagerEntry?
@@ -132,6 +158,7 @@ public extension CombinedChartView {
         public let onSelectEntry: (PagerEntry) -> Void
         public let onSelectNextPage: () -> Void
 
+        /// Creates pager context.
         public init(
             entries: [PagerEntry],
             highlightedEntry: PagerEntry?,
@@ -150,22 +177,27 @@ public extension CombinedChartView {
         }
     }
 
+    /// Context passed to point selection callbacks.
     struct SelectionContext {
         public let point: ChartPoint
         public let index: Int
 
+        /// Creates selection context.
         public init(point: ChartPoint, index: Int) {
             self.point = point
             self.index = index
         }
     }
 
+    /// Presentation mode describing how the chart should emphasize bars, line, and selection.
     struct ChartPresentationMode: Hashable {
+        /// Color strategy for bars in the current presentation mode.
         public enum BarColorStyle: Hashable {
             case seriesColors
             case unifiedTrendColor
         }
 
+        /// Indicator style used when a point is selected.
         public enum SelectionIndicatorStyle: Hashable {
             case line
             case band
@@ -176,6 +208,7 @@ public extension CombinedChartView {
         public let selectionIndicatorStyle: SelectionIndicatorStyle
         public let showsSelectedPoint: Bool
 
+        /// Creates a presentation mode.
         public init(
             barColorStyle: BarColorStyle,
             showsTrendLine: Bool,
@@ -187,6 +220,7 @@ public extension CombinedChartView {
             self.showsSelectedPoint = showsSelectedPoint
         }
 
+        /// A mode that emphasizes the unified trend line.
         public static var totalTrend: ChartPresentationMode {
             .init(
                 barColorStyle: .unifiedTrendColor,
@@ -195,6 +229,7 @@ public extension CombinedChartView {
                 showsSelectedPoint: true)
         }
 
+        /// A mode that emphasizes per-series bar breakdown.
         public static var breakdown: ChartPresentationMode {
             .init(
                 barColorStyle: .seriesColors,
@@ -204,17 +239,20 @@ public extension CombinedChartView {
         }
     }
 
+    /// A selectable chart tab.
     struct ChartTab: Identifiable, Hashable {
         public let id: String
         public let title: String
         public let mode: ChartPresentationMode
 
+        /// Creates a chart tab.
         public init(id: String, title: String, mode: ChartPresentationMode) {
             self.id = id
             self.title = title
             self.mode = mode
         }
 
+        /// The built-in tab for the total trend presentation.
         public static var totalTrend: ChartTab {
             ChartTab(
                 id: "totalTrend",
@@ -222,6 +260,7 @@ public extension CombinedChartView {
                 mode: .totalTrend)
         }
 
+        /// The built-in tab for the breakdown presentation.
         public static var breakdown: ChartTab {
             ChartTab(
                 id: "breakdown",
@@ -229,6 +268,7 @@ public extension CombinedChartView {
                 mode: .breakdown)
         }
 
+        /// The default tab set used by sample and preview content.
         public static var defaults: [ChartTab] {
             [
                 .totalTrend,
@@ -237,22 +277,26 @@ public extension CombinedChartView {
         }
     }
 
+    /// Stable identity for one chart point.
     struct ChartPointID: Hashable {
         public let groupID: String
         public let xKey: String
 
+        /// Creates a chart point identifier.
         public init(groupID: String, xKey: String) {
             self.groupID = groupID
             self.xKey = xKey
         }
     }
 
+    /// One logical chart point.
     struct ChartPoint: Identifiable {
         public let id: ChartPointID
         public let xKey: String
         public let xLabel: String
         public let values: [ChartSeriesKey: Double]
 
+        /// Creates a chart point.
         public init(
             id: ChartPointID,
             xKey: String,
@@ -265,12 +309,14 @@ public extension CombinedChartView {
         }
     }
 
+    /// A grouped series of chart points, typically representing one year or category.
     struct ChartGroup: Identifiable {
         public let id: String
         public let displayTitle: String
         public let groupOrder: Int
         public let points: [ChartPoint]
 
+        /// Creates a chart group.
         public init(id: String, displayTitle: String, groupOrder: Int, points: [ChartPoint]) {
             self.id = id
             self.displayTitle = displayTitle
