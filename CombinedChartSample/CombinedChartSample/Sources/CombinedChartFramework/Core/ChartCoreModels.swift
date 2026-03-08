@@ -341,6 +341,35 @@ extension CombinedChartView {
     }
 
     struct SectionContext {
+        let renderContext: SectionRenderContext
+        let yAxisLabel: (Double) -> String
+
+        func makeYAxisLabelsContext(
+            plotSyncState: PlotSyncState) -> YAxisLabelsContext {
+            .init(
+                yAxisTickValues: renderContext.yAxisTickValues,
+                tickPositions: plotSyncState.yTickPositions,
+                plotArea: plotSyncState.plotAreaInfo,
+                labelText: yAxisLabel)
+        }
+
+        func makeRenderContext(
+            plotAreaHeight: CGFloat,
+            visibleSelection: VisibleSelection?) -> ChartRenderContext {
+            .init(
+                selectedTab: renderContext.selectedTab,
+                visibleData: renderContext.data,
+                yAxisTickValues: renderContext.yAxisTickValues,
+                yAxisDisplayDomain: renderContext.yAxisDisplayDomain,
+                plotAreaHeight: plotAreaHeight,
+                config: renderContext.config,
+                showDebugOverlay: renderContext.showDebugOverlay,
+                selectionOverlay: renderContext.selectionOverlay,
+                visibleSelection: visibleSelection)
+        }
+    }
+
+    struct SectionRenderContext {
         let config: ChartConfig
         let selectedTab: ChartTab
         let data: [ChartDataPoint]
@@ -348,7 +377,13 @@ extension CombinedChartView {
         let yAxisDisplayDomain: ClosedRange<Double>
         let showDebugOverlay: Bool
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
-        let yAxisLabel: (Double) -> String
+    }
+
+    struct YAxisLabelsContext {
+        let yAxisTickValues: [Double]
+        let tickPositions: [Double: CGFloat]
+        let plotArea: PlotAreaInfo?
+        let labelText: (Double) -> String
     }
 
     struct ChartRenderContext {

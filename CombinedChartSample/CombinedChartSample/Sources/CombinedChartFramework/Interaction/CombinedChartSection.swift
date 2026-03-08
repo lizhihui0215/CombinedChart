@@ -19,10 +19,8 @@ extension CombinedChartView {
                 HStack(alignment: .top, spacing: 0) {
                     HStack(alignment: .top, spacing: 8) {
                         ChartYAxisLabels(
-                            yAxisTickValues: context.yAxisTickValues,
-                            tickPositions: plotSyncState.yTickPositions,
-                            plotArea: plotSyncState.plotAreaInfo,
-                            labelText: context.yAxisLabel)
+                            context: context.makeYAxisLabelsContext(
+                                plotSyncState: plotSyncState))
 
                         if let plotAreaInfo = plotSyncState.plotAreaInfo {
                             Rectangle()
@@ -65,24 +63,24 @@ extension CombinedChartView {
 
 private extension CombinedChartView.CombinedChartSection {
     var maxStartMonthIndex: Int {
-        max(0, context.data.count - context.config.monthsPerPage)
+        max(0, context.renderContext.data.count - context.renderContext.config.monthsPerPage)
     }
 
     var dragPagingState: CombinedChartView.DragPagingState {
         .init(
             contentOffsetX: viewportState.contentOffsetX,
             visibleStartMonthIndex: viewportState.visibleStartMonthIndex,
-            monthsPerPage: context.config.monthsPerPage,
+            monthsPerPage: context.renderContext.config.monthsPerPage,
             maxStartMonthIndex: maxStartMonthIndex,
-            dragScrollMode: context.config.pager.dragScrollMode)
+            dragScrollMode: context.renderContext.config.pager.dragScrollMode)
     }
 
     func layoutMetrics(for geometry: GeometryProxy) -> CombinedChartView.ChartLayoutMetrics {
         .init(
             availableWidth: geometry.size.width,
-            axisWidth: context.config.axis.yAxisWidth,
-            monthsPerPage: context.config.monthsPerPage,
-            dataCount: context.data.count,
+            axisWidth: context.renderContext.config.axis.yAxisWidth,
+            monthsPerPage: context.renderContext.config.monthsPerPage,
+            dataCount: context.renderContext.data.count,
             dragPagingState: dragPagingState,
             dragTranslationX: dragTranslationX,
             settlingOffsetX: settlingOffsetX,
@@ -112,15 +110,8 @@ private extension CombinedChartView.CombinedChartSection {
     }
 
     var renderContext: CombinedChartView.ChartRenderContext {
-        .init(
-            selectedTab: context.selectedTab,
-            visibleData: context.data,
-            yAxisTickValues: context.yAxisTickValues,
-            yAxisDisplayDomain: context.yAxisDisplayDomain,
+        context.makeRenderContext(
             plotAreaHeight: plotSyncState.plotAreaInfo?.height ?? 0,
-            config: context.config,
-            showDebugOverlay: context.showDebugOverlay,
-            selectionOverlay: context.selectionOverlay,
             visibleSelection: visibleSelection)
     }
 

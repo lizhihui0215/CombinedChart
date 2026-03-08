@@ -2,21 +2,18 @@ import SwiftUI
 
 extension CombinedChartView {
     struct ChartYAxisLabels: View {
-        let yAxisTickValues: [Double]
-        let tickPositions: [Double: CGFloat]
-        let plotArea: PlotAreaInfo?
-        let labelText: (Double) -> String
+        let context: YAxisLabelsContext
 
         var body: some View {
-            let topPadding = plotArea?.minY ?? 12
-            let plotHeight = plotArea?.height ?? 320
+            let topPadding = context.plotArea?.minY ?? 12
+            let plotHeight = context.plotArea?.height ?? 320
 
             GeometryReader { _ in
                 let maxLabelWidth: CGFloat = 44
                 ZStack(alignment: .topLeading) {
-                    ForEach(yAxisTickValues, id: \.self) { value in
-                        if let yPos = tickPositions[value] {
-                            Text(labelText(value))
+                    ForEach(context.yAxisTickValues, id: \.self) { value in
+                        if let yPos = context.tickPositions[value] {
+                            Text(context.labelText(value))
                                 .font(.caption2)
                                 .foregroundStyle(.gray)
                                 .multilineTextAlignment(.trailing)

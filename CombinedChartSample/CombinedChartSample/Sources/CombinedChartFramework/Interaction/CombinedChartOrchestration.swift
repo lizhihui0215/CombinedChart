@@ -110,13 +110,14 @@ extension CombinedChartView {
 
     var sectionContext: SectionContext {
         .init(
-            config: config,
-            selectedTab: selectedTab,
-            data: data,
-            yAxisTickValues: yAxisTickValues,
-            yAxisDisplayDomain: yAxisDisplayDomain,
-            showDebugOverlay: showDebugOverlay,
-            selectionOverlay: viewSlots.selectionOverlay,
+            renderContext: .init(
+                config: config,
+                selectedTab: selectedTab,
+                data: data,
+                yAxisTickValues: yAxisTickValues,
+                yAxisDisplayDomain: yAxisDisplayDomain,
+                showDebugOverlay: showDebugOverlay,
+                selectionOverlay: viewSlots.selectionOverlay),
             yAxisLabel: yAxisLabel(for:))
     }
 
