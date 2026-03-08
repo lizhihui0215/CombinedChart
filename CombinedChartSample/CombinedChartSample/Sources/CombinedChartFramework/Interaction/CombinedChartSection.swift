@@ -23,7 +23,7 @@ extension CombinedChartView {
 
                         if let plotAreaMinY = plotSyncState.plotAreaMinY, plotSyncState.plotAreaHeight > 0 {
                             Rectangle()
-                                .fill(.black)
+                                .fill(context.config.axis.dividerColor)
                                 .frame(width: 1, height: plotSyncState.plotAreaHeight)
                                 .offset(y: plotAreaMinY)
                         }

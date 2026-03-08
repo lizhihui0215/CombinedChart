@@ -12,7 +12,8 @@ extension CombinedChartView.ChartRenderer {
                             for: key,
                             axisPointByKey: axisContext.pointInfoByKey,
                             axisPointInfos: axisContext.pointInfos)))
-                        .font(.caption2)
+                        .font(context.config.axis.xAxisLabelFont)
+                        .foregroundStyle(context.config.axis.xAxisLabelColor)
                 }
             }
         }
@@ -21,8 +22,8 @@ extension CombinedChartView.ChartRenderer {
     @AxisContentBuilder
     var chartYAxis: some AxisContent {
         AxisMarks(position: .leading, values: context.yAxisTickValues) { _ in
-            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                .foregroundStyle(.gray)
+            AxisGridLine(stroke: StrokeStyle(lineWidth: context.config.axis.gridLineWidth))
+                .foregroundStyle(context.config.axis.gridLineColor)
         }
     }
 

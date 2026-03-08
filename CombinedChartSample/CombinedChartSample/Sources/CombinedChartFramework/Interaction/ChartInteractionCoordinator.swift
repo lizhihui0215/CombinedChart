@@ -53,6 +53,7 @@ extension CombinedChartView {
     func makePagerContext(snapshot: ChartInteractionSnapshot) -> PagerContext? {
         guard snapshot.hasData else { return nil }
         return .init(
+            config: config,
             entries: snapshot.pagerState.entries,
             highlightedEntry: snapshot.pagerState.highlightedEntry,
             canSelectPreviousPage: snapshot.canSelectPreviousPage,

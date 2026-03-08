@@ -47,6 +47,7 @@ public struct ChartConfig {
     public let line: Line
     public let axis: Axis
     public let pager: Pager
+    public let debug: Debug
 
     /// A ready-to-use configuration tuned for the sample combined chart experience.
     public static let `default` = ChartConfig(
@@ -109,7 +110,8 @@ public struct ChartConfig {
             zeroLineColor: .black,
             zeroLineWidth: 1,
             yAxisWidth: 40),
-        pager: Pager())
+        pager: Pager(),
+        debug: Debug())
 
     /// Creates a chart configuration.
     ///
@@ -120,19 +122,22 @@ public struct ChartConfig {
     ///   - line: Configuration for the trend line and selection appearance.
     ///   - axis: Configuration for axis formatting and zero-line rendering.
     ///   - pager: Configuration for pager visibility and scrolling behavior.
+    ///   - debug: Configuration for optional debug overlay colors and typography.
     public init(
         monthsPerPage: Int,
         chartHeight: CGFloat,
         bar: Bar,
         line: Line,
         axis: Axis,
-        pager: Pager) {
+        pager: Pager,
+        debug: Debug = .init()) {
         self.monthsPerPage = monthsPerPage
         self.chartHeight = chartHeight
         self.bar = bar
         self.line = line
         self.axis = axis
         self.pager = pager
+        self.debug = debug
     }
 }
 
@@ -197,8 +202,15 @@ public extension ChartConfig {
     struct Axis {
         public let xAxisLabel: (XLabelContext) -> String
         public let yAxisLabel: (YLabelContext) -> String
+        public let xAxisLabelFont: Font
+        public let xAxisLabelColor: Color
+        public let yAxisLabelFont: Font
+        public let yAxisLabelColor: Color
+        public let gridLineColor: Color
+        public let gridLineWidth: CGFloat
         public let zeroLineColor: Color
         public let zeroLineWidth: CGFloat
+        public let dividerColor: Color
         public let yAxisWidth: CGFloat
 
         /// Creates axis configuration.
@@ -206,19 +218,40 @@ public extension ChartConfig {
         /// - Parameters:
         ///   - xAxisLabel: Formats labels for visible x-axis points.
         ///   - yAxisLabel: Formats labels for visible y-axis values.
+        ///   - xAxisLabelFont: Font used to render x-axis labels.
+        ///   - xAxisLabelColor: Color used to render x-axis labels.
+        ///   - yAxisLabelFont: Font used to render y-axis labels.
+        ///   - yAxisLabelColor: Color used to render y-axis labels.
+        ///   - gridLineColor: Color of horizontal grid lines.
+        ///   - gridLineWidth: Width of horizontal grid lines.
         ///   - zeroLineColor: The color of the zero-value reference line.
         ///   - zeroLineWidth: The width of the zero-value reference line.
+        ///   - dividerColor: Color of the divider between y-axis labels and the chart.
         ///   - yAxisWidth: Reserved width for the y-axis label column.
         public init(
             xAxisLabel: @escaping (XLabelContext) -> String,
             yAxisLabel: @escaping (YLabelContext) -> String,
+            xAxisLabelFont: Font = .caption2,
+            xAxisLabelColor: Color = .primary,
+            yAxisLabelFont: Font = .caption2,
+            yAxisLabelColor: Color = .gray,
+            gridLineColor: Color = .gray,
+            gridLineWidth: CGFloat = 0.5,
             zeroLineColor: Color,
             zeroLineWidth: CGFloat,
+            dividerColor: Color = .black,
             yAxisWidth: CGFloat) {
             self.xAxisLabel = xAxisLabel
             self.yAxisLabel = yAxisLabel
+            self.xAxisLabelFont = xAxisLabelFont
+            self.xAxisLabelColor = xAxisLabelColor
+            self.yAxisLabelFont = yAxisLabelFont
+            self.yAxisLabelColor = yAxisLabelColor
+            self.gridLineColor = gridLineColor
+            self.gridLineWidth = gridLineWidth
             self.zeroLineColor = zeroLineColor
             self.zeroLineWidth = zeroLineWidth
+            self.dividerColor = dividerColor
             self.yAxisWidth = yAxisWidth
         }
     }
@@ -241,6 +274,10 @@ public extension ChartConfig {
         public let isVisible: Bool
         public let arrowScrollMode: ArrowScrollMode
         public let dragScrollMode: DragScrollMode
+        public let titleFont: Font
+        public let titleColor: Color
+        public let activeControlColor: Color
+        public let inactiveControlColor: Color
         /// The scroll progress required before the next x-axis unit becomes the visible start.
         ///
         /// Use a value between `0` and `1`:
@@ -258,17 +295,48 @@ public extension ChartConfig {
         ///   - isVisible: A Boolean value that determines whether the pager is shown.
         ///   - arrowScrollMode: The navigation behavior used for pager arrows.
         ///   - dragScrollMode: The settling behavior used for drag gestures.
+        ///   - titleFont: Font used to render the current pager title.
+        ///   - titleColor: Color used to render the current pager title.
+        ///   - activeControlColor: Color used for enabled pager controls.
+        ///   - inactiveControlColor: Color used for disabled pager controls.
         ///   - visibleStartThreshold: The proportion of the leading x-axis unit that must be scrolled
         ///     past before the next unit becomes the visible start. Values are clamped to `0...1`.
         public init(
             isVisible: Bool = true,
             arrowScrollMode: ArrowScrollMode = .byPage,
             dragScrollMode: DragScrollMode = .freeSnapping,
+            titleFont: Font = .callout.weight(.semibold),
+            titleColor: Color = .primary,
+            activeControlColor: Color = .primary,
+            inactiveControlColor: Color = .secondary,
             visibleStartThreshold: CGFloat = 2.0 / 3.0) {
             self.isVisible = isVisible
             self.arrowScrollMode = arrowScrollMode
             self.dragScrollMode = dragScrollMode
+            self.titleFont = titleFont
+            self.titleColor = titleColor
+            self.activeControlColor = activeControlColor
+            self.inactiveControlColor = inactiveControlColor
             self.visibleStartThreshold = min(max(visibleStartThreshold, 0), 1)
+        }
+    }
+
+    /// Configuration for optional debug overlays rendered by the chart.
+    struct Debug {
+        public let statusFont: Font
+        public let statusColor: Color
+        public let pointGuideColor: Color
+        public let thresholdGuideColor: Color
+
+        public init(
+            statusFont: Font = .caption.monospaced(),
+            statusColor: Color = .secondary,
+            pointGuideColor: Color = Color.red.opacity(0.6),
+            thresholdGuideColor: Color = Color.blue.opacity(0.7)) {
+            self.statusFont = statusFont
+            self.statusColor = statusColor
+            self.pointGuideColor = pointGuideColor
+            self.thresholdGuideColor = thresholdGuideColor
         }
     }
 }

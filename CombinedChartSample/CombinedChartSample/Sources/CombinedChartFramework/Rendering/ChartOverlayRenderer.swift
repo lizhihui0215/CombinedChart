@@ -107,7 +107,7 @@ extension CombinedChartView.ChartRenderer {
                 }
             }
             .stroke(
-                Color.red.opacity(0.6),
+                overlayContext.config.debug.pointGuideColor,
                 style: StrokeStyle(lineWidth: 1.0, dash: [2, 3]))
 
             Path { path in
@@ -117,7 +117,7 @@ extension CombinedChartView.ChartRenderer {
                 }
             }
             .stroke(
-                Color.blue.opacity(0.7),
+                overlayContext.config.debug.thresholdGuideColor,
                 style: StrokeStyle(lineWidth: 1.0, dash: [6, 4]))
         }
     }

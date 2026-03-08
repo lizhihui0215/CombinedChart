@@ -123,8 +123,8 @@ public struct CombinedChartView: View {
         VStack(spacing: 12) {
             if showDebugOverlay, let visibleStartLabel {
                 Text("Visible start index: \(visibleStartIndex ?? viewportState.startIndex) (\(visibleStartLabel))")
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
+                    .font(config.debug.statusFont)
+                    .foregroundStyle(config.debug.statusColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
