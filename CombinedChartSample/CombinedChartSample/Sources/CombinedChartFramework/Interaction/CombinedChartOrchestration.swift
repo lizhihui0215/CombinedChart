@@ -19,8 +19,7 @@ extension CombinedChartView {
             selectedTab: selectedTab,
             showDebugOverlay: showDebugOverlay,
             viewSlots: viewSlots,
-            visibleStartMonthIndex: viewportState.visibleStartMonthIndex,
-            contentOffsetX: viewportState.contentOffsetX,
+            viewportState: viewportState,
             layoutState: layoutState)
     }
 
