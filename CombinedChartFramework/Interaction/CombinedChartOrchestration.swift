@@ -1,0 +1,161 @@
+import SwiftUI
+
+extension CombinedChartView {
+    @ViewBuilder
+    var pagerView: some View {
+        if let pagerContext {
+            if let pager = viewSlots.pager {
+                pager(pagerContext)
+            } else {
+                CombinedChartPager(context: pagerContext)
+            }
+        }
+    }
+
+    private var orchestrationContext: CombinedChartViewOrchestrationContext {
+        .init(
+            config: config,
+            groups: groups,
+            selectedTab: selectedTab,
+            showDebugOverlay: showDebugOverlay,
+            viewSlots: viewSlots,
+            visibleStartMonthIndex: visibleStartMonthIndex,
+            contentOffsetX: contentOffsetX,
+            unitWidth: unitWidth)
+    }
+
+    private var sortedGroups: [ChartDataGroup] {
+        orchestrationContext.sortedGroups
+    }
+
+    private var data: [ChartDataPoint] {
+        orchestrationContext.data
+    }
+
+    private var derivedState: ChartDerivedState {
+        orchestrationContext.derivedState
+    }
+
+    private var pagerState: PagerState {
+        derivedState.pagerState
+    }
+
+    private var yearPageRanges: [YearPageRange] {
+        pagerState.yearPageRanges
+    }
+
+    private var currentYearRangeIndex: Int? {
+        pagerState.currentYearRangeIndex
+    }
+
+    private var highlightedPagerEntry: PagerEntry? {
+        pagerState.highlightedEntry
+    }
+
+    private var pagerEntries: [PagerEntry] {
+        pagerState.entries
+    }
+
+    private var visibleMonthRange: ClosedRange<Int>? {
+        pagerState.visibleMonthRange
+    }
+
+    private var currentYearRange: YearPageRange? {
+        pagerState.currentYearRange
+    }
+
+    private var maxStartMonthIndex: Int {
+        max(0, data.count - config.monthsPerPage)
+    }
+
+    var hasData: Bool {
+        derivedState.hasData
+    }
+
+    var visibleStartMonthLabel: String? {
+        derivedState.visibleStartMonthLabel
+    }
+
+    var yAxisTickValues: [Double] {
+        derivedState.yAxisTickValues
+    }
+
+    var yAxisDisplayDomain: ClosedRange<Double> {
+        derivedState.yAxisDisplayDomain
+    }
+
+    private var axisPointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo] {
+        derivedState.axisPointInfos
+    }
+
+    private var pagerContext: PagerContext? {
+        guard hasData else { return nil }
+        return .init(
+            entries: pagerEntries,
+            highlightedEntry: highlightedPagerEntry,
+            canSelectPreviousPage: visibleStartMonthIndex > 0,
+            canSelectNextPage: visibleStartMonthIndex < maxStartMonthIndex,
+            onSelectPreviousPage: { dispatch(.selectPreviousPage) },
+            onSelectEntry: { entry in
+                dispatch(.selectMonthWindow(startMonthIndex: entry.startMonthIndex))
+            },
+            onSelectNextPage: { dispatch(.selectNextPage) })
+    }
+
+    private func yAxisLabel(for amount: Double) -> String {
+        config.axis.yAxisLabel(
+            .init(
+                value: amount,
+                visiblePoints: axisPointInfos))
+    }
+
+    var sectionContext: SectionContext {
+        .init(
+            config: config,
+            selectedTab: selectedTab,
+            data: data,
+            yAxisTickValues: yAxisTickValues,
+            yAxisDisplayDomain: yAxisDisplayDomain,
+            showDebugOverlay: showDebugOverlay,
+            selectionOverlay: viewSlots.selectionOverlay,
+            yAxisLabel: yAxisLabel(for:))
+    }
+
+    private var interactionState: InteractionState {
+        .init(
+            selectedIndex: selectedIndex,
+            visibleStartMonthIndex: visibleStartMonthIndex,
+            contentOffsetX: contentOffsetX,
+            unitWidth: unitWidth,
+            monthsPerPage: config.monthsPerPage,
+            maxStartMonthIndex: maxStartMonthIndex,
+            arrowScrollMode: config.pager.arrowScrollMode,
+            currentYearRangeIndex: currentYearRangeIndex,
+            yearPageRanges: yearPageRanges)
+    }
+
+    func dispatch(_ action: ViewAction) {
+        let mutations = InteractionReducer.mutations(for: action, state: interactionState)
+        for mutation in mutations {
+            apply(mutation)
+        }
+    }
+
+    private func apply(_ mutation: InteractionMutation) {
+        switch mutation {
+        case .selection(let index, let emitsPointTap):
+            selectedIndex = index
+            guard emitsPointTap, let index, data.indices.contains(index) else { return }
+            let point = data[index].source
+            onPointTap?(
+                .init(
+                    point: point,
+                    index: index))
+        case .monthWindow(let startMonthIndex, let nextContentOffsetX):
+            visibleStartMonthIndex = startMonthIndex
+            if let nextContentOffsetX {
+                contentOffsetX = nextContentOffsetX
+            }
+        }
+    }
+}

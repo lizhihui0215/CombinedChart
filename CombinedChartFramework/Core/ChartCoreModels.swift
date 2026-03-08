@@ -73,7 +73,7 @@ extension CombinedChartView {
         let maxStartMonthIndex: Int
         let dragScrollMode: ChartConfig.ChartPagerConfig.DragScrollMode
 
-        func displayTranslationX(from dragTranslationX: CGFloat) -> CGFloat {
+        private func displayTranslationX(from dragTranslationX: CGFloat) -> CGFloat {
             switch dragScrollMode {
             case .byPage:
                 0
@@ -82,7 +82,7 @@ extension CombinedChartView {
             }
         }
 
-        func clampedDragTranslationX(
+        private func clampedDragTranslationX(
             from dragTranslationX: CGFloat,
             maxContentOffsetX: CGFloat) -> CGFloat {
             let maxRightDragOffset = contentOffsetX

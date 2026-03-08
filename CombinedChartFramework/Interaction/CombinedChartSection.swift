@@ -67,7 +67,7 @@ extension CombinedChartView {
     }
 }
 
-extension CombinedChartView.CombinedChartSection {
+private extension CombinedChartView.CombinedChartSection {
     var maxStartMonthIndex: Int {
         max(0, context.data.count - context.config.monthsPerPage)
     }

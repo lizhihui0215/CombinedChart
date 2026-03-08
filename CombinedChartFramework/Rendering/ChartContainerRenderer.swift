@@ -63,7 +63,7 @@ extension CombinedChartView {
     }
 }
 
-extension CombinedChartView.ChartContainer {
+private extension CombinedChartView.ChartContainer {
     func lineColor(for value: Double) -> Color {
         value >= 0 ? marksContext.config.line.positiveLineColor : marksContext.config.line.negativeLineColor
     }
@@ -93,13 +93,6 @@ extension CombinedChartView.ChartContainer {
         CombinedChartView.BarSegmentResolver.makeSegments(
             for: point,
             series: marksContext.config.bar.series,
-            useTrendBarColor: useTrendBarColor,
-            trendBarColorStyle: marksContext.config.bar.trendBarColorStyle)
-    }
-
-    func trendBarColor(for seriesColor: Color, useTrendBarColor: Bool) -> Color {
-        CombinedChartView.BarSegmentResolver.resolveColor(
-            seriesColor: seriesColor,
             useTrendBarColor: useTrendBarColor,
             trendBarColorStyle: marksContext.config.bar.trendBarColorStyle)
     }
