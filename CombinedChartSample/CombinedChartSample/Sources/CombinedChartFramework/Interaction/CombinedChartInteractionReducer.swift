@@ -11,7 +11,7 @@ extension CombinedChartView {
 
     enum InteractionMutation {
         case selection(VisibleSelection?, emitsPointTap: Bool)
-        case monthWindow(startMonthIndex: Int, contentOffsetX: CGFloat?)
+        case monthWindow(MonthWindowContext)
     }
 
     enum InteractionCommand: Equatable {
@@ -89,8 +89,9 @@ extension CombinedChartView {
                 : nil
 
             return .monthWindow(
-                startMonthIndex: clampedStartMonthIndex,
-                contentOffsetX: nextContentOffsetX)
+                .init(
+                    startMonthIndex: clampedStartMonthIndex,
+                    contentOffsetX: nextContentOffsetX))
         }
 
         private static func settledDragMutation(
@@ -105,8 +106,9 @@ extension CombinedChartView {
                 maximumContentOffsetX)
 
             return .monthWindow(
-                startMonthIndex: clampedStartMonthIndex,
-                contentOffsetX: clampedContentOffsetX)
+                .init(
+                    startMonthIndex: clampedStartMonthIndex,
+                    contentOffsetX: clampedContentOffsetX))
         }
     }
 }

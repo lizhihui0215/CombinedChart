@@ -15,11 +15,11 @@ final class ChartInteractionReducerTests: XCTestCase {
 
         XCTAssertEqual(result.mutations.count, 1)
         XCTAssertTrue(result.commands.isEmpty)
-        guard case .monthWindow(let startMonthIndex, let contentOffsetX) = result.mutations[0] else {
+        guard case .monthWindow(let context) = result.mutations[0] else {
             return XCTFail("Expected monthWindow mutation")
         }
-        XCTAssertEqual(startMonthIndex, 4)
-        XCTAssertEqual(contentOffsetX, 400)
+        XCTAssertEqual(context.startMonthIndex, 4)
+        XCTAssertEqual(context.contentOffsetX, 400)
     }
 
     func testReducerBuildsByEntryNextMutation() {
@@ -51,11 +51,11 @@ final class ChartInteractionReducerTests: XCTestCase {
 
         XCTAssertEqual(result.mutations.count, 1)
         XCTAssertTrue(result.commands.isEmpty)
-        guard case .monthWindow(let startMonthIndex, let contentOffsetX) = result.mutations[0] else {
+        guard case .monthWindow(let context) = result.mutations[0] else {
             return XCTFail("Expected monthWindow mutation")
         }
-        XCTAssertEqual(startMonthIndex, 6)
-        XCTAssertEqual(contentOffsetX, 600)
+        XCTAssertEqual(context.startMonthIndex, 6)
+        XCTAssertEqual(context.contentOffsetX, 600)
     }
 
     func testReducerClampsSelectMonthWindowMutation() {
@@ -70,16 +70,16 @@ final class ChartInteractionReducerTests: XCTestCase {
 
         XCTAssertEqual(result.mutations.count, 1)
         XCTAssertTrue(result.commands.isEmpty)
-        guard case .monthWindow(let startMonthIndex, let contentOffsetX) = result.mutations[0] else {
+        guard case .monthWindow(let context) = result.mutations[0] else {
             return XCTFail("Expected monthWindow mutation")
         }
-        XCTAssertEqual(startMonthIndex, 8)
-        XCTAssertEqual(contentOffsetX, 800)
+        XCTAssertEqual(context.startMonthIndex, 8)
+        XCTAssertEqual(context.contentOffsetX, 800)
     }
 
     func testReducerPreservesFreeDragSettledOffset() {
         let result = CombinedChartView.InteractionReducer.reduce(
-            action: .settleDrag(targetMonthIndex: 3, targetContentOffsetX: 365),
+            action: .settleDrag(.init(targetMonthIndex: 3, targetContentOffsetX: 365)),
             state: makeState(
                 visibleStartMonthIndex: 0,
                 unitWidth: 100,
@@ -89,16 +89,16 @@ final class ChartInteractionReducerTests: XCTestCase {
 
         XCTAssertEqual(result.mutations.count, 1)
         XCTAssertTrue(result.commands.isEmpty)
-        guard case .monthWindow(let startMonthIndex, let contentOffsetX) = result.mutations[0] else {
+        guard case .monthWindow(let context) = result.mutations[0] else {
             return XCTFail("Expected monthWindow mutation")
         }
-        XCTAssertEqual(startMonthIndex, 3)
-        XCTAssertEqual(contentOffsetX, 365)
+        XCTAssertEqual(context.startMonthIndex, 3)
+        XCTAssertEqual(context.contentOffsetX, 365)
     }
 
     func testReducerClampsSettledDragOffsetToMaximumRange() {
         let result = CombinedChartView.InteractionReducer.reduce(
-            action: .settleDrag(targetMonthIndex: 99, targetContentOffsetX: 9999),
+            action: .settleDrag(.init(targetMonthIndex: 99, targetContentOffsetX: 9999)),
             state: makeState(
                 visibleStartMonthIndex: 0,
                 unitWidth: 100,
@@ -108,11 +108,11 @@ final class ChartInteractionReducerTests: XCTestCase {
 
         XCTAssertEqual(result.mutations.count, 1)
         XCTAssertTrue(result.commands.isEmpty)
-        guard case .monthWindow(let startMonthIndex, let contentOffsetX) = result.mutations[0] else {
+        guard case .monthWindow(let context) = result.mutations[0] else {
             return XCTFail("Expected monthWindow mutation")
         }
-        XCTAssertEqual(startMonthIndex, 8)
-        XCTAssertEqual(contentOffsetX, 800)
+        XCTAssertEqual(context.startMonthIndex, 8)
+        XCTAssertEqual(context.contentOffsetX, 800)
     }
 
     func testReducerSelectionMutationCarriesStablePointIdentity() {
@@ -171,13 +171,15 @@ final class ChartInteractionReducerTests: XCTestCase {
         .init(
             visibleSelection: nil,
             visiblePointIDs: visiblePointIDs,
-            visibleStartMonthIndex: visibleStartMonthIndex,
-            contentOffsetX: CGFloat(visibleStartMonthIndex) * unitWidth,
+            viewport: .init(
+                visibleStartMonthIndex: visibleStartMonthIndex,
+                contentOffsetX: CGFloat(visibleStartMonthIndex) * unitWidth),
             unitWidth: unitWidth,
-            monthsPerPage: monthsPerPage,
-            maxStartMonthIndex: maxStartMonthIndex,
-            arrowScrollMode: arrowScrollMode,
-            currentYearRangeIndex: currentYearRangeIndex,
-            yearPageRanges: yearPageRanges)
+            pagingContext: .init(
+                monthsPerPage: monthsPerPage,
+                maxStartMonthIndex: maxStartMonthIndex,
+                arrowScrollMode: arrowScrollMode,
+                currentYearRangeIndex: currentYearRangeIndex,
+                yearPageRanges: yearPageRanges))
     }
 }

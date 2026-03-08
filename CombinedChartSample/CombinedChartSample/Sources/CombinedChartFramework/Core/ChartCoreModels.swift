@@ -340,6 +340,11 @@ extension CombinedChartView {
         let targetContentOffsetX: CGFloat
     }
 
+    struct MonthWindowContext: Equatable {
+        let startMonthIndex: Int
+        let contentOffsetX: CGFloat?
+    }
+
     struct ViewportState: Equatable {
         var visibleStartMonthIndex: Int
         var contentOffsetX: CGFloat
