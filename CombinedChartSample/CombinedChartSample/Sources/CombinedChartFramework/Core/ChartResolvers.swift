@@ -2,14 +2,11 @@ import Charts
 import SwiftUI
 
 extension CombinedChartView {
+    // MARK: - Selection
+
     struct SelectionCandidate {
         let index: Int
         let xPosition: CGFloat
-    }
-
-    struct ResolvedLinePoint {
-        let position: CGPoint
-        let value: Double
     }
 
     enum SelectionResolver {
@@ -47,6 +44,13 @@ extension CombinedChartView {
                 visibleIndex: resolvedVisibleIndex,
                 pointID: dataPointIDs[resolvedVisibleIndex])
         }
+    }
+
+    // MARK: - Line
+
+    struct ResolvedLinePoint {
+        let position: CGPoint
+        let value: Double
     }
 
     enum LineSegmentResolver {
@@ -114,6 +118,8 @@ extension CombinedChartView {
             return path
         }
     }
+
+    // MARK: - Bar
 
     enum BarSegmentResolver {
         static func gapValue(

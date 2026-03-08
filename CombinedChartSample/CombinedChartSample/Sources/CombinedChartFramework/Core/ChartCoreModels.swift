@@ -2,6 +2,8 @@ import Charts
 import SwiftUI
 
 extension CombinedChartView {
+    // MARK: - Layout
+
     struct LayoutState: Equatable {
         var viewportWidth: CGFloat
         var unitWidth: CGFloat
@@ -168,6 +170,8 @@ extension CombinedChartView {
         }
     }
 
+    // MARK: - Derived State
+
     struct PagerState {
         let entries: [PagerEntry]
         let yearPageRanges: [YearPageRange]
@@ -327,6 +331,8 @@ extension CombinedChartView {
         }
     }
 
+    // MARK: - Interaction
+
     enum ViewAction {
         case selectPoint(index: Int?, emitsPointTap: Bool = true)
         case selectMonthWindow(startMonthIndex: Int)
@@ -349,6 +355,8 @@ extension CombinedChartView {
         var visibleStartMonthIndex: Int
         var contentOffsetX: CGFloat
     }
+
+    // MARK: - Section Contexts
 
     struct SectionContext {
         let renderContext: SectionRenderContext
@@ -397,6 +405,8 @@ extension CombinedChartView {
         let renderContext: ChartRenderContext
     }
 
+    // MARK: - Rendering Contexts
+
     struct YAxisLabelsContext {
         let yAxisTickValues: [Double]
         let tickPositions: [Double: CGFloat]
@@ -416,6 +426,8 @@ extension CombinedChartView {
         let visibleSelection: VisibleSelection?
     }
 
+    // MARK: - Rendering Models
+
     struct VisibleSelection: Equatable {
         let visibleIndex: Int
         let pointID: ChartPointID
@@ -428,6 +440,8 @@ extension CombinedChartView {
         let currentYearRangeIndex: Int?
         let yearPageRanges: [YearPageRange]
     }
+
+    // MARK: - Render Output Models
 
     struct ChartSelectionState {
         let point: ChartDataPoint
