@@ -11,7 +11,7 @@ extension CombinedChartView {
 
     enum InteractionMutation {
         case selection(VisibleSelection?, emitsPointTap: Bool)
-        case monthWindow(MonthWindowContext)
+        case viewportUpdate(ViewportUpdateContext)
     }
 
     enum InteractionCommand: Equatable {
@@ -32,7 +32,7 @@ extension CombinedChartView {
                     emitsPointTap: emitsPointTap,
                     state: state)
             case .selectMonthWindow(let startMonthIndex):
-                monthWindowResult(
+                viewportUpdateResult(
                     startMonthIndex: startMonthIndex,
                     state: state)
             case .settleDrag(let context):
@@ -77,11 +77,11 @@ extension CombinedChartView {
             for direction: Int,
             state: InteractionState) -> InteractionResult {
             .init(
-                mutations: monthWindowMutations(for: direction, state: state),
+                mutations: viewportUpdateMutations(for: direction, state: state),
                 commands: [])
         }
 
-        private static func monthWindowMutations(
+        private static func viewportUpdateMutations(
             for direction: Int,
             state: InteractionState) -> [InteractionMutation] {
             guard let startMonthIndex = targetStartMonthIndex(
@@ -89,7 +89,7 @@ extension CombinedChartView {
                 state: state)
             else { return [] }
 
-            return [monthWindowMutation(
+            return [viewportUpdateMutation(
                 startMonthIndex: startMonthIndex,
                 state: state)]
         }
@@ -116,11 +116,11 @@ extension CombinedChartView {
 
         // MARK: - Viewport
 
-        private static func monthWindowResult(
+        private static func viewportUpdateResult(
             startMonthIndex: Int,
             state: InteractionState) -> InteractionResult {
             .init(
-                mutations: [monthWindowMutation(startMonthIndex: startMonthIndex, state: state)],
+                mutations: [viewportUpdateMutation(startMonthIndex: startMonthIndex, state: state)],
                 commands: [])
         }
 
@@ -132,11 +132,11 @@ extension CombinedChartView {
                 commands: [])
         }
 
-        private static func monthWindowMutation(
+        private static func viewportUpdateMutation(
             startMonthIndex: Int,
             state: InteractionState) -> InteractionMutation {
-            .monthWindow(
-                makeMonthWindowContext(
+            .viewportUpdate(
+                makeViewportUpdateContext(
                     startMonthIndex: startMonthIndex,
                     contentOffsetX: nil,
                     state: state))
@@ -145,17 +145,17 @@ extension CombinedChartView {
         private static func settledDragMutation(
             context: DragSettleContext,
             state: InteractionState) -> InteractionMutation {
-            .monthWindow(
-                makeMonthWindowContext(
+            .viewportUpdate(
+                makeViewportUpdateContext(
                     startMonthIndex: context.targetMonthIndex,
                     contentOffsetX: context.targetContentOffsetX,
                     state: state))
         }
 
-        private static func makeMonthWindowContext(
+        private static func makeViewportUpdateContext(
             startMonthIndex: Int,
             contentOffsetX: CGFloat?,
-            state: InteractionState) -> MonthWindowContext {
+            state: InteractionState) -> ViewportUpdateContext {
             let clampedStartMonthIndex = clampedStartMonthIndex(
                 startMonthIndex,
                 state: state)

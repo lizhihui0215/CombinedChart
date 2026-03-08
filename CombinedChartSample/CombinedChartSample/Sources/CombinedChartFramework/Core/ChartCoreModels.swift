@@ -323,7 +323,7 @@ extension CombinedChartView {
         let targetContentOffsetX: CGFloat
     }
 
-    struct MonthWindowContext: Equatable {
+    struct ViewportUpdateContext: Equatable {
         let startMonthIndex: Int
         let contentOffsetX: CGFloat?
     }

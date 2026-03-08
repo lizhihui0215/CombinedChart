@@ -160,7 +160,7 @@ extension CombinedChartView {
         case .selection(let visibleSelection, let emitsPointTap):
             reconcileVisibleSelection(visibleSelection)
             guard emitsPointTap else { return }
-        case .monthWindow(let context):
+        case .viewportUpdate(let context):
             viewportState.visibleStartMonthIndex = context.startMonthIndex
             if let nextContentOffsetX = context.contentOffsetX {
                 viewportState.contentOffsetX = nextContentOffsetX

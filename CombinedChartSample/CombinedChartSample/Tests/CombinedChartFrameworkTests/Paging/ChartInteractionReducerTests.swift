@@ -15,8 +15,8 @@ final class ChartInteractionReducerTests: XCTestCase {
 
         XCTAssertEqual(result.mutations.count, 1)
         XCTAssertTrue(result.commands.isEmpty)
-        guard case .monthWindow(let context) = result.mutations[0] else {
-            return XCTFail("Expected monthWindow mutation")
+        guard case .viewportUpdate(let context) = result.mutations[0] else {
+            return XCTFail("Expected viewportUpdate mutation")
         }
         XCTAssertEqual(context.startMonthIndex, 4)
         XCTAssertEqual(context.contentOffsetX, 400)
@@ -51,8 +51,8 @@ final class ChartInteractionReducerTests: XCTestCase {
 
         XCTAssertEqual(result.mutations.count, 1)
         XCTAssertTrue(result.commands.isEmpty)
-        guard case .monthWindow(let context) = result.mutations[0] else {
-            return XCTFail("Expected monthWindow mutation")
+        guard case .viewportUpdate(let context) = result.mutations[0] else {
+            return XCTFail("Expected viewportUpdate mutation")
         }
         XCTAssertEqual(context.startMonthIndex, 6)
         XCTAssertEqual(context.contentOffsetX, 600)
@@ -70,8 +70,8 @@ final class ChartInteractionReducerTests: XCTestCase {
 
         XCTAssertEqual(result.mutations.count, 1)
         XCTAssertTrue(result.commands.isEmpty)
-        guard case .monthWindow(let context) = result.mutations[0] else {
-            return XCTFail("Expected monthWindow mutation")
+        guard case .viewportUpdate(let context) = result.mutations[0] else {
+            return XCTFail("Expected viewportUpdate mutation")
         }
         XCTAssertEqual(context.startMonthIndex, 8)
         XCTAssertEqual(context.contentOffsetX, 800)
@@ -89,8 +89,8 @@ final class ChartInteractionReducerTests: XCTestCase {
 
         XCTAssertEqual(result.mutations.count, 1)
         XCTAssertTrue(result.commands.isEmpty)
-        guard case .monthWindow(let context) = result.mutations[0] else {
-            return XCTFail("Expected monthWindow mutation")
+        guard case .viewportUpdate(let context) = result.mutations[0] else {
+            return XCTFail("Expected viewportUpdate mutation")
         }
         XCTAssertEqual(context.startMonthIndex, 3)
         XCTAssertEqual(context.contentOffsetX, 365)
@@ -108,8 +108,8 @@ final class ChartInteractionReducerTests: XCTestCase {
 
         XCTAssertEqual(result.mutations.count, 1)
         XCTAssertTrue(result.commands.isEmpty)
-        guard case .monthWindow(let context) = result.mutations[0] else {
-            return XCTFail("Expected monthWindow mutation")
+        guard case .viewportUpdate(let context) = result.mutations[0] else {
+            return XCTFail("Expected viewportUpdate mutation")
         }
         XCTAssertEqual(context.startMonthIndex, 8)
         XCTAssertEqual(context.contentOffsetX, 800)
