@@ -5,17 +5,22 @@ extension CombinedChartView {
         let sortedGroups: [ChartDataGroup]
         let data: [ChartDataPoint]
         let dataPointIDs: [ChartPointID]
+        let axisPointInfos: [ChartConfig.Axis.PointInfo]
 
         static func make(from groups: [ChartGroup]) -> Self {
             let sortedGroups = groups
                 .map { ChartDataGroup(source: $0) }
                 .sorted { $0.groupOrder < $1.groupOrder }
             let data = sortedGroups.flatMap(\.points)
+            let axisPointInfos = data.enumerated().map { index, point in
+                point.axisPointInfo(index: index)
+            }
 
             return .init(
                 sortedGroups: sortedGroups,
                 data: data,
-                dataPointIDs: data.map(\.id))
+                dataPointIDs: data.map(\.id),
+                axisPointInfos: axisPointInfos)
         }
     }
 
@@ -75,6 +80,7 @@ extension CombinedChartView {
                 config: config,
                 sortedGroups: sortedGroups,
                 data: data,
+                axisPointInfos: preparedData.axisPointInfos,
                 startIndex: viewportState.startIndex,
                 contentOffsetX: viewportState.contentOffsetX,
                 unitWidth: layoutState.unitWidth)

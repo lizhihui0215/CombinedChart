@@ -13,20 +13,24 @@ extension CombinedChartView {
             config: ChartConfig,
             sortedGroups: [ChartDataGroup],
             data: [ChartDataPoint],
+            axisPointInfos: [ChartConfig.Axis.PointInfo],
             startIndex: Int,
             contentOffsetX: CGFloat,
             unitWidth: CGFloat) {
             hasData = !data.isEmpty
-            axisPointInfos = data.enumerated().map { index, point in
-                point.axisPointInfo(index: index)
-            }
+            self.axisPointInfos = axisPointInfos
 
-            let minValue = data
-                .map { $0.stackedExtents(using: config).min }
-                .min() ?? -20
-            let maxValue = data
-                .map { $0.stackedExtents(using: config).max }
-                .max() ?? 20
+            var minValue = Double.infinity
+            var maxValue = -Double.infinity
+            for point in data {
+                let extents = point.stackedExtents(using: config)
+                minValue = min(minValue, extents.min)
+                maxValue = max(maxValue, extents.max)
+            }
+            if !minValue.isFinite || !maxValue.isFinite {
+                minValue = -20
+                maxValue = 20
+            }
             let padding = max((maxValue - minValue) * 0.1, 2)
             yDomain = (minValue - padding)...(maxValue + padding)
 
