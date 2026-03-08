@@ -62,6 +62,8 @@ extension CombinedChartView {
 }
 
 private extension CombinedChartView.CombinedChartSection {
+    // MARK: - Runtime
+
     func makeRuntimeContext(for geometry: GeometryProxy) -> CombinedChartView.SectionRuntimeContext {
         let dragPagingState = CombinedChartView.DragPagingState(
             contentOffsetX: viewportState.contentOffsetX,
@@ -88,6 +90,8 @@ private extension CombinedChartView.CombinedChartSection {
                 visibleSelection: visibleSelection))
     }
 
+    // MARK: - Sync
+
     func syncPlotArea(_ plotRect: CGRect, isDragging: Bool) {
         guard !isDragging else { return }
         let info = CombinedChartView.PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
@@ -109,6 +113,8 @@ private extension CombinedChartView.CombinedChartSection {
             unitWidth: metrics.unitWidth)
         viewportState.contentOffsetX = CGFloat(viewportState.visibleStartMonthIndex) * metrics.unitWidth
     }
+
+    // MARK: - Gesture
 
     func dragGesture(runtimeContext: CombinedChartView.SectionRuntimeContext) -> some Gesture {
         DragGesture()
