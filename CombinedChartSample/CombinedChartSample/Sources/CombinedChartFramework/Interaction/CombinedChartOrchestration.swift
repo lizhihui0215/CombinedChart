@@ -151,23 +151,23 @@ extension CombinedChartView {
     }
 
     private func apply(_ mutation: InteractionMutation) {
-        let dataPointIDs = data.map(\.id)
-
         switch mutation {
         case .selection(let visibleSelection, let emitsPointTap):
-            self.visibleSelection = CombinedChartView.SelectionResolver.reconciledSelection(
-                visibleSelection,
-                dataPointIDs: dataPointIDs)
+            reconcileVisibleSelection(visibleSelection)
             guard emitsPointTap else { return }
         case .monthWindow(let startMonthIndex, let nextContentOffsetX):
             viewportState.visibleStartMonthIndex = startMonthIndex
             if let nextContentOffsetX {
                 viewportState.contentOffsetX = nextContentOffsetX
             }
-            visibleSelection = CombinedChartView.SelectionResolver.reconciledSelection(
-                visibleSelection,
-                dataPointIDs: dataPointIDs)
+            reconcileVisibleSelection(visibleSelection)
         }
+    }
+
+    private func reconcileVisibleSelection(_ visibleSelection: VisibleSelection?) {
+        self.visibleSelection = CombinedChartView.SelectionResolver.reconciledSelection(
+            visibleSelection,
+            dataPointIDs: data.map(\.id))
     }
 
     private func perform(_ command: InteractionCommand) {
