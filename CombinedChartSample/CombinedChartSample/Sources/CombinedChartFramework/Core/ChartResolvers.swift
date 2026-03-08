@@ -7,7 +7,7 @@ extension CombinedChartView {
     enum SelectionResolver {
         static func nearestIndex(
             to tapLocation: CGPoint,
-            candidates: [SelectionCandidate]) -> Int? {
+            candidates: [(index: Int, xPosition: CGFloat)]) -> Int? {
             candidates
                 .min { abs($0.xPosition - tapLocation.x) < abs($1.xPosition - tapLocation.x) }?
                 .index
@@ -45,7 +45,7 @@ extension CombinedChartView {
 
     enum LineSegmentResolver {
         static func makeSegments(
-            points: [ResolvedLinePoint],
+            points: [(position: CGPoint, value: Double)],
             color: (Double) -> Color) -> [LineSegmentPath] {
             guard points.count > 1 else { return [] }
             var segments: [LineSegmentPath] = []
@@ -167,15 +167,5 @@ extension CombinedChartView {
                 return color
             }
         }
-    }
-
-    struct SelectionCandidate {
-        let index: Int
-        let xPosition: CGFloat
-    }
-
-    struct ResolvedLinePoint {
-        let position: CGPoint
-        let value: Double
     }
 }

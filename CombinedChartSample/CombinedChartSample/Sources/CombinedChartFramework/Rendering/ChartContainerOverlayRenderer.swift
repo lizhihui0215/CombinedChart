@@ -159,9 +159,9 @@ extension CombinedChartView.ChartContainer {
                         guard plotRect.contains(tapLocation) else { return }
 
                         let candidates = overlayContext.visibleData.enumerated()
-                            .compactMap { index, point -> CombinedChartView.SelectionCandidate? in
+                            .compactMap { index, point -> (index: Int, xPosition: CGFloat)? in
                                 guard let xPosition = proxy.position(forX: point.xKey) else { return nil }
-                                return .init(index: index, xPosition: xPosition)
+                                return (index: index, xPosition: xPosition)
                             }
                         let nearestIndex = CombinedChartView.SelectionResolver.nearestIndex(
                             to: tapLocation,
@@ -238,12 +238,12 @@ extension CombinedChartView.ChartContainer {
     }
 
     func lineSegmentPaths(proxy: ChartProxy) -> [CombinedChartView.LineSegmentPath] {
-        let resolvedPoints = overlayContext.visibleData.compactMap { point -> CombinedChartView.ResolvedLinePoint? in
+        let resolvedPoints = overlayContext.visibleData.compactMap { point -> (position: CGPoint, value: Double)? in
             let value = point.trendLineValue(using: overlayContext.config)
             guard let position = linePoint(for: point.xKey, value: value, proxy: proxy) else {
                 return nil
             }
-            return .init(position: position, value: value)
+            return (position: position, value: value)
         }
 
         return CombinedChartView.LineSegmentResolver.makeSegments(

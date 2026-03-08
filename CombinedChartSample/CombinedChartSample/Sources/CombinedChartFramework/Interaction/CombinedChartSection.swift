@@ -86,7 +86,7 @@ private extension CombinedChartView.CombinedChartSection {
             dragPagingState: dragPagingState,
             layoutMetrics: layoutMetrics,
             renderContext: context.makeRenderContext(
-                plotAreaHeight: plotSyncState.plotAreaInfo?.height ?? 0,
+                plotAreaHeight: plotSyncState.plotAreaHeight,
                 visibleSelection: visibleSelection))
     }
 
@@ -94,17 +94,12 @@ private extension CombinedChartView.CombinedChartSection {
 
     func syncPlotArea(_ plotRect: CGRect, isDragging: Bool) {
         guard !isDragging else { return }
-        let info = CombinedChartView.PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
-        if plotSyncState.plotAreaInfo != info {
-            plotSyncState.plotAreaInfo = info
-        }
+        plotSyncState.updatePlotArea(with: plotRect)
     }
 
     func syncYAxisTickPositions(_ positions: [Double: CGFloat], isDragging: Bool) {
         guard !isDragging else { return }
-        if plotSyncState.yTickPositions != positions {
-            plotSyncState.yTickPositions = positions
-        }
+        plotSyncState.updateYAxisTickPositions(positions)
     }
 
     func syncViewport(metrics: CombinedChartView.ChartLayoutMetrics) {

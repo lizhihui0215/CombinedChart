@@ -16,6 +16,21 @@ extension CombinedChartView {
         var yTickPositions: [Double: CGFloat]
 
         static let empty = Self(plotAreaInfo: nil, yTickPositions: [:])
+
+        var plotAreaHeight: CGFloat {
+            plotAreaInfo?.height ?? 0
+        }
+
+        mutating func updatePlotArea(with plotRect: CGRect) {
+            let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
+            guard plotAreaInfo != info else { return }
+            plotAreaInfo = info
+        }
+
+        mutating func updateYAxisTickPositions(_ positions: [Double: CGFloat]) {
+            guard yTickPositions != positions else { return }
+            yTickPositions = positions
+        }
     }
 
     struct PlotAreaInfo: Equatable {
