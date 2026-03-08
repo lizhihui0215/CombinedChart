@@ -173,16 +173,19 @@ extension CombinedChartView {
     private func perform(_ command: InteractionCommand) {
         switch command {
         case .emitPointTap(let visibleSelection):
-            let dataPointIDs = data.map(\.id)
-            guard let resolvedIndex = CombinedChartView.SelectionResolver.resolvedVisibleIndex(
-                for: visibleSelection,
-                dataPointIDs: dataPointIDs)
-            else { return }
-            let point = data[resolvedIndex].source
-            onPointTap?(
-                .init(
-                    point: point,
-                    index: resolvedIndex))
+            emitPointTap(for: visibleSelection)
         }
+    }
+
+    private func emitPointTap(for visibleSelection: VisibleSelection) {
+        guard let resolvedIndex = CombinedChartView.SelectionResolver.resolvedVisibleIndex(
+            for: visibleSelection,
+            dataPointIDs: data.map(\.id))
+        else { return }
+
+        onPointTap?(
+            .init(
+                point: data[resolvedIndex].source,
+                index: resolvedIndex))
     }
 }
