@@ -118,6 +118,7 @@ extension CombinedChartView {
                 yAxisDisplayDomain: yAxisDisplayDomain,
                 showDebugOverlay: showDebugOverlay,
                 selectionOverlay: viewSlots.selectionOverlay),
+            pagingContext: pagingContext,
             yAxisLabel: yAxisLabel(for:))
     }
 

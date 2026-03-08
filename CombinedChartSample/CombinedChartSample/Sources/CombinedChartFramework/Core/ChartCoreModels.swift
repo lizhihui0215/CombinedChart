@@ -342,6 +342,7 @@ extension CombinedChartView {
 
     struct SectionContext {
         let renderContext: SectionRenderContext
+        let pagingContext: PagingContext
         let yAxisLabel: (Double) -> String
 
         func makeYAxisLabelsContext(
@@ -381,7 +382,6 @@ extension CombinedChartView {
 
     struct SectionRuntimeContext {
         let pagingContext: PagingContext
-        let maxStartMonthIndex: Int
         let dragPagingState: DragPagingState
         let layoutMetrics: ChartLayoutMetrics
         let renderContext: ChartRenderContext

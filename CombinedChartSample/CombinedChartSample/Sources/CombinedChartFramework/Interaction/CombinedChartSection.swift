@@ -63,33 +63,24 @@ extension CombinedChartView {
 
 private extension CombinedChartView.CombinedChartSection {
     func makeRuntimeContext(for geometry: GeometryProxy) -> CombinedChartView.SectionRuntimeContext {
-        let pagingContext = CombinedChartView.PagingContext(
-            monthsPerPage: context.renderContext.config.monthsPerPage,
-            maxStartMonthIndex: max(
-                0,
-                context.renderContext.data.count - context.renderContext.config.monthsPerPage),
-            arrowScrollMode: context.renderContext.config.pager.arrowScrollMode,
-            currentYearRangeIndex: nil,
-            yearPageRanges: [])
         let dragPagingState = CombinedChartView.DragPagingState(
             contentOffsetX: viewportState.contentOffsetX,
             visibleStartMonthIndex: viewportState.visibleStartMonthIndex,
-            monthsPerPage: pagingContext.monthsPerPage,
-            maxStartMonthIndex: pagingContext.maxStartMonthIndex,
+            monthsPerPage: context.pagingContext.monthsPerPage,
+            maxStartMonthIndex: context.pagingContext.maxStartMonthIndex,
             dragScrollMode: context.renderContext.config.pager.dragScrollMode)
         let layoutMetrics = CombinedChartView.ChartLayoutMetrics(
             availableWidth: geometry.size.width,
             axisWidth: context.renderContext.config.axis.yAxisWidth,
-            monthsPerPage: pagingContext.monthsPerPage,
+            monthsPerPage: context.pagingContext.monthsPerPage,
             dataCount: context.renderContext.data.count,
             dragPagingState: dragPagingState,
             dragTranslationX: dragTranslationX,
             settlingOffsetX: settlingOffsetX,
-            maxStartMonthIndex: pagingContext.maxStartMonthIndex)
+            maxStartMonthIndex: context.pagingContext.maxStartMonthIndex)
 
         return .init(
-            pagingContext: pagingContext,
-            maxStartMonthIndex: pagingContext.maxStartMonthIndex,
+            pagingContext: context.pagingContext,
             dragPagingState: dragPagingState,
             layoutMetrics: layoutMetrics,
             renderContext: context.makeRenderContext(
