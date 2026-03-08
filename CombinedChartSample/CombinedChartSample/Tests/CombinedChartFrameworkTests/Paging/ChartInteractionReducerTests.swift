@@ -1,9 +1,9 @@
 @testable import CombinedChartFramework
 import SwiftUI
-import Testing
+import XCTest
 
-struct ChartInteractionReducerTests {
-    @Test func reducerBuildsByPagePreviousMutation() {
+final class ChartInteractionReducerTests: XCTestCase {
+    func testReducerBuildsByPagePreviousMutation() {
         let mutations = CombinedChartView.InteractionReducer.mutations(
             for: .selectPreviousPage,
             state: makeState(
@@ -13,16 +13,15 @@ struct ChartInteractionReducerTests {
                 maxStartMonthIndex: 12,
                 arrowScrollMode: .byPage))
 
-        #expect(mutations.count == 1)
+        XCTAssertEqual(mutations.count, 1)
         guard case .monthWindow(let startMonthIndex, let contentOffsetX) = mutations[0] else {
-            Issue.record("Expected monthWindow mutation")
-            return
+            return XCTFail("Expected monthWindow mutation")
         }
-        #expect(startMonthIndex == 4)
-        #expect(contentOffsetX == 400)
+        XCTAssertEqual(startMonthIndex, 4)
+        XCTAssertEqual(contentOffsetX, 400)
     }
 
-    @Test func reducerBuildsByEntryNextMutation() {
+    func testReducerBuildsByEntryNextMutation() {
         let mutations = CombinedChartView.InteractionReducer.mutations(
             for: .selectNextPage,
             state: makeState(
@@ -49,16 +48,15 @@ struct ChartInteractionReducerTests {
                         endPage: 2)
                 ]))
 
-        #expect(mutations.count == 1)
+        XCTAssertEqual(mutations.count, 1)
         guard case .monthWindow(let startMonthIndex, let contentOffsetX) = mutations[0] else {
-            Issue.record("Expected monthWindow mutation")
-            return
+            return XCTFail("Expected monthWindow mutation")
         }
-        #expect(startMonthIndex == 6)
-        #expect(contentOffsetX == 600)
+        XCTAssertEqual(startMonthIndex, 6)
+        XCTAssertEqual(contentOffsetX, 600)
     }
 
-    @Test func reducerClampsSelectMonthWindowMutation() {
+    func testReducerClampsSelectMonthWindowMutation() {
         let mutations = CombinedChartView.InteractionReducer.mutations(
             for: .selectMonthWindow(startMonthIndex: 99),
             state: makeState(
@@ -68,16 +66,15 @@ struct ChartInteractionReducerTests {
                 maxStartMonthIndex: 8,
                 arrowScrollMode: .byPage))
 
-        #expect(mutations.count == 1)
+        XCTAssertEqual(mutations.count, 1)
         guard case .monthWindow(let startMonthIndex, let contentOffsetX) = mutations[0] else {
-            Issue.record("Expected monthWindow mutation")
-            return
+            return XCTFail("Expected monthWindow mutation")
         }
-        #expect(startMonthIndex == 8)
-        #expect(contentOffsetX == 800)
+        XCTAssertEqual(startMonthIndex, 8)
+        XCTAssertEqual(contentOffsetX, 800)
     }
 
-    @Test func reducerPreservesFreeDragSettledOffset() {
+    func testReducerPreservesFreeDragSettledOffset() {
         let mutations = CombinedChartView.InteractionReducer.mutations(
             for: .settleDrag(targetMonthIndex: 3, targetContentOffsetX: 365),
             state: makeState(
@@ -87,16 +84,15 @@ struct ChartInteractionReducerTests {
                 maxStartMonthIndex: 8,
                 arrowScrollMode: .byPage))
 
-        #expect(mutations.count == 1)
+        XCTAssertEqual(mutations.count, 1)
         guard case .monthWindow(let startMonthIndex, let contentOffsetX) = mutations[0] else {
-            Issue.record("Expected monthWindow mutation")
-            return
+            return XCTFail("Expected monthWindow mutation")
         }
-        #expect(startMonthIndex == 3)
-        #expect(contentOffsetX == 365)
+        XCTAssertEqual(startMonthIndex, 3)
+        XCTAssertEqual(contentOffsetX, 365)
     }
 
-    @Test func reducerClampsSettledDragOffsetToMaximumRange() {
+    func testReducerClampsSettledDragOffsetToMaximumRange() {
         let mutations = CombinedChartView.InteractionReducer.mutations(
             for: .settleDrag(targetMonthIndex: 99, targetContentOffsetX: 9999),
             state: makeState(
@@ -106,13 +102,35 @@ struct ChartInteractionReducerTests {
                 maxStartMonthIndex: 8,
                 arrowScrollMode: .byPage))
 
-        #expect(mutations.count == 1)
+        XCTAssertEqual(mutations.count, 1)
         guard case .monthWindow(let startMonthIndex, let contentOffsetX) = mutations[0] else {
-            Issue.record("Expected monthWindow mutation")
-            return
+            return XCTFail("Expected monthWindow mutation")
         }
-        #expect(startMonthIndex == 8)
-        #expect(contentOffsetX == 800)
+        XCTAssertEqual(startMonthIndex, 8)
+        XCTAssertEqual(contentOffsetX, 800)
+    }
+
+    func testReducerSelectionMutationCarriesStablePointIdentity() {
+        let mutations = CombinedChartView.InteractionReducer.mutations(
+            for: .selectPoint(index: 1),
+            state: makeState(
+                visibleStartMonthIndex: 0,
+                unitWidth: 100,
+                monthsPerPage: 4,
+                maxStartMonthIndex: 8,
+                arrowScrollMode: .byPage,
+                visiblePointIDs: [
+                    .init(groupID: "2024", xKey: "2024-01"),
+                    .init(groupID: "2024", xKey: "2024-02")
+                ]))
+
+        XCTAssertEqual(mutations.count, 1)
+        guard case .selection(let visibleSelection, let emitsPointTap) = mutations[0] else {
+            return XCTFail("Expected selection mutation")
+        }
+        XCTAssertEqual(visibleSelection?.visibleIndex, 1)
+        XCTAssertEqual(visibleSelection?.pointID, .init(groupID: "2024", xKey: "2024-02"))
+        XCTAssertTrue(emitsPointTap)
     }
 
     private func makeState(
@@ -121,10 +139,12 @@ struct ChartInteractionReducerTests {
         monthsPerPage: Int,
         maxStartMonthIndex: Int,
         arrowScrollMode: ChartConfig.ChartPagerConfig.ArrowScrollMode,
+        visiblePointIDs: [CombinedChartView.ChartPointID] = [],
         currentYearRangeIndex: Int? = nil,
         yearPageRanges: [CombinedChartView.YearPageRange] = []) -> CombinedChartView.InteractionState {
         .init(
-            selectedIndex: nil,
+            visibleSelection: nil,
+            visiblePointIDs: visiblePointIDs,
             visibleStartMonthIndex: visibleStartMonthIndex,
             contentOffsetX: CGFloat(visibleStartMonthIndex) * unitWidth,
             unitWidth: unitWidth,

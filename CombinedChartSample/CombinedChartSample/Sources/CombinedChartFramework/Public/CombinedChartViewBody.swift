@@ -14,7 +14,7 @@ public extension CombinedChartView {
                 if hasData {
                     CombinedChartSection(
                         context: sectionContext,
-                        selectedIndex: selectedIndex,
+                        visibleSelection: visibleSelection,
                         visibleStartMonthIndex: $visibleStartMonthIndex,
                         contentOffsetX: $contentOffsetX,
                         unitWidth: $unitWidth,

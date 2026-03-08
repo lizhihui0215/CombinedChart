@@ -115,9 +115,13 @@ enum ChartSampleData {
                 displayTitle: group.displayTitle,
                 groupOrder: group.groupOrder,
                 points: group.points.map { point in
-                    let randomizedValues = point.values.mapValues { value in
-                        let factor = Double.random(in: (1.0 - clampedVariance)...(1.0 + clampedVariance))
-                        return max(0, value * factor)
+                    let randomizedValues = point.values.reduce(into: [ChartSeriesKey: Double]()) { partial, entry in
+                        let factor = stableVarianceFactor(
+                            groupID: group.id,
+                            xKey: point.xKey,
+                            seriesKey: entry.key,
+                            variance: clampedVariance)
+                        partial[entry.key] = max(0, entry.value * factor)
                     }
                     return CombinedChartView.ChartPoint(
                         id: .init(groupID: group.id, xKey: point.xKey),
@@ -129,10 +133,11 @@ enum ChartSampleData {
     }
 
     static func makeConfig(
-        dragScrollMode: ChartConfig.ChartPagerConfig.DragScrollMode = .freeSnapping) -> ChartConfig {
+        dragScrollMode: ChartConfig.ChartPagerConfig.DragScrollMode = .freeSnapping,
+        chartHeight: CGFloat = 420) -> ChartConfig {
         ChartConfig(
             monthsPerPage: 4,
-            chartHeight: 420,
+            chartHeight: chartHeight,
             bar: makeBarConfig(),
             line: ChartConfig.ChartLineConfig(
                 positiveLineColor: .red,
@@ -207,5 +212,22 @@ enum ChartSampleData {
             color: color,
             valuePolarity: valuePolarity,
             trendLineInclusion: .included)
+    }
+
+    private static func stableVarianceFactor(
+        groupID: String,
+        xKey: String,
+        seriesKey: ChartSeriesKey,
+        variance: Double) -> Double {
+        guard variance > 0 else { return 1 }
+
+        let identifier = "\(groupID)|\(xKey)|\(seriesKey.rawValue)"
+        let hash = identifier.utf8.reduce(UInt64(1_469_598_103_934_665_603)) { partial, byte in
+            (partial ^ UInt64(byte)) &* 1_099_511_628_211
+        }
+        let normalized = Double(hash % 10000) / 9999
+        let lowerBound = 1.0 - variance
+        let upperBound = 1.0 + variance
+        return lowerBound + ((upperBound - lowerBound) * normalized)
     }
 }

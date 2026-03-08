@@ -47,7 +47,7 @@ extension CombinedChartView {
                 plotAreaHeight: context.plotAreaHeight,
                 config: context.config,
                 showDebugOverlay: context.showDebugOverlay,
-                selectedIndex: context.selectedIndex)
+                visibleSelection: context.visibleSelection)
         }
 
         var overlayContext: OverlayRenderContext {
@@ -57,7 +57,7 @@ extension CombinedChartView {
                 yAxisTickValues: context.yAxisTickValues,
                 config: context.config,
                 selectionOverlay: context.selectionOverlay,
-                selectedIndex: context.selectedIndex)
+                visibleSelection: context.visibleSelection)
         }
     }
 }
@@ -115,11 +115,12 @@ private extension CombinedChartView.ChartContainer {
             .lineStyle(StrokeStyle(lineWidth: marksContext.config.axis.zeroLineWidth))
 
         if marksContext.selectedTab.mode.showsSelectedPoint,
-           let selectedIndex = marksContext.selectedIndex,
-           marksContext.visibleData.indices.contains(selectedIndex) {
-            let value = marksContext.visibleData[selectedIndex].trendLineValue(using: marksContext.config)
+           let visibleSelection = marksContext.visibleSelection,
+           marksContext.visibleData.indices.contains(visibleSelection.visibleIndex) {
+            let value = marksContext.visibleData[visibleSelection.visibleIndex]
+                .trendLineValue(using: marksContext.config)
             PointMark(
-                x: .value("Selected Month", marksContext.visibleData[selectedIndex].xKey),
+                x: .value("Selected Month", marksContext.visibleData[visibleSelection.visibleIndex].xKey),
                 y: .value("Selected Value", value))
                 .foregroundStyle(lineColor(for: value))
                 .symbolSize(marksContext.config.line.selection.pointSize)

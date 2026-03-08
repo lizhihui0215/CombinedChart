@@ -1,9 +1,9 @@
 @testable import CombinedChartFramework
 import SwiftUI
-import Testing
+import XCTest
 
-struct DragPagingStateTests {
-    @Test func byPageDragUsesRealTranslationForPaging() {
+final class DragPagingStateTests: XCTestCase {
+    func testByPageDragUsesRealTranslationForPaging() {
         let state = CombinedChartView.DragPagingState(
             contentOffsetX: 0,
             visibleStartMonthIndex: 0,
@@ -16,10 +16,10 @@ struct DragPagingStateTests {
             computedUnitWidth: 100,
             computedViewportWidth: 400)
 
-        #expect(targetOffsetX == 400)
+        XCTAssertEqual(targetOffsetX, 400)
     }
 
-    @Test func byPageDragBelowThresholdDoesNotPage() {
+    func testByPageDragBelowThresholdDoesNotPage() {
         let state = CombinedChartView.DragPagingState(
             contentOffsetX: 0,
             visibleStartMonthIndex: 0,
@@ -32,10 +32,10 @@ struct DragPagingStateTests {
             computedUnitWidth: 100,
             computedViewportWidth: 400)
 
-        #expect(targetOffsetX == 0)
+        XCTAssertEqual(targetOffsetX, 0)
     }
 
-    @Test func freeSnappingRoundsToNearestMonth() {
+    func testFreeSnappingRoundsToNearestMonth() {
         let state = CombinedChartView.DragPagingState(
             contentOffsetX: 130,
             visibleStartMonthIndex: 1,
@@ -48,10 +48,10 @@ struct DragPagingStateTests {
             computedUnitWidth: 100,
             computedViewportWidth: 400)
 
-        #expect(targetOffsetX == 200)
+        XCTAssertEqual(targetOffsetX, 200)
     }
 
-    @Test func targetMonthIndexClampsToValidRange() {
+    func testTargetMonthIndexClampsToValidRange() {
         let state = CombinedChartView.DragPagingState(
             contentOffsetX: 0,
             visibleStartMonthIndex: 0,
@@ -66,7 +66,7 @@ struct DragPagingStateTests {
             for: 9999,
             computedUnitWidth: 100)
 
-        #expect(negativeIndex == 0)
-        #expect(oversizedIndex == 8)
+        XCTAssertEqual(negativeIndex, 0)
+        XCTAssertEqual(oversizedIndex, 8)
     }
 }

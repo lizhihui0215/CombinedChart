@@ -24,10 +24,16 @@ public struct CombinedChartView: View {
         self.onPointTap = onPointTap
         _selectedTab = selectedTab
         _showDebugOverlay = showDebugOverlay
+        _visibleSelection = State(
+            initialValue: groups.first?.points.first.map {
+                .init(
+                    visibleIndex: 0,
+                    pointID: $0.id)
+            })
     }
 
     // UI state.
-    @State var selectedIndex: Int? = 0
+    @State var visibleSelection: VisibleSelection?
     @State var visibleStartMonthIndex: Int = 0
     @State var contentOffsetX: CGFloat = 0
     @State var unitWidth: CGFloat = 0

@@ -20,6 +20,17 @@ extension CombinedChartView {
                 .min { abs($0.xPosition - tapLocation.x) < abs($1.xPosition - tapLocation.x) }?
                 .index
         }
+
+        static func resolvedVisibleIndex(
+            for selection: VisibleSelection,
+            dataPointIDs: [ChartPointID]) -> Int? {
+            if dataPointIDs.indices.contains(selection.visibleIndex),
+               dataPointIDs[selection.visibleIndex] == selection.pointID {
+                return selection.visibleIndex
+            }
+
+            return dataPointIDs.firstIndex(of: selection.pointID)
+        }
     }
 
     enum LineSegmentResolver {

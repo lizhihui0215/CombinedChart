@@ -298,7 +298,8 @@ extension CombinedChartView {
             yAxisTickValues = (-5...5).map { Double($0) * step }
 
             if let first = yAxisTickValues.first, let last = yAxisTickValues.last {
-                yAxisDisplayDomain = first...last
+                let gridlineInset = max(step * 0.01, 0.001)
+                yAxisDisplayDomain = (first - gridlineInset)...(last + gridlineInset)
             } else {
                 yAxisDisplayDomain = yDomain
             }
@@ -341,12 +342,17 @@ extension CombinedChartView {
         let config: ChartConfig
         let showDebugOverlay: Bool
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
-        let selectedIndex: Int?
+        let visibleSelection: VisibleSelection?
+    }
+
+    struct VisibleSelection: Equatable {
+        let visibleIndex: Int
+        let pointID: ChartPointID
     }
 
     struct ChartSelectionState {
         let point: ChartDataPoint
-        let index: Int
+        let visibleIndex: Int
         let value: Double
         let xPosition: CGFloat
     }
@@ -382,7 +388,7 @@ extension CombinedChartView {
         let plotAreaHeight: CGFloat
         let config: ChartConfig
         let showDebugOverlay: Bool
-        let selectedIndex: Int?
+        let visibleSelection: VisibleSelection?
     }
 
     struct OverlayRenderContext {
@@ -391,6 +397,6 @@ extension CombinedChartView {
         let yAxisTickValues: [Double]
         let config: ChartConfig
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
-        let selectedIndex: Int?
+        let visibleSelection: VisibleSelection?
     }
 }

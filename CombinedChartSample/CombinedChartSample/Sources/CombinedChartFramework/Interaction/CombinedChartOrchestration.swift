@@ -123,7 +123,8 @@ extension CombinedChartView {
 
     private var interactionState: InteractionState {
         .init(
-            selectedIndex: selectedIndex,
+            visibleSelection: visibleSelection,
+            visiblePointIDs: data.map(\.id),
             visibleStartMonthIndex: visibleStartMonthIndex,
             contentOffsetX: contentOffsetX,
             unitWidth: unitWidth,
@@ -143,14 +144,19 @@ extension CombinedChartView {
 
     private func apply(_ mutation: InteractionMutation) {
         switch mutation {
-        case .selection(let index, let emitsPointTap):
-            selectedIndex = index
-            guard emitsPointTap, let index, data.indices.contains(index) else { return }
-            let point = data[index].source
+        case .selection(let visibleSelection, let emitsPointTap):
+            self.visibleSelection = visibleSelection
+            guard emitsPointTap,
+                  let visibleSelection,
+                  let resolvedIndex = CombinedChartView.SelectionResolver.resolvedVisibleIndex(
+                      for: visibleSelection,
+                      dataPointIDs: data.map(\.id))
+            else { return }
+            let point = data[resolvedIndex].source
             onPointTap?(
                 .init(
                     point: point,
-                    index: index))
+                    index: resolvedIndex))
         case .monthWindow(let startMonthIndex, let nextContentOffsetX):
             visibleStartMonthIndex = startMonthIndex
             if let nextContentOffsetX {

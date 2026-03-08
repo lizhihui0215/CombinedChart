@@ -3,7 +3,7 @@ import SwiftUI
 extension CombinedChartView {
     struct CombinedChartSection: View {
         let context: SectionContext
-        let selectedIndex: Int?
+        let visibleSelection: VisibleSelection?
         @Binding var visibleStartMonthIndex: Int
         @Binding var contentOffsetX: CGFloat
         @Binding var unitWidth: CGFloat
@@ -123,7 +123,7 @@ private extension CombinedChartView.CombinedChartSection {
             config: context.config,
             showDebugOverlay: context.showDebugOverlay,
             selectionOverlay: context.selectionOverlay,
-            selectedIndex: selectedIndex)
+            visibleSelection: visibleSelection)
     }
 
     func dragGesture(metrics: CombinedChartView.ChartLayoutMetrics) -> some Gesture {

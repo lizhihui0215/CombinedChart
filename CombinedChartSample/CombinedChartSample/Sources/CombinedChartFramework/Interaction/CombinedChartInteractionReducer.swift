@@ -2,7 +2,8 @@ import SwiftUI
 
 extension CombinedChartView {
     struct InteractionState {
-        let selectedIndex: Int?
+        let visibleSelection: VisibleSelection?
+        let visiblePointIDs: [ChartPointID]
         let visibleStartMonthIndex: Int
         let contentOffsetX: CGFloat
         let unitWidth: CGFloat
@@ -14,7 +15,7 @@ extension CombinedChartView {
     }
 
     enum InteractionMutation {
-        case selection(index: Int?, emitsPointTap: Bool)
+        case selection(VisibleSelection?, emitsPointTap: Bool)
         case monthWindow(startMonthIndex: Int, contentOffsetX: CGFloat?)
     }
 
@@ -22,7 +23,7 @@ extension CombinedChartView {
         static func mutations(for action: ViewAction, state: InteractionState) -> [InteractionMutation] {
             switch action {
             case .selectPoint(let index, let emitsPointTap):
-                [.selection(index: index, emitsPointTap: emitsPointTap)]
+                [.selection(selection(for: index, state: state), emitsPointTap: emitsPointTap)]
             case .selectMonthWindow(let startMonthIndex):
                 [monthWindowMutation(startMonthIndex: startMonthIndex, state: state)]
             case .settleDrag(let targetMonthIndex, let targetContentOffsetX):
@@ -35,6 +36,15 @@ extension CombinedChartView {
             case .selectNextPage:
                 monthWindowMutations(for: 1, state: state)
             }
+        }
+
+        private static func selection(for visibleIndex: Int?, state: InteractionState) -> VisibleSelection? {
+            guard let visibleIndex, state.visiblePointIDs.indices.contains(visibleIndex) else {
+                return nil
+            }
+            return .init(
+                visibleIndex: visibleIndex,
+                pointID: state.visiblePointIDs[visibleIndex])
         }
 
         private static func monthWindowMutations(

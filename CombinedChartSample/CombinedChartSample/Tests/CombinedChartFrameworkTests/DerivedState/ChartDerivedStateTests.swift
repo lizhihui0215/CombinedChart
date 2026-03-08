@@ -1,9 +1,9 @@
 @testable import CombinedChartFramework
 import SwiftUI
-import Testing
+import XCTest
 
-struct ChartDerivedStateTests {
-    @Test func pagerStateUsesFullyVisibleRangeForHighlight() {
+final class ChartDerivedStateTests: XCTestCase {
+    func testPagerStateUsesFullyVisibleRangeForHighlight() {
         let pagerState = CombinedChartView.PagerState(
             sortedGroups: [
                 ChartTestBuilders.makeGroup(id: "2024", title: "2024", order: 0, monthCount: 4),
@@ -15,12 +15,12 @@ struct ChartDerivedStateTests {
             contentOffsetX: 400,
             unitWidth: 100)
 
-        #expect(pagerState.visibleMonthRange == 4...7)
-        #expect(pagerState.highlightedEntry?.id == "2025")
-        #expect(pagerState.currentYearRange?.id == "2025")
+        XCTAssertEqual(pagerState.visibleMonthRange, 4...7)
+        XCTAssertEqual(pagerState.highlightedEntry?.id, "2025")
+        XCTAssertEqual(pagerState.currentYearRange?.id, "2025")
     }
 
-    @Test func pagerStateFallsBackToCurrentRangeWhenWindowSpansYears() {
+    func testPagerStateFallsBackToCurrentRangeWhenWindowSpansYears() {
         let pagerState = CombinedChartView.PagerState(
             sortedGroups: [
                 ChartTestBuilders.makeGroup(id: "2024", title: "2024", order: 0, monthCount: 6),
@@ -32,12 +32,12 @@ struct ChartDerivedStateTests {
             contentOffsetX: 400,
             unitWidth: 100)
 
-        #expect(pagerState.visibleMonthRange == 4...7)
-        #expect(pagerState.currentYearRange?.id == "2024")
-        #expect(pagerState.highlightedEntry?.id == "2024")
+        XCTAssertEqual(pagerState.visibleMonthRange, 4...7)
+        XCTAssertEqual(pagerState.currentYearRange?.id, "2024")
+        XCTAssertEqual(pagerState.highlightedEntry?.id, "2024")
     }
 
-    @Test func chartDerivedStateBuildsExpectedAxisDomainAndLabel() {
+    func testChartDerivedStateBuildsExpectedAxisDomainAndLabel() {
         let config = ChartConfig.default
         let data = [
             ChartTestBuilders.makeDataPoint(
@@ -67,16 +67,16 @@ struct ChartDerivedStateTests {
             contentOffsetX: 100,
             unitWidth: 100)
 
-        #expect(derivedState.hasData)
-        #expect(derivedState.visibleStartMonthLabel == "Feb")
-        #expect(derivedState.axisPointInfos.count == 2)
-        #expect(derivedState.yDomain.lowerBound == -13.5)
-        #expect(derivedState.yDomain.upperBound == 28.5)
-        #expect(derivedState.yAxisTickValues == [-30, -24, -18, -12, -6, 0, 6, 12, 18, 24, 30])
-        #expect(derivedState.yAxisDisplayDomain == -30.0...30.0)
+        XCTAssertTrue(derivedState.hasData)
+        XCTAssertEqual(derivedState.visibleStartMonthLabel, "Feb")
+        XCTAssertEqual(derivedState.axisPointInfos.count, 2)
+        XCTAssertEqual(derivedState.yDomain.lowerBound, -13.5)
+        XCTAssertEqual(derivedState.yDomain.upperBound, 28.5)
+        XCTAssertEqual(derivedState.yAxisTickValues, [-30, -24, -18, -12, -6, 0, 6, 12, 18, 24, 30])
+        XCTAssertEqual(derivedState.yAxisDisplayDomain, -30.06...30.06)
     }
 
-    @Test func pagerStateRangeReturnsNilWhenIndexIsOutOfBounds() {
+    func testPagerStateRangeReturnsNilWhenIndexIsOutOfBounds() {
         let pagerState = CombinedChartView.PagerState(
             sortedGroups: [
                 ChartTestBuilders.makeGroup(id: "2024", title: "2024", order: 0, monthCount: 4),
@@ -88,9 +88,9 @@ struct ChartDerivedStateTests {
             contentOffsetX: 0,
             unitWidth: 100)
 
-        #expect(pagerState.range(at: 0)?.id == "2024")
-        #expect(pagerState.range(at: 1)?.id == "2025")
-        #expect(pagerState.range(at: -1) == nil)
-        #expect(pagerState.range(at: 2) == nil)
+        XCTAssertEqual(pagerState.range(at: 0)?.id, "2024")
+        XCTAssertEqual(pagerState.range(at: 1)?.id, "2025")
+        XCTAssertNil(pagerState.range(at: -1))
+        XCTAssertNil(pagerState.range(at: 2))
     }
 }
