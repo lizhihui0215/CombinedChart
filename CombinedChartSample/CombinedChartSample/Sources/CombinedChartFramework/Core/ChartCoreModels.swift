@@ -56,7 +56,7 @@ extension CombinedChartView {
         let startIndex: Int
         let monthsPerPage: Int
         let maxStartMonthIndex: Int
-        let dragScrollMode: ChartConfig.ChartPagerConfig.DragScrollMode
+        let dragScrollMode: ChartConfig.Pager.DragScrollMode
 
         private func displayTranslationX(from dragTranslationX: CGFloat) -> CGFloat {
             switch dragScrollMode {
@@ -144,7 +144,7 @@ extension CombinedChartView {
 
     struct ChartDerivedState {
         let hasData: Bool
-        let axisPointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo]
+        let axisPointInfos: [ChartConfig.Axis.PointInfo]
         let yDomain: ClosedRange<Double>
         let yAxisTickValues: [Double]
         let yAxisDisplayDomain: ClosedRange<Double>
@@ -294,7 +294,7 @@ extension CombinedChartView {
     struct PagingContext {
         let monthsPerPage: Int
         let maxStartMonthIndex: Int
-        let arrowScrollMode: ChartConfig.ChartPagerConfig.ArrowScrollMode
+        let arrowScrollMode: ChartConfig.Pager.ArrowScrollMode
         let currentYearRangeIndex: Int?
         let yearPageRanges: [YearPageRange]
     }
@@ -316,8 +316,8 @@ extension CombinedChartView {
 
     struct AxisRenderContext {
         let monthValues: [String]
-        let pointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo]
-        let pointInfoByKey: [String: ChartConfig.ChartAxisConfig.AxisPointInfo]
+        let pointInfos: [ChartConfig.Axis.PointInfo]
+        let pointInfoByKey: [String: ChartConfig.Axis.PointInfo]
     }
 
     struct MarksRenderContext {

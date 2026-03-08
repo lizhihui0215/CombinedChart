@@ -15,41 +15,41 @@ public enum ChartSeriesKey: String, CaseIterable, Hashable, Identifiable {
 public struct ChartConfig {
     public let monthsPerPage: Int
     public let chartHeight: CGFloat
-    public let bar: ChartBarConfig
-    public let line: ChartLineConfig
-    public let axis: ChartAxisConfig
-    public let pager: ChartPagerConfig
+    public let bar: Bar
+    public let line: Line
+    public let axis: Axis
+    public let pager: Pager
 
     public static let `default` = ChartConfig(
         monthsPerPage: 4,
         chartHeight: 420,
-        bar: ChartBarConfig(
+        bar: Bar(
             series: [
-                ChartConfig.ChartBarConfig.ChartSeriesStyle(
+                ChartConfig.Bar.SeriesStyle(
                     id: .liabilities,
                     label: "Liabilities",
                     color: Color(red: 0.82, green: 0.35, blue: 0.42),
                     valuePolarity: .forcedSign(.negative),
                     trendLineInclusion: .included),
-                ChartConfig.ChartBarConfig.ChartSeriesStyle(
+                ChartConfig.Bar.SeriesStyle(
                     id: .saving,
                     label: "Saving",
                     color: Color(red: 0.20, green: 0.52, blue: 0.68),
                     valuePolarity: .forcedSign(.positive),
                     trendLineInclusion: .included),
-                ChartConfig.ChartBarConfig.ChartSeriesStyle(
+                ChartConfig.Bar.SeriesStyle(
                     id: .investment,
                     label: "Investment",
                     color: Color(red: 0.86, green: 0.43, blue: 0.16),
                     valuePolarity: .forcedSign(.positive),
                     trendLineInclusion: .included),
-                ChartConfig.ChartBarConfig.ChartSeriesStyle(
+                ChartConfig.Bar.SeriesStyle(
                     id: .otherLiquid,
                     label: "Other Liquid",
                     color: Color(red: 0.30, green: 0.67, blue: 0.14),
                     valuePolarity: .forcedSign(.positive),
                     trendLineInclusion: .included),
-                ChartConfig.ChartBarConfig.ChartSeriesStyle(
+                ChartConfig.Bar.SeriesStyle(
                     id: .otherNonLiquid,
                     label: "Other Non-Liquid",
                     color: Color(red: 0.08, green: 0.28, blue: 0.34),
@@ -60,7 +60,7 @@ public struct ChartConfig {
             segmentGap: 4,
             segmentGapColor: Color(uiColor: .systemBackground),
             barWidth: 40),
-        line: ChartLineConfig(
+        line: Line(
             positiveLineColor: Color(red: 0.16, green: 0.30, blue: 0.38),
             negativeLineColor: Color(red: 0.74, green: 0.24, blue: 0.28),
             lineWidth: 2,
@@ -69,7 +69,7 @@ public struct ChartConfig {
                 selectionLineColorStrategy: .fixedLine(Color.gray),
                 fillColor: Color.gray.opacity(0.12),
                 minimumSelectionWidth: 24)),
-        axis: ChartAxisConfig(
+        axis: Axis(
             xAxisLabel: { context in
                 context.point.xLabel
             },
@@ -80,15 +80,15 @@ public struct ChartConfig {
             zeroLineColor: .black,
             zeroLineWidth: 1,
             yAxisWidth: 40),
-        pager: ChartPagerConfig())
+        pager: Pager())
 
     public init(
         monthsPerPage: Int,
         chartHeight: CGFloat,
-        bar: ChartBarConfig,
-        line: ChartLineConfig,
-        axis: ChartAxisConfig,
-        pager: ChartPagerConfig) {
+        bar: Bar,
+        line: Line,
+        axis: Axis,
+        pager: Pager) {
         self.monthsPerPage = monthsPerPage
         self.chartHeight = chartHeight
         self.bar = bar
@@ -99,20 +99,20 @@ public struct ChartConfig {
 }
 
 public extension ChartConfig {
-    struct ChartBarConfig {
+    struct Bar {
         public enum TrendBarColorStyle {
             case seriesColor
             case unified(Color)
         }
 
-        public let series: [ChartSeriesStyle]
+        public let series: [SeriesStyle]
         public let trendBarColorStyle: TrendBarColorStyle
         public let segmentGap: CGFloat
         public let segmentGapColor: Color
         public let barWidth: CGFloat
 
         public init(
-            series: [ChartSeriesStyle],
+            series: [SeriesStyle],
             trendBarColorStyle: TrendBarColorStyle,
             segmentGap: CGFloat,
             segmentGapColor: Color,
@@ -125,17 +125,17 @@ public extension ChartConfig {
         }
     }
 
-    struct ChartLineConfig {
+    struct Line {
         public let positiveLineColor: Color
         public let negativeLineColor: Color
         public let lineWidth: CGFloat
-        public let selection: SelectionConfig
+        public let selection: Selection
 
         public init(
             positiveLineColor: Color,
             negativeLineColor: Color,
             lineWidth: CGFloat,
-            selection: SelectionConfig) {
+            selection: Selection) {
             self.positiveLineColor = positiveLineColor
             self.negativeLineColor = negativeLineColor
             self.lineWidth = lineWidth
@@ -143,16 +143,16 @@ public extension ChartConfig {
         }
     }
 
-    struct ChartAxisConfig {
-        public let xAxisLabel: (XAxisLabelContext) -> String
-        public let yAxisLabel: (YAxisLabelContext) -> String
+    struct Axis {
+        public let xAxisLabel: (XLabelContext) -> String
+        public let yAxisLabel: (YLabelContext) -> String
         public let zeroLineColor: Color
         public let zeroLineWidth: CGFloat
         public let yAxisWidth: CGFloat
 
         public init(
-            xAxisLabel: @escaping (XAxisLabelContext) -> String,
-            yAxisLabel: @escaping (YAxisLabelContext) -> String,
+            xAxisLabel: @escaping (XLabelContext) -> String,
+            yAxisLabel: @escaping (YLabelContext) -> String,
             zeroLineColor: Color,
             zeroLineWidth: CGFloat,
             yAxisWidth: CGFloat) {
@@ -164,7 +164,7 @@ public extension ChartConfig {
         }
     }
 
-    struct ChartPagerConfig {
+    struct Pager {
         public enum ArrowScrollMode {
             case byPage
             case byEntry
@@ -191,12 +191,12 @@ public extension ChartConfig {
     }
 }
 
-public extension ChartConfig.ChartBarConfig {
-    var trendLineSeries: [ChartSeriesStyle] {
+public extension ChartConfig.Bar {
+    var trendLineSeries: [SeriesStyle] {
         series.filter(\.contributesToTrendLine)
     }
 
-    struct ChartSeriesStyle: Identifiable {
+    struct SeriesStyle: Identifiable {
         public struct Appearance {
             public let label: String
             public let color: Color
@@ -292,8 +292,8 @@ public extension ChartConfig.ChartBarConfig {
     }
 }
 
-public extension ChartConfig.ChartLineConfig {
-    struct SelectionConfig {
+public extension ChartConfig.Line {
+    struct Selection {
         public let pointSize: CGFloat
         public let selectionLineColorStrategy: LineColorStrategy
         public let fillColor: Color
@@ -317,8 +317,8 @@ public extension ChartConfig.ChartLineConfig {
     }
 }
 
-public extension ChartConfig.ChartAxisConfig {
-    struct AxisPointInfo: Identifiable {
+public extension ChartConfig.Axis {
+    struct PointInfo: Identifiable {
         public let id: String
         public let index: Int
         public let xKey: String
@@ -339,21 +339,21 @@ public extension ChartConfig.ChartAxisConfig {
         }
     }
 
-    struct XAxisLabelContext {
-        public let point: AxisPointInfo
-        public let visiblePoints: [AxisPointInfo]
+    struct XLabelContext {
+        public let point: PointInfo
+        public let visiblePoints: [PointInfo]
 
-        public init(point: AxisPointInfo, visiblePoints: [AxisPointInfo]) {
+        public init(point: PointInfo, visiblePoints: [PointInfo]) {
             self.point = point
             self.visiblePoints = visiblePoints
         }
     }
 
-    struct YAxisLabelContext {
+    struct YLabelContext {
         public let value: Double
-        public let visiblePoints: [AxisPointInfo]
+        public let visiblePoints: [PointInfo]
 
-        public init(value: Double, visiblePoints: [AxisPointInfo]) {
+        public init(value: Double, visiblePoints: [PointInfo]) {
             self.value = value
             self.visiblePoints = visiblePoints
         }

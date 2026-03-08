@@ -4,9 +4,6 @@ extension CombinedChartView {
     struct CombinedChartViewOrchestrationContext {
         let config: ChartConfig
         let groups: [ChartGroup]
-        let selectedTab: ChartTab
-        let showDebugOverlay: Bool
-        let viewSlots: ViewSlots
         let viewportState: ViewportState
         let layoutState: LayoutState
 

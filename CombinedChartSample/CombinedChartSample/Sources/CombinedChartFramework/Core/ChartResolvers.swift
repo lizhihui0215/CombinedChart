@@ -129,9 +129,9 @@ extension CombinedChartView {
 
         static func makeSegments(
             for point: ChartDataPoint,
-            series: [ChartConfig.ChartBarConfig.ChartSeriesStyle],
+            series: [ChartConfig.Bar.SeriesStyle],
             useTrendBarColor: Bool,
-            trendBarColorStyle: ChartConfig.ChartBarConfig.TrendBarColorStyle) -> [BarSegment] {
+            trendBarColorStyle: ChartConfig.Bar.TrendBarColorStyle) -> [BarSegment] {
             var positiveStart: Double = 0
             var negativeStart: Double = 0
             var result: [BarSegment] = []
@@ -157,7 +157,7 @@ extension CombinedChartView {
         static func resolveColor(
             seriesColor: Color,
             useTrendBarColor: Bool,
-            trendBarColorStyle: ChartConfig.ChartBarConfig.TrendBarColorStyle) -> Color {
+            trendBarColorStyle: ChartConfig.Bar.TrendBarColorStyle) -> Color {
             guard useTrendBarColor else { return seriesColor }
 
             switch trendBarColorStyle {

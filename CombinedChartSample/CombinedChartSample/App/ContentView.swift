@@ -19,7 +19,7 @@ struct ContentView: View {
             self
         }
 
-        var dragScrollMode: ChartConfig.ChartPagerConfig.DragScrollMode {
+        var dragScrollMode: ChartConfig.Pager.DragScrollMode {
             switch self {
             case .byPage:
                 .byPage
@@ -45,7 +45,7 @@ struct ContentView: View {
     }
 
     private struct UITestLaunchConfiguration {
-        let selectedTab: CombinedChartView.ChartTab
+        let selectedTab: CombinedChartView.Tab
         let dragMode: DragModeOption
         let showDebugOverlay: Bool
         let chartHeight: CGFloat
@@ -56,7 +56,7 @@ struct ContentView: View {
             let dragModeValue = Self.argumentValue(after: "-snapshot-drag-mode", in: arguments)
             let chartHeightValue = Self.argumentValue(after: "-snapshot-chart-height", in: arguments)
 
-            selectedTab = CombinedChartView.ChartTab.defaults.first(where: { $0.id == selectedTabID }) ?? .totalTrend
+            selectedTab = CombinedChartView.Tab.defaults.first(where: { $0.id == selectedTabID }) ?? .totalTrend
             dragMode = dragModeValue.flatMap { DragModeOption(launchArgumentValue: $0) } ?? .freeSnapping
             showDebugOverlay = arguments.contains("-snapshot-show-debug-overlay")
             chartHeight = chartHeightValue

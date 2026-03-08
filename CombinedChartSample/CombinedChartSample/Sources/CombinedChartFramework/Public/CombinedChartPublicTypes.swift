@@ -1,6 +1,17 @@
 import SwiftUI
 
 public extension CombinedChartView {
+    typealias Config = ChartConfig
+    typealias Mode = ChartPresentationMode
+    typealias Tab = ChartTab
+    typealias DataGroup = ChartGroup
+    typealias Point = ChartPoint
+    typealias PointID = ChartPointID
+    typealias Slots = ViewSlots
+    typealias PagerItem = PagerEntry
+    typealias Selection = SelectionContext
+    typealias SelectionOverlay = SelectionOverlayContext
+
     struct DefaultEmptyStateView: View {
         public init() {}
 
@@ -52,6 +63,13 @@ public extension CombinedChartView {
                 pager: pager)
         }
 
+        public init(@ViewBuilder emptyState: () -> some View) {
+            self.init(
+                emptyState: AnyView(emptyState()),
+                selectionOverlay: nil,
+                pager: nil)
+        }
+
         public init(
             @ViewBuilder emptyState: () -> some View = { DefaultEmptyStateView() },
             @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View,
@@ -87,6 +105,19 @@ public extension CombinedChartView {
         public let plotFrame: CGRect
         public let indicatorFrame: CGRect
         public let indicatorStyle: ChartPresentationMode.SelectionIndicatorStyle
+
+        public init(
+            point: ChartPoint,
+            value: Double,
+            plotFrame: CGRect,
+            indicatorFrame: CGRect,
+            indicatorStyle: ChartPresentationMode.SelectionIndicatorStyle) {
+            self.point = point
+            self.value = value
+            self.plotFrame = plotFrame
+            self.indicatorFrame = indicatorFrame
+            self.indicatorStyle = indicatorStyle
+        }
     }
 
     struct PagerContext {
@@ -97,11 +128,33 @@ public extension CombinedChartView {
         public let onSelectPreviousPage: () -> Void
         public let onSelectEntry: (PagerEntry) -> Void
         public let onSelectNextPage: () -> Void
+
+        public init(
+            entries: [PagerEntry],
+            highlightedEntry: PagerEntry?,
+            canSelectPreviousPage: Bool,
+            canSelectNextPage: Bool,
+            onSelectPreviousPage: @escaping () -> Void,
+            onSelectEntry: @escaping (PagerEntry) -> Void,
+            onSelectNextPage: @escaping () -> Void) {
+            self.entries = entries
+            self.highlightedEntry = highlightedEntry
+            self.canSelectPreviousPage = canSelectPreviousPage
+            self.canSelectNextPage = canSelectNextPage
+            self.onSelectPreviousPage = onSelectPreviousPage
+            self.onSelectEntry = onSelectEntry
+            self.onSelectNextPage = onSelectNextPage
+        }
     }
 
     struct SelectionContext {
         public let point: ChartPoint
         public let index: Int
+
+        public init(point: ChartPoint, index: Int) {
+            self.point = point
+            self.index = index
+        }
     }
 
     struct ChartPresentationMode: Hashable {

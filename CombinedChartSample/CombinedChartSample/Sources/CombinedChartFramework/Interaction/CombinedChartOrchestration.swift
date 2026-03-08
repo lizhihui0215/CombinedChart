@@ -18,9 +18,6 @@ extension CombinedChartView {
         .init(
             config: config,
             groups: groups,
-            selectedTab: selectedTab,
-            showDebugOverlay: showDebugOverlay,
-            viewSlots: viewSlots,
             viewportState: viewportState,
             layoutState: layoutState)
     }
@@ -85,7 +82,7 @@ extension CombinedChartView {
         derivedState.yAxisDisplayDomain
     }
 
-    private var axisPointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo] {
+    private var axisPointInfos: [ChartConfig.Axis.PointInfo] {
         derivedState.axisPointInfos
     }
 

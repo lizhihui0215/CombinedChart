@@ -164,7 +164,7 @@ final class ChartInteractionReducerTests: XCTestCase {
         unitWidth: CGFloat,
         monthsPerPage: Int,
         maxStartMonthIndex: Int,
-        arrowScrollMode: ChartConfig.ChartPagerConfig.ArrowScrollMode,
+        arrowScrollMode: ChartConfig.Pager.ArrowScrollMode,
         visiblePointIDs: [CombinedChartView.ChartPointID] = [],
         currentYearRangeIndex: Int? = nil,
         yearPageRanges: [CombinedChartView.YearPageRange] = []) -> CombinedChartView.InteractionState {

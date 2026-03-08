@@ -28,14 +28,14 @@ extension CombinedChartView.ChartContainer {
 
     func xAxisLabelContext(
         for key: String,
-        axisPointByKey: [String: ChartConfig.ChartAxisConfig.AxisPointInfo],
-        axisPointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo]) -> ChartConfig.ChartAxisConfig.XAxisLabelContext {
+        axisPointByKey: [String: ChartConfig.Axis.PointInfo],
+        axisPointInfos: [ChartConfig.Axis.PointInfo]) -> ChartConfig.Axis.XLabelContext {
         .init(
             point: axisPointByKey[key] ?? fallbackAxisPointInfo(for: key),
             visiblePoints: axisPointInfos)
     }
 
-    func fallbackAxisPointInfo(for key: String) -> ChartConfig.ChartAxisConfig.AxisPointInfo {
+    func fallbackAxisPointInfo(for key: String) -> ChartConfig.Axis.PointInfo {
         .init(
             id: key,
             index: 0,

@@ -84,7 +84,7 @@ extension CombinedChartView {
         private static func viewportUpdateMutations(
             for direction: Int,
             state: InteractionState) -> [InteractionMutation] {
-            guard let startIndex = targetStartMonthIndex(
+            guard let startIndex = targetStartIndex(
                 for: direction,
                 state: state)
             else { return [] }
@@ -94,7 +94,7 @@ extension CombinedChartView {
                 state: state)]
         }
 
-        private static func targetStartMonthIndex(
+        private static func targetStartIndex(
             for direction: Int,
             state: InteractionState) -> Int? {
             switch state.pagingContext.arrowScrollMode {
@@ -156,7 +156,7 @@ extension CombinedChartView {
             startIndex: Int,
             contentOffsetX: CGFloat?,
             state: InteractionState) -> ViewportUpdateContext {
-            let clampedStartIndex = clampedStartMonthIndex(
+            let clampedStartIndex = clampedStartIndex(
                 startIndex,
                 state: state)
 
@@ -173,10 +173,10 @@ extension CombinedChartView {
                 contentOffsetX: resolvedContentOffsetX)
         }
 
-        private static func clampedStartMonthIndex(
-            _ startMonthIndex: Int,
+        private static func clampedStartIndex(
+            _ startIndex: Int,
             state: InteractionState) -> Int {
-            min(max(startMonthIndex, 0), state.pagingContext.maxStartMonthIndex)
+            min(max(startIndex, 0), state.pagingContext.maxStartMonthIndex)
         }
 
         private static func clampedContentOffsetX(

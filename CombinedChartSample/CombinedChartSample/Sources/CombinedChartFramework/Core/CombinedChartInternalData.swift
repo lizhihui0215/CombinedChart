@@ -20,7 +20,7 @@ extension CombinedChartView {
             source.values
         }
 
-        func signedValue(for series: ChartConfig.ChartBarConfig.ChartSeriesStyle) -> Double {
+        func signedValue(for series: ChartConfig.Bar.SeriesStyle) -> Double {
             let rawValue = values[series.id] ?? 0
             return series.signedValue(for: rawValue)
         }
@@ -47,7 +47,7 @@ extension CombinedChartView {
             return (negativeTotal, positiveTotal)
         }
 
-        func axisPointInfo(index: Int) -> ChartConfig.ChartAxisConfig.AxisPointInfo {
+        func axisPointInfo(index: Int) -> ChartConfig.Axis.PointInfo {
             .init(
                 id: axisPointID,
                 index: index,

@@ -133,13 +133,13 @@ enum ChartSampleData {
     }
 
     static func makeConfig(
-        dragScrollMode: ChartConfig.ChartPagerConfig.DragScrollMode = .freeSnapping,
+        dragScrollMode: ChartConfig.Pager.DragScrollMode = .freeSnapping,
         chartHeight: CGFloat = 420) -> ChartConfig {
         ChartConfig(
             monthsPerPage: 4,
             chartHeight: chartHeight,
             bar: makeBarConfig(),
-            line: ChartConfig.ChartLineConfig(
+            line: ChartConfig.Line(
                 positiveLineColor: .red,
                 negativeLineColor: .yellow,
                 lineWidth: 1,
@@ -148,7 +148,7 @@ enum ChartSampleData {
                     selectionLineColorStrategy: .fixedLine(Color.gray),
                     fillColor: Color.gray.opacity(0.12),
                     minimumSelectionWidth: 24)),
-            axis: ChartConfig.ChartAxisConfig(
+            axis: ChartConfig.Axis(
                 xAxisLabel: { context in
                     context.point.xLabel
                 },
@@ -164,8 +164,8 @@ enum ChartSampleData {
                 dragScrollMode: dragScrollMode))
     }
 
-    private static func makeBarConfig() -> ChartConfig.ChartBarConfig {
-        ChartConfig.ChartBarConfig(
+    private static func makeBarConfig() -> ChartConfig.Bar {
+        ChartConfig.Bar(
             series: makeBarSeries(),
             trendBarColorStyle: .unified(Color.gray.opacity(0.45)),
             segmentGap: 2,
@@ -173,7 +173,7 @@ enum ChartSampleData {
             barWidth: 40)
     }
 
-    private static func makeBarSeries() -> [ChartConfig.ChartBarConfig.ChartSeriesStyle] {
+    private static func makeBarSeries() -> [ChartConfig.Bar.SeriesStyle] {
         [
             makeSeriesStyle(
                 id: ChartSeriesKey.liabilities,
@@ -203,10 +203,10 @@ enum ChartSampleData {
         id: ChartSeriesKey,
         label: String,
         color: Color,
-        valuePolarity: ChartConfig.ChartBarConfig.ChartSeriesStyle.ValueBehavior
+        valuePolarity: ChartConfig.Bar.SeriesStyle.ValueBehavior
             .ValuePolarity = .preserveSign) -> ChartConfig
-                .ChartBarConfig.ChartSeriesStyle {
-        ChartConfig.ChartBarConfig.ChartSeriesStyle(
+                .Bar.SeriesStyle {
+        ChartConfig.Bar.SeriesStyle(
             id: id,
             label: label,
             color: color,
