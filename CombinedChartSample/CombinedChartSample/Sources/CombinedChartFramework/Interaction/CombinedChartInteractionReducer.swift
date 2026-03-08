@@ -32,21 +32,21 @@ extension CombinedChartView {
                     emitsPointTap: emitsPointTap,
                     state: state)
             case .selectMonthWindow(let startMonthIndex):
-                .init(
-                    mutations: [monthWindowMutation(startMonthIndex: startMonthIndex, state: state)],
-                    commands: [])
+                monthWindowResult(
+                    startMonthIndex: startMonthIndex,
+                    state: state)
             case .settleDrag(let context):
-                .init(
-                    mutations: [settledDragMutation(context: context, state: state)],
-                    commands: [])
+                settledDragResult(
+                    context: context,
+                    state: state)
             case .selectPreviousPage:
-                .init(
-                    mutations: monthWindowMutations(for: -1, state: state),
-                    commands: [])
+                navigationResult(
+                    for: -1,
+                    state: state)
             case .selectNextPage:
-                .init(
-                    mutations: monthWindowMutations(for: 1, state: state),
-                    commands: [])
+                navigationResult(
+                    for: 1,
+                    state: state)
             }
         }
 
@@ -80,6 +80,30 @@ extension CombinedChartView {
             return [monthWindowMutation(
                 startMonthIndex: startMonthIndex,
                 state: state)]
+        }
+
+        private static func navigationResult(
+            for direction: Int,
+            state: InteractionState) -> InteractionResult {
+            .init(
+                mutations: monthWindowMutations(for: direction, state: state),
+                commands: [])
+        }
+
+        private static func monthWindowResult(
+            startMonthIndex: Int,
+            state: InteractionState) -> InteractionResult {
+            .init(
+                mutations: [monthWindowMutation(startMonthIndex: startMonthIndex, state: state)],
+                commands: [])
+        }
+
+        private static func settledDragResult(
+            context: DragSettleContext,
+            state: InteractionState) -> InteractionResult {
+            .init(
+                mutations: [settledDragMutation(context: context, state: state)],
+                commands: [])
         }
 
         private static func monthWindowMutation(
