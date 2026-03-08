@@ -74,17 +74,6 @@ public extension CombinedChartView {
             self.pager = pager
         }
 
-        /// Creates slots with a custom empty state and optional concrete closures for other slots.
-        public init(
-            @ViewBuilder emptyState: () -> some View,
-            selectionOverlay: ((SelectionOverlayContext) -> AnyView)? = nil,
-            pager: ((PagerContext) -> AnyView)? = nil) {
-            self.init(
-                emptyState: AnyView(emptyState()),
-                selectionOverlay: selectionOverlay,
-                pager: pager)
-        }
-
         /// Creates slots with only a custom empty state.
         public init(@ViewBuilder emptyState: () -> some View) {
             self.init(
@@ -101,26 +90,6 @@ public extension CombinedChartView {
             self.init(
                 emptyState: AnyView(emptyState()),
                 selectionOverlay: { context in AnyView(selectionOverlay(context)) },
-                pager: { context in AnyView(pager(context)) })
-        }
-
-        /// Creates slots with a custom selection overlay and the default pager.
-        public init(
-            @ViewBuilder emptyState: () -> some View = { DefaultEmptyStateView() },
-            @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View) {
-            self.init(
-                emptyState: AnyView(emptyState()),
-                selectionOverlay: { context in AnyView(selectionOverlay(context)) },
-                pager: nil)
-        }
-
-        /// Creates slots with a custom pager and the default selection overlay behavior.
-        public init(
-            @ViewBuilder emptyState: () -> some View = { DefaultEmptyStateView() },
-            @ViewBuilder pager: @escaping (PagerContext) -> some View) {
-            self.init(
-                emptyState: AnyView(emptyState()),
-                selectionOverlay: nil,
                 pager: { context in AnyView(pager(context)) })
         }
     }

@@ -36,30 +36,54 @@ extension CombinedChartView {
     func makeSectionContext(
         snapshot: ChartInteractionSnapshot,
         axisPointInfos: [ChartConfig.Axis.PointInfo]) -> ChartSectionContext {
-        snapshot.makeSectionContext(
+        .init(
             config: config,
             selectedTab: selectedTab,
+            data: snapshot.data,
+            yAxisTickValues: snapshot.yAxisTickValues,
+            yAxisDisplayDomain: snapshot.yAxisDisplayDomain,
             showDebugOverlay: showDebugOverlay,
             selectionOverlay: slots.selectionOverlay,
+            pagingContext: snapshot.pagingContext,
             yAxisLabel: { amount in
                 yAxisLabel(for: amount, axisPointInfos: axisPointInfos)
             })
+    }
+
+    func makePagerContext(snapshot: ChartInteractionSnapshot) -> PagerContext? {
+        guard snapshot.hasData else { return nil }
+        return .init(
+            entries: snapshot.pagerState.entries,
+            highlightedEntry: snapshot.pagerState.highlightedEntry,
+            canSelectPreviousPage: snapshot.canSelectPreviousPage,
+            canSelectNextPage: snapshot.canSelectNextPage,
+            onSelectPreviousPage: { dispatch(.selectPreviousPage) },
+            onSelectEntry: { entry in
+                dispatch(.selectMonthWindow(startMonthIndex: entry.startMonthIndex))
+            },
+            onSelectNextPage: { dispatch(.selectNextPage) })
+    }
+
+    func makeInteractionState(snapshot: ChartInteractionSnapshot) -> InteractionState {
+        .init(
+            visibleSelection: visibleSelection,
+            visiblePointIDs: snapshot.dataPointIDs,
+            viewport: viewportState,
+            unitWidth: layoutState.unitWidth,
+            pagingContext: snapshot.pagingContext)
     }
 
     // MARK: - Dispatch
 
     func dispatch(_ action: ViewAction) {
         let snapshot = interactionSnapshot
-        let interactionState = snapshot.makeInteractionState(
-            visibleSelection: visibleSelection,
-            viewportState: viewportState,
-            unitWidth: layoutState.unitWidth)
+        let interactionState = makeInteractionState(snapshot: snapshot)
         let result = InteractionReducer.reduce(action: action, state: interactionState)
         for mutation in result.mutations {
-            apply(mutation, dataPointIDs: snapshot.data.map(\.id))
+            apply(mutation, dataPointIDs: snapshot.dataPointIDs)
         }
         for command in result.commands {
-            perform(command, data: snapshot.data)
+            perform(command, data: snapshot.data, dataPointIDs: snapshot.dataPointIDs)
         }
     }
 
@@ -85,10 +109,14 @@ extension CombinedChartView {
 
     private func perform(
         _ command: InteractionCommand,
-        data: [ChartDataPoint]) {
+        data: [ChartDataPoint],
+        dataPointIDs: [ChartPointID]) {
         switch command {
         case .emitPointTap(let visibleSelection):
-            emitPointTap(for: visibleSelection, data: data)
+            emitPointTap(
+                for: visibleSelection,
+                data: data,
+                dataPointIDs: dataPointIDs)
         }
     }
 
@@ -104,10 +132,11 @@ extension CombinedChartView {
 
     private func emitPointTap(
         for visibleSelection: VisibleSelection,
-        data: [ChartDataPoint]) {
+        data: [ChartDataPoint],
+        dataPointIDs: [ChartPointID]) {
         guard let resolvedIndex = CombinedChartView.SelectionResolver.resolvedVisibleIndex(
             for: visibleSelection,
-            dataPointIDs: data.map(\.id))
+            dataPointIDs: dataPointIDs)
         else { return }
 
         onPointTap?(

@@ -117,7 +117,7 @@ public struct CombinedChartView: View {
         let sectionContext = makeSectionContext(
             snapshot: snapshot,
             axisPointInfos: axisPointInfos)
-        let pagerContext = snapshot.makePagerContext(dispatch: dispatch)
+        let pagerContext = makePagerContext(snapshot: snapshot)
 
         VStack(spacing: 12) {
             if showDebugOverlay, let visibleStartLabel {
@@ -161,8 +161,12 @@ public struct CombinedChartView: View {
 
             for point in group.points {
                 hasher.combine(point.id)
+                hasher.combine(point.xKey)
                 hasher.combine(point.xLabel)
-                hasher.combine(point.values.count)
+                for key in ChartSeriesKey.allCases {
+                    hasher.combine(key)
+                    hasher.combine(point.values[key] ?? 0)
+                }
             }
         }
 

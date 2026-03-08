@@ -39,8 +39,7 @@ extension CombinedChartView {
         let visibleSelection: VisibleSelection?
     }
 
-    struct BarSegment: Identifiable {
-        let id = UUID()
+    struct BarSegment {
         let start: Double
         let value: Double
         let color: Color

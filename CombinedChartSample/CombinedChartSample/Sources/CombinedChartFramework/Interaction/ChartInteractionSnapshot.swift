@@ -4,20 +4,24 @@ extension CombinedChartView {
     struct ChartPreparedData {
         let sortedGroups: [ChartDataGroup]
         let data: [ChartDataPoint]
+        let dataPointIDs: [ChartPointID]
 
         static func make(from groups: [ChartGroup]) -> Self {
             let sortedGroups = groups
                 .map { ChartDataGroup(source: $0) }
                 .sorted { $0.groupOrder < $1.groupOrder }
+            let data = sortedGroups.flatMap(\.points)
 
             return .init(
                 sortedGroups: sortedGroups,
-                data: sortedGroups.flatMap(\.points))
+                data: data,
+                dataPointIDs: data.map(\.id))
         }
     }
 
     struct ChartInteractionSnapshot {
         let data: [ChartDataPoint]
+        let dataPointIDs: [ChartPointID]
         let derivedState: ChartDerivedState
         let pagingContext: PagingContext
         let canSelectPreviousPage: Bool
@@ -45,52 +49,6 @@ extension CombinedChartView {
 
         var pagerState: PagerState {
             derivedState.viewport.pagerState
-        }
-
-        func makePagerContext(
-            dispatch: @escaping (ViewAction) -> Void) -> PagerContext? {
-            guard hasData else { return nil }
-            return .init(
-                entries: pagerState.entries,
-                highlightedEntry: pagerState.highlightedEntry,
-                canSelectPreviousPage: canSelectPreviousPage,
-                canSelectNextPage: canSelectNextPage,
-                onSelectPreviousPage: { dispatch(.selectPreviousPage) },
-                onSelectEntry: { entry in
-                    dispatch(.selectMonthWindow(startMonthIndex: entry.startMonthIndex))
-                },
-                onSelectNextPage: { dispatch(.selectNextPage) })
-        }
-
-        func makeSectionContext(
-            config: ChartConfig,
-            selectedTab: ChartTab,
-            showDebugOverlay: Bool,
-            selectionOverlay: ((SelectionOverlayContext) -> AnyView)?,
-            yAxisLabel: @escaping (Double) -> String) -> ChartSectionContext {
-            .init(
-                config: config,
-                selectedTab: selectedTab,
-                data: data,
-                yAxisTickValues: yAxisTickValues,
-                yAxisDisplayDomain: yAxisDisplayDomain,
-                showDebugOverlay: showDebugOverlay,
-                selectionOverlay: selectionOverlay,
-                pagingContext: pagingContext,
-                yAxisLabel: yAxisLabel)
-        }
-
-        func makeInteractionState(
-            visibleSelection: VisibleSelection?,
-            viewportState: ViewportState,
-            unitWidth: CGFloat)
-            -> InteractionState {
-            .init(
-                visibleSelection: visibleSelection,
-                visiblePointIDs: data.map(\.id),
-                viewport: viewportState,
-                unitWidth: unitWidth,
-                pagingContext: pagingContext)
         }
     }
 
@@ -130,6 +88,7 @@ extension CombinedChartView {
 
             return .init(
                 data: data,
+                dataPointIDs: preparedData.dataPointIDs,
                 derivedState: derivedState,
                 pagingContext: pagingContext,
                 canSelectPreviousPage: viewportState.startIndex > 0,
