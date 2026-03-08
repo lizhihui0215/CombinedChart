@@ -63,12 +63,12 @@ final class ChartDerivedStateTests: XCTestCase {
             config: config,
             sortedGroups: [ChartTestBuilders.makeGroup(id: "2024", title: "2024", order: 0, points: data)],
             data: data,
-            visibleStartMonthIndex: 1,
+            startIndex: 1,
             contentOffsetX: 100,
             unitWidth: 100)
 
         XCTAssertTrue(derivedState.hasData)
-        XCTAssertEqual(derivedState.visibleStartMonthLabel, "Feb")
+        XCTAssertEqual(derivedState.visibleStartLabel, "Feb")
         XCTAssertEqual(derivedState.axisPointInfos.count, 2)
         XCTAssertEqual(derivedState.yDomain.lowerBound, -13.5)
         XCTAssertEqual(derivedState.yDomain.upperBound, 28.5)

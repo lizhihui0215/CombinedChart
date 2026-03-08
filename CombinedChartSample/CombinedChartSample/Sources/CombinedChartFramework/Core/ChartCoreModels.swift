@@ -22,19 +22,16 @@ extension CombinedChartView {
     }
 
     struct PlotSyncState: Equatable {
-        var plotAreaInfo: PlotAreaInfo?
+        var plotAreaMinY: CGFloat?
+        var plotAreaHeight: CGFloat
         var yTickPositions: [Double: CGFloat]
 
-        static let empty = Self(plotAreaInfo: nil, yTickPositions: [:])
-
-        var plotAreaHeight: CGFloat {
-            plotAreaInfo?.height ?? 0
-        }
+        static let empty = Self(plotAreaMinY: nil, plotAreaHeight: 0, yTickPositions: [:])
 
         mutating func updatePlotArea(with plotRect: CGRect) {
-            let info = PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
-            guard plotAreaInfo != info else { return }
-            plotAreaInfo = info
+            guard plotAreaMinY != plotRect.minY || plotAreaHeight != plotRect.height else { return }
+            plotAreaMinY = plotRect.minY
+            plotAreaHeight = plotRect.height
         }
 
         mutating func updateYAxisTickPositions(_ positions: [Double: CGFloat]) {
@@ -48,19 +45,15 @@ extension CombinedChartView {
             .init(
                 yAxisTickValues: yAxisTickValues,
                 tickPositions: yTickPositions,
-                plotArea: plotAreaInfo,
+                plotAreaMinY: plotAreaMinY,
+                plotAreaHeight: plotAreaHeight,
                 labelText: labelText)
         }
     }
 
-    struct PlotAreaInfo: Equatable {
-        let minY: CGFloat
-        let height: CGFloat
-    }
-
-    struct DragPagingState {
+    struct DragViewportState {
         let contentOffsetX: CGFloat
-        let visibleStartMonthIndex: Int
+        let startIndex: Int
         let monthsPerPage: Int
         let maxStartMonthIndex: Int
         let dragScrollMode: ChartConfig.ChartPagerConfig.DragScrollMode
@@ -125,7 +118,7 @@ extension CombinedChartView {
                     0
                 }
                 let targetMonthIndex = min(
-                    max(visibleStartMonthIndex + pageDelta, 0),
+                    max(startIndex + pageDelta, 0),
                     maxStartMonthIndex)
                 return CGFloat(targetMonthIndex) * computedUnitWidth
             case .freeSnapping:
@@ -161,7 +154,7 @@ extension CombinedChartView {
             sortedGroups: [ChartDataGroup],
             dataCount: Int,
             monthsPerPage: Int,
-            visibleStartMonthIndex: Int,
+            startIndex: Int,
             contentOffsetX: CGFloat,
             unitWidth: CGFloat) {
             let yearPageRanges = Self.makeYearPageRanges(
@@ -174,8 +167,8 @@ extension CombinedChartView {
                     startMonthIndex: $0.startMonthIndex)
             }
             let currentYearRange = yearPageRanges.first {
-                $0.startMonthIndex <= visibleStartMonthIndex &&
-                    $0.endMonthIndex >= visibleStartMonthIndex
+                $0.startMonthIndex <= startIndex &&
+                    $0.endMonthIndex >= startIndex
             } ?? yearPageRanges.first
             let currentYearRangeIndex = currentYearRange.flatMap { currentYearRange in
                 yearPageRanges.firstIndex { $0.id == currentYearRange.id }
@@ -256,7 +249,7 @@ extension CombinedChartView {
 
     struct ChartDerivedState {
         let hasData: Bool
-        let visibleStartMonthLabel: String?
+        let visibleStartLabel: String?
         let axisPointInfos: [ChartConfig.ChartAxisConfig.AxisPointInfo]
         let yDomain: ClosedRange<Double>
         let yAxisTickValues: [Double]
@@ -267,12 +260,12 @@ extension CombinedChartView {
             config: ChartConfig,
             sortedGroups: [ChartDataGroup],
             data: [ChartDataPoint],
-            visibleStartMonthIndex: Int,
+            startIndex: Int,
             contentOffsetX: CGFloat,
             unitWidth: CGFloat) {
             hasData = !data.isEmpty
-            visibleStartMonthLabel = data.indices.contains(visibleStartMonthIndex)
-                ? data[visibleStartMonthIndex].xLabel
+            visibleStartLabel = data.indices.contains(startIndex)
+                ? data[startIndex].xLabel
                 : nil
             axisPointInfos = data.enumerated().map { index, point in
                 point.axisPointInfo(index: index)
@@ -302,7 +295,7 @@ extension CombinedChartView {
                 sortedGroups: sortedGroups,
                 dataCount: data.count,
                 monthsPerPage: config.monthsPerPage,
-                visibleStartMonthIndex: visibleStartMonthIndex,
+                startIndex: startIndex,
                 contentOffsetX: contentOffsetX,
                 unitWidth: unitWidth)
         }
@@ -324,17 +317,17 @@ extension CombinedChartView {
     }
 
     struct ViewportUpdateContext: Equatable {
-        let startMonthIndex: Int
+        let startIndex: Int
         let contentOffsetX: CGFloat?
     }
 
     struct ViewportState: Equatable {
-        var visibleStartMonthIndex: Int
+        var startIndex: Int
         var contentOffsetX: CGFloat
 
-        var startIndex: Int {
-            get { visibleStartMonthIndex }
-            set { visibleStartMonthIndex = newValue }
+        var visibleStartMonthIndex: Int {
+            get { startIndex }
+            set { startIndex = newValue }
         }
     }
 
@@ -379,7 +372,8 @@ extension CombinedChartView {
     struct YAxisLabelsContext {
         let yAxisTickValues: [Double]
         let tickPositions: [Double: CGFloat]
-        let plotArea: PlotAreaInfo?
+        let plotAreaMinY: CGFloat?
+        let plotAreaHeight: CGFloat
         let labelText: (Double) -> String
     }
 

@@ -33,7 +33,7 @@ extension CombinedChartView {
                     state: state)
             case .selectMonthWindow(let startMonthIndex):
                 viewportUpdateResult(
-                    startMonthIndex: startMonthIndex,
+                    startIndex: startMonthIndex,
                     state: state)
             case .settleDrag(let context):
                 settledDragResult(
@@ -84,13 +84,13 @@ extension CombinedChartView {
         private static func viewportUpdateMutations(
             for direction: Int,
             state: InteractionState) -> [InteractionMutation] {
-            guard let startMonthIndex = targetStartMonthIndex(
+            guard let startIndex = targetStartMonthIndex(
                 for: direction,
                 state: state)
             else { return [] }
 
             return [viewportUpdateMutation(
-                startMonthIndex: startMonthIndex,
+                startIndex: startIndex,
                 state: state)]
         }
 
@@ -117,10 +117,10 @@ extension CombinedChartView {
         // MARK: - Viewport
 
         private static func viewportUpdateResult(
-            startMonthIndex: Int,
+            startIndex: Int,
             state: InteractionState) -> InteractionResult {
             .init(
-                mutations: [viewportUpdateMutation(startMonthIndex: startMonthIndex, state: state)],
+                mutations: [viewportUpdateMutation(startIndex: startIndex, state: state)],
                 commands: [])
         }
 
@@ -133,11 +133,11 @@ extension CombinedChartView {
         }
 
         private static func viewportUpdateMutation(
-            startMonthIndex: Int,
+            startIndex: Int,
             state: InteractionState) -> InteractionMutation {
             .viewportUpdate(
                 makeViewportUpdateContext(
-                    startMonthIndex: startMonthIndex,
+                    startIndex: startIndex,
                     contentOffsetX: nil,
                     state: state))
         }
@@ -147,29 +147,29 @@ extension CombinedChartView {
             state: InteractionState) -> InteractionMutation {
             .viewportUpdate(
                 makeViewportUpdateContext(
-                    startMonthIndex: context.targetMonthIndex,
+                    startIndex: context.targetMonthIndex,
                     contentOffsetX: context.targetContentOffsetX,
                     state: state))
         }
 
         private static func makeViewportUpdateContext(
-            startMonthIndex: Int,
+            startIndex: Int,
             contentOffsetX: CGFloat?,
             state: InteractionState) -> ViewportUpdateContext {
-            let clampedStartMonthIndex = clampedStartMonthIndex(
-                startMonthIndex,
+            let clampedStartIndex = clampedStartMonthIndex(
+                startIndex,
                 state: state)
 
             let resolvedContentOffsetX: CGFloat? = if let contentOffsetX {
                 clampedContentOffsetX(contentOffsetX, state: state)
             } else if state.unitWidth > 0 {
-                CGFloat(clampedStartMonthIndex) * state.unitWidth
+                CGFloat(clampedStartIndex) * state.unitWidth
             } else {
                 nil
             }
 
             return .init(
-                startMonthIndex: clampedStartMonthIndex,
+                startIndex: clampedStartIndex,
                 contentOffsetX: resolvedContentOffsetX)
         }
 

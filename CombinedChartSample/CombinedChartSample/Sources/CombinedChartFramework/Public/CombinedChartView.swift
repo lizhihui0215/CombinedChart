@@ -35,7 +35,7 @@ public struct CombinedChartView: View {
     // UI state.
     @State var visibleSelection: VisibleSelection?
     @State var viewportState: ViewportState = .init(
-        visibleStartMonthIndex: 0,
+        startIndex: 0,
         contentOffsetX: 0)
     @State var layoutState: LayoutState = .empty
     @State var plotSyncState: PlotSyncState = .empty

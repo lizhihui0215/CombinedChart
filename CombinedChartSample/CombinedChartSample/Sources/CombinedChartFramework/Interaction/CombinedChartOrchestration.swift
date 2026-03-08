@@ -73,8 +73,8 @@ extension CombinedChartView {
         derivedState.hasData
     }
 
-    var visibleStartMonthLabel: String? {
-        derivedState.visibleStartMonthLabel
+    var visibleStartLabel: String? {
+        derivedState.visibleStartLabel
     }
 
     var yAxisTickValues: [Double] {
@@ -161,7 +161,7 @@ extension CombinedChartView {
             reconcileVisibleSelection(visibleSelection)
             guard emitsPointTap else { return }
         case .viewportUpdate(let context):
-            viewportState.startIndex = context.startMonthIndex
+            viewportState.startIndex = context.startIndex
             if let nextContentOffsetX = context.contentOffsetX {
                 viewportState.contentOffsetX = nextContentOffsetX
             }
@@ -224,7 +224,7 @@ private extension CombinedChartView {
                 config: config,
                 sortedGroups: sortedGroups,
                 data: data,
-                visibleStartMonthIndex: viewportState.startIndex,
+                startIndex: viewportState.startIndex,
                 contentOffsetX: viewportState.contentOffsetX,
                 unitWidth: layoutState.unitWidth)
         }

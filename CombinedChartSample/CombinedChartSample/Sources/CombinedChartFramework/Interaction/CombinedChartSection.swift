@@ -22,11 +22,11 @@ extension CombinedChartView {
                             context: context.makeYAxisLabelsContext(
                                 plotSyncState: plotSyncState))
 
-                        if let plotAreaInfo = plotSyncState.plotAreaInfo {
+                        if let plotAreaMinY = plotSyncState.plotAreaMinY, plotSyncState.plotAreaHeight > 0 {
                             Rectangle()
                                 .fill(.black)
-                                .frame(width: 1, height: plotAreaInfo.height)
-                                .offset(y: plotAreaInfo.minY)
+                                .frame(width: 1, height: plotSyncState.plotAreaHeight)
+                                .offset(y: plotAreaMinY)
                         }
                     }
 
@@ -65,9 +65,9 @@ private extension CombinedChartView.CombinedChartSection {
     // MARK: - Runtime
 
     func makeRuntimeContext(for geometry: GeometryProxy) -> CombinedChartView.SectionRuntimeContext {
-        let dragPagingState = CombinedChartView.DragPagingState(
+        let dragPagingState = CombinedChartView.DragViewportState(
             contentOffsetX: viewportState.contentOffsetX,
-            visibleStartMonthIndex: viewportState.startIndex,
+            startIndex: viewportState.startIndex,
             monthsPerPage: context.pagingContext.monthsPerPage,
             maxStartMonthIndex: context.pagingContext.maxStartMonthIndex,
             dragScrollMode: context.config.pager.dragScrollMode)
@@ -151,7 +151,7 @@ private extension CombinedChartView {
             axisWidth: CGFloat,
             monthsPerPage: Int,
             dataCount: Int,
-            dragPagingState: DragPagingState,
+            dragPagingState: DragViewportState,
             dragTranslationX: CGFloat,
             settlingOffsetX: CGFloat,
             maxStartMonthIndex: Int) {
@@ -169,7 +169,7 @@ private extension CombinedChartView {
 
     struct SectionRuntimeContext {
         let pagingContext: PagingContext
-        let dragPagingState: DragPagingState
+        let dragPagingState: DragViewportState
         let layoutMetrics: ChartLayoutMetrics
         let renderContext: ChartRenderContext
     }

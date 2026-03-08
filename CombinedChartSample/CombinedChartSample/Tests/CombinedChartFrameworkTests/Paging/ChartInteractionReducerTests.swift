@@ -7,7 +7,7 @@ final class ChartInteractionReducerTests: XCTestCase {
         let result = CombinedChartView.InteractionReducer.reduce(
             action: .selectPreviousPage,
             state: makeState(
-                visibleStartMonthIndex: 8,
+                startIndex: 8,
                 unitWidth: 100,
                 monthsPerPage: 4,
                 maxStartMonthIndex: 12,
@@ -26,7 +26,7 @@ final class ChartInteractionReducerTests: XCTestCase {
         let result = CombinedChartView.InteractionReducer.reduce(
             action: .selectNextPage,
             state: makeState(
-                visibleStartMonthIndex: 0,
+                startIndex: 0,
                 unitWidth: 100,
                 monthsPerPage: 4,
                 maxStartMonthIndex: 12,
@@ -62,7 +62,7 @@ final class ChartInteractionReducerTests: XCTestCase {
         let result = CombinedChartView.InteractionReducer.reduce(
             action: .selectMonthWindow(startMonthIndex: 99),
             state: makeState(
-                visibleStartMonthIndex: 0,
+                startIndex: 0,
                 unitWidth: 100,
                 monthsPerPage: 4,
                 maxStartMonthIndex: 8,
@@ -81,7 +81,7 @@ final class ChartInteractionReducerTests: XCTestCase {
         let result = CombinedChartView.InteractionReducer.reduce(
             action: .settleDrag(.init(targetMonthIndex: 3, targetContentOffsetX: 365)),
             state: makeState(
-                visibleStartMonthIndex: 0,
+                startIndex: 0,
                 unitWidth: 100,
                 monthsPerPage: 4,
                 maxStartMonthIndex: 8,
@@ -100,7 +100,7 @@ final class ChartInteractionReducerTests: XCTestCase {
         let result = CombinedChartView.InteractionReducer.reduce(
             action: .settleDrag(.init(targetMonthIndex: 99, targetContentOffsetX: 9999)),
             state: makeState(
-                visibleStartMonthIndex: 0,
+                startIndex: 0,
                 unitWidth: 100,
                 monthsPerPage: 4,
                 maxStartMonthIndex: 8,
@@ -119,7 +119,7 @@ final class ChartInteractionReducerTests: XCTestCase {
         let result = CombinedChartView.InteractionReducer.reduce(
             action: .selectPoint(index: 1),
             state: makeState(
-                visibleStartMonthIndex: 0,
+                startIndex: 0,
                 unitWidth: 100,
                 monthsPerPage: 4,
                 maxStartMonthIndex: 8,
@@ -145,7 +145,7 @@ final class ChartInteractionReducerTests: XCTestCase {
         let result = CombinedChartView.InteractionReducer.reduce(
             action: .selectPoint(index: 1, emitsPointTap: false),
             state: makeState(
-                visibleStartMonthIndex: 0,
+                startIndex: 0,
                 unitWidth: 100,
                 monthsPerPage: 4,
                 maxStartMonthIndex: 8,
@@ -160,7 +160,7 @@ final class ChartInteractionReducerTests: XCTestCase {
     }
 
     private func makeState(
-        visibleStartMonthIndex: Int,
+        startIndex: Int,
         unitWidth: CGFloat,
         monthsPerPage: Int,
         maxStartMonthIndex: Int,
@@ -172,8 +172,8 @@ final class ChartInteractionReducerTests: XCTestCase {
             visibleSelection: nil,
             visiblePointIDs: visiblePointIDs,
             viewport: .init(
-                visibleStartMonthIndex: visibleStartMonthIndex,
-                contentOffsetX: CGFloat(visibleStartMonthIndex) * unitWidth),
+                startIndex: startIndex,
+                contentOffsetX: CGFloat(startIndex) * unitWidth),
             unitWidth: unitWidth,
             pagingContext: .init(
                 monthsPerPage: monthsPerPage,

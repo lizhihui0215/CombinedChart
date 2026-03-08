@@ -3,8 +3,8 @@ import SwiftUI
 public extension CombinedChartView {
     var body: some View {
         VStack(spacing: 12) {
-            if showDebugOverlay, let visibleStartMonthLabel {
-                Text("Visible start index: \(viewportState.startIndex) (\(visibleStartMonthLabel))")
+            if showDebugOverlay, let visibleStartLabel {
+                Text("Visible start index: \(viewportState.startIndex) (\(visibleStartLabel))")
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)

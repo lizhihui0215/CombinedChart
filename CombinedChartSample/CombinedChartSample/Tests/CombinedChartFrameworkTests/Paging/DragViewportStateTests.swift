@@ -2,11 +2,11 @@
 import SwiftUI
 import XCTest
 
-final class DragPagingStateTests: XCTestCase {
+final class DragViewportStateTests: XCTestCase {
     func testByPageDragUsesRealTranslationForPaging() {
-        let state = CombinedChartView.DragPagingState(
+        let state = CombinedChartView.DragViewportState(
             contentOffsetX: 0,
-            visibleStartMonthIndex: 0,
+            startIndex: 0,
             monthsPerPage: 4,
             maxStartMonthIndex: 8,
             dragScrollMode: .byPage)
@@ -20,9 +20,9 @@ final class DragPagingStateTests: XCTestCase {
     }
 
     func testByPageDragBelowThresholdDoesNotPage() {
-        let state = CombinedChartView.DragPagingState(
+        let state = CombinedChartView.DragViewportState(
             contentOffsetX: 0,
-            visibleStartMonthIndex: 0,
+            startIndex: 0,
             monthsPerPage: 4,
             maxStartMonthIndex: 8,
             dragScrollMode: .byPage)
@@ -36,9 +36,9 @@ final class DragPagingStateTests: XCTestCase {
     }
 
     func testFreeSnappingRoundsToNearestMonth() {
-        let state = CombinedChartView.DragPagingState(
+        let state = CombinedChartView.DragViewportState(
             contentOffsetX: 130,
-            visibleStartMonthIndex: 1,
+            startIndex: 1,
             monthsPerPage: 4,
             maxStartMonthIndex: 8,
             dragScrollMode: .freeSnapping)
@@ -52,9 +52,9 @@ final class DragPagingStateTests: XCTestCase {
     }
 
     func testTargetMonthIndexClampsToValidRange() {
-        let state = CombinedChartView.DragPagingState(
+        let state = CombinedChartView.DragViewportState(
             contentOffsetX: 0,
-            visibleStartMonthIndex: 0,
+            startIndex: 0,
             monthsPerPage: 4,
             maxStartMonthIndex: 8,
             dragScrollMode: .free)

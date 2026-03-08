@@ -5,8 +5,8 @@ extension CombinedChartView {
         let context: YAxisLabelsContext
 
         var body: some View {
-            let topPadding = context.plotArea?.minY ?? 12
-            let plotHeight = context.plotArea?.height ?? 320
+            let topPadding = context.plotAreaMinY ?? 12
+            let plotHeight = context.plotAreaHeight > 0 ? context.plotAreaHeight : 320
 
             GeometryReader { _ in
                 let maxLabelWidth: CGFloat = 44
