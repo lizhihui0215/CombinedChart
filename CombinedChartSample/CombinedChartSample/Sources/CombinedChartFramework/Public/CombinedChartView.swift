@@ -34,10 +34,10 @@ public struct CombinedChartView: View {
 
     // UI state.
     @State var visibleSelection: VisibleSelection?
-    @State var visibleStartMonthIndex: Int = 0
-    @State var contentOffsetX: CGFloat = 0
-    @State var unitWidth: CGFloat = 0
-    @State var viewportWidth: CGFloat = 0
+    @State var viewportState: ViewportState = .init(
+        visibleStartMonthIndex: 0,
+        contentOffsetX: 0)
+    @State var layoutState: LayoutState = .empty
 
     @State var plotAreaInfo: PlotAreaInfo?
     @State var yTickPositions: [Double: CGFloat] = [:]

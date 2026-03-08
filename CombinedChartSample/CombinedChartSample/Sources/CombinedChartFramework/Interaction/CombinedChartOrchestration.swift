@@ -19,9 +19,9 @@ extension CombinedChartView {
             selectedTab: selectedTab,
             showDebugOverlay: showDebugOverlay,
             viewSlots: viewSlots,
-            visibleStartMonthIndex: visibleStartMonthIndex,
-            contentOffsetX: contentOffsetX,
-            unitWidth: unitWidth)
+            visibleStartMonthIndex: viewportState.visibleStartMonthIndex,
+            contentOffsetX: viewportState.contentOffsetX,
+            layoutState: layoutState)
     }
 
     private var sortedGroups: [ChartDataGroup] {
@@ -93,8 +93,8 @@ extension CombinedChartView {
         return .init(
             entries: pagerEntries,
             highlightedEntry: highlightedPagerEntry,
-            canSelectPreviousPage: visibleStartMonthIndex > 0,
-            canSelectNextPage: visibleStartMonthIndex < maxStartMonthIndex,
+            canSelectPreviousPage: viewportState.visibleStartMonthIndex > 0,
+            canSelectNextPage: viewportState.visibleStartMonthIndex < maxStartMonthIndex,
             onSelectPreviousPage: { dispatch(.selectPreviousPage) },
             onSelectEntry: { entry in
                 dispatch(.selectMonthWindow(startMonthIndex: entry.startMonthIndex))
@@ -125,9 +125,8 @@ extension CombinedChartView {
         .init(
             visibleSelection: visibleSelection,
             visiblePointIDs: data.map(\.id),
-            visibleStartMonthIndex: visibleStartMonthIndex,
-            contentOffsetX: contentOffsetX,
-            unitWidth: unitWidth,
+            viewport: viewportState,
+            unitWidth: layoutState.unitWidth,
             monthsPerPage: config.monthsPerPage,
             maxStartMonthIndex: maxStartMonthIndex,
             arrowScrollMode: config.pager.arrowScrollMode,
@@ -155,9 +154,9 @@ extension CombinedChartView {
                 dataPointIDs: dataPointIDs)
             guard emitsPointTap else { return }
         case .monthWindow(let startMonthIndex, let nextContentOffsetX):
-            visibleStartMonthIndex = startMonthIndex
+            viewportState.visibleStartMonthIndex = startMonthIndex
             if let nextContentOffsetX {
-                contentOffsetX = nextContentOffsetX
+                viewportState.contentOffsetX = nextContentOffsetX
             }
             visibleSelection = CombinedChartView.SelectionResolver.reconciledSelection(
                 visibleSelection,

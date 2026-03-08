@@ -4,8 +4,7 @@ extension CombinedChartView {
     struct InteractionState {
         let visibleSelection: VisibleSelection?
         let visiblePointIDs: [ChartPointID]
-        let visibleStartMonthIndex: Int
-        let contentOffsetX: CGFloat
+        let viewport: ViewportState
         let unitWidth: CGFloat
         let monthsPerPage: Int
         let maxStartMonthIndex: Int
@@ -73,7 +72,7 @@ extension CombinedChartView {
             switch state.arrowScrollMode {
             case .byPage:
                 return [monthWindowMutation(
-                    startMonthIndex: state.visibleStartMonthIndex + (direction * state.monthsPerPage),
+                    startMonthIndex: state.viewport.visibleStartMonthIndex + (direction * state.monthsPerPage),
                     state: state)]
             case .byEntry:
                 guard let currentYearRangeIndex = state.currentYearRangeIndex else { return [] }

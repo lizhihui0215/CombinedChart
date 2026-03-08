@@ -4,10 +4,8 @@ extension CombinedChartView {
     struct CombinedChartSection: View {
         let context: SectionContext
         let visibleSelection: VisibleSelection?
-        @Binding var visibleStartMonthIndex: Int
-        @Binding var contentOffsetX: CGFloat
-        @Binding var unitWidth: CGFloat
-        @Binding var viewportWidth: CGFloat
+        @Binding var viewportState: ViewportState
+        @Binding var layoutState: LayoutState
         @Binding var plotAreaInfo: PlotAreaInfo?
         @Binding var yTickPositions: [Double: CGFloat]
         let onDispatchAction: (ViewAction) -> Void
@@ -73,8 +71,8 @@ private extension CombinedChartView.CombinedChartSection {
 
     var dragPagingState: CombinedChartView.DragPagingState {
         .init(
-            contentOffsetX: contentOffsetX,
-            visibleStartMonthIndex: visibleStartMonthIndex,
+            contentOffsetX: viewportState.contentOffsetX,
+            visibleStartMonthIndex: viewportState.visibleStartMonthIndex,
             monthsPerPage: context.config.monthsPerPage,
             maxStartMonthIndex: maxStartMonthIndex,
             dragScrollMode: context.config.pager.dragScrollMode)
@@ -108,9 +106,10 @@ private extension CombinedChartView.CombinedChartSection {
     }
 
     func syncViewport(metrics: CombinedChartView.ChartLayoutMetrics) {
-        unitWidth = metrics.unitWidth
-        viewportWidth = metrics.viewportWidth
-        contentOffsetX = CGFloat(visibleStartMonthIndex) * metrics.unitWidth
+        layoutState = .init(
+            viewportWidth: metrics.viewportWidth,
+            unitWidth: metrics.unitWidth)
+        viewportState.contentOffsetX = CGFloat(viewportState.visibleStartMonthIndex) * metrics.unitWidth
     }
 
     var renderContext: CombinedChartView.ChartRenderContext {

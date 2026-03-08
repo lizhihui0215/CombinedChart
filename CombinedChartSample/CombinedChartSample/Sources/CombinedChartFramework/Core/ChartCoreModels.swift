@@ -2,6 +2,13 @@ import Charts
 import SwiftUI
 
 extension CombinedChartView {
+    struct LayoutState: Equatable {
+        var viewportWidth: CGFloat
+        var unitWidth: CGFloat
+
+        static let empty = Self(viewportWidth: 0, unitWidth: 0)
+    }
+
     struct CombinedChartViewOrchestrationContext {
         let config: ChartConfig
         let groups: [ChartGroup]
@@ -10,7 +17,7 @@ extension CombinedChartView {
         let viewSlots: ViewSlots
         let visibleStartMonthIndex: Int
         let contentOffsetX: CGFloat
-        let unitWidth: CGFloat
+        let layoutState: LayoutState
 
         var sortedGroups: [ChartDataGroup] {
             groups
@@ -29,7 +36,7 @@ extension CombinedChartView {
                 data: data,
                 visibleStartMonthIndex: visibleStartMonthIndex,
                 contentOffsetX: contentOffsetX,
-                unitWidth: unitWidth)
+                unitWidth: layoutState.unitWidth)
         }
     }
 
@@ -320,6 +327,11 @@ extension CombinedChartView {
         case settleDrag(targetMonthIndex: Int, targetContentOffsetX: CGFloat)
         case selectPreviousPage
         case selectNextPage
+    }
+
+    struct ViewportState: Equatable {
+        var visibleStartMonthIndex: Int
+        var contentOffsetX: CGFloat
     }
 
     struct SectionContext {
