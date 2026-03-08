@@ -9,6 +9,16 @@ extension CombinedChartView {
         var unitWidth: CGFloat
 
         static let empty = Self(viewportWidth: 0, unitWidth: 0)
+
+        mutating func update(
+            viewportWidth: CGFloat,
+            unitWidth: CGFloat) {
+            let nextState = Self(
+                viewportWidth: viewportWidth,
+                unitWidth: unitWidth)
+            guard self != nextState else { return }
+            self = nextState
+        }
     }
 
     struct PlotSyncState: Equatable {
@@ -30,6 +40,16 @@ extension CombinedChartView {
         mutating func updateYAxisTickPositions(_ positions: [Double: CGFloat]) {
             guard yTickPositions != positions else { return }
             yTickPositions = positions
+        }
+
+        func makeYAxisLabelsContext(
+            yAxisTickValues: [Double],
+            labelText: @escaping (Double) -> String) -> YAxisLabelsContext {
+            .init(
+                yAxisTickValues: yAxisTickValues,
+                tickPositions: yTickPositions,
+                plotArea: plotAreaInfo,
+                labelText: labelText)
         }
     }
 
@@ -328,10 +348,8 @@ extension CombinedChartView {
 
         func makeYAxisLabelsContext(
             plotSyncState: PlotSyncState) -> YAxisLabelsContext {
-            .init(
+            plotSyncState.makeYAxisLabelsContext(
                 yAxisTickValues: yAxisTickValues,
-                tickPositions: plotSyncState.yTickPositions,
-                plotArea: plotSyncState.plotAreaInfo,
                 labelText: yAxisLabel)
         }
 

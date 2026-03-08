@@ -103,7 +103,7 @@ private extension CombinedChartView.CombinedChartSection {
     }
 
     func syncViewport(metrics: CombinedChartView.ChartLayoutMetrics) {
-        layoutState = .init(
+        _layoutState.wrappedValue.update(
             viewportWidth: metrics.viewportWidth,
             unitWidth: metrics.unitWidth)
         viewportState.contentOffsetX = CGFloat(viewportState.visibleStartMonthIndex) * metrics.unitWidth
