@@ -13,7 +13,7 @@ extension CombinedChartView {
 
         var body: some View {
             GeometryReader { geometry in
-                let runtimeContext = makeRuntimeContext(for: geometry)
+                let scrollState = makeScrollState(for: geometry)
                 let isDragging = dragTranslationX != 0
 
                 HStack(alignment: .top, spacing: 0) {
@@ -32,7 +32,7 @@ extension CombinedChartView {
 
                     ZStack(alignment: .topLeading) {
                         ChartContainer(
-                            context: runtimeContext.renderContext,
+                            context: scrollState.renderContext,
                             onSelectIndex: { onDispatchAction(.selectPoint(index: $0)) },
                             onPlotAreaChange: { plotRect in
                                 syncPlotArea(plotRect, isDragging: isDragging)
@@ -40,21 +40,21 @@ extension CombinedChartView {
                             onYAxisTickPositions: { positions in
                                 syncYAxisTickPositions(positions, isDragging: isDragging)
                             })
-                            .frame(width: runtimeContext.layoutMetrics.chartWidth)
+                            .frame(width: scrollState.layoutMetrics.chartWidth)
                             .frame(maxHeight: .infinity)
                     }
                     .compositingGroup()
-                    .offset(x: runtimeContext.layoutMetrics.currentContentOffsetX)
-                    .frame(width: runtimeContext.layoutMetrics.viewportWidth, alignment: .leading)
+                    .offset(x: scrollState.layoutMetrics.currentContentOffsetX)
+                    .frame(width: scrollState.layoutMetrics.viewportWidth, alignment: .leading)
                     .clipped()
                     .contentShape(Rectangle())
-                    .gesture(dragGesture(runtimeContext: runtimeContext))
+                    .gesture(dragGesture(scrollState: scrollState))
                 }
                 .onAppear {
-                    syncViewport(metrics: runtimeContext.layoutMetrics)
+                    syncViewport(scrollState: scrollState)
                 }
                 .onChange(of: geometry.size) { _ in
-                    syncViewport(metrics: runtimeContext.layoutMetrics)
+                    syncViewport(scrollState: scrollState)
                 }
             }
         }
@@ -62,32 +62,17 @@ extension CombinedChartView {
 }
 
 private extension CombinedChartView.CombinedChartSection {
-    // MARK: - Runtime
+    // MARK: - Scroll State
 
-    func makeRuntimeContext(for geometry: GeometryProxy) -> CombinedChartView.SectionRuntimeContext {
-        let dragPagingState = CombinedChartView.DragViewportState(
-            contentOffsetX: viewportState.contentOffsetX,
-            startIndex: viewportState.startIndex,
-            monthsPerPage: context.pagingContext.monthsPerPage,
-            maxStartMonthIndex: context.pagingContext.maxStartMonthIndex,
-            dragScrollMode: context.config.pager.dragScrollMode)
-        let layoutMetrics = CombinedChartView.ChartLayoutMetrics(
+    func makeScrollState(for geometry: GeometryProxy) -> CombinedChartView.SectionScrollState {
+        .init(
+            context: context,
+            viewportState: viewportState,
+            plotAreaHeight: plotSyncState.plotAreaHeight,
+            visibleSelection: visibleSelection,
             availableWidth: geometry.size.width,
-            axisWidth: context.config.axis.yAxisWidth,
-            monthsPerPage: context.pagingContext.monthsPerPage,
-            dataCount: context.data.count,
-            dragPagingState: dragPagingState,
             dragTranslationX: dragTranslationX,
-            settlingOffsetX: settlingOffsetX,
-            maxStartMonthIndex: context.pagingContext.maxStartMonthIndex)
-
-        return .init(
-            pagingContext: context.pagingContext,
-            dragPagingState: dragPagingState,
-            layoutMetrics: layoutMetrics,
-            renderContext: context.makeRenderContext(
-                plotAreaHeight: plotSyncState.plotAreaHeight,
-                visibleSelection: visibleSelection))
+            settlingOffsetX: settlingOffsetX)
     }
 
     // MARK: - Sync
@@ -102,37 +87,26 @@ private extension CombinedChartView.CombinedChartSection {
         plotSyncState.updateYAxisTickPositions(positions)
     }
 
-    func syncViewport(metrics: CombinedChartView.ChartLayoutMetrics) {
-        _layoutState.wrappedValue.update(
-            viewportWidth: metrics.viewportWidth,
-            unitWidth: metrics.unitWidth)
-        viewportState.contentOffsetX = CGFloat(viewportState.startIndex) * metrics.unitWidth
+    func syncViewport(scrollState: CombinedChartView.SectionScrollState) {
+        scrollState.syncViewport(
+            layoutState: &_layoutState.wrappedValue,
+            viewportState: &viewportState)
     }
 
     // MARK: - Gesture
 
-    func dragGesture(runtimeContext: CombinedChartView.SectionRuntimeContext) -> some Gesture {
+    func dragGesture(scrollState: CombinedChartView.SectionScrollState) -> some Gesture {
         DragGesture()
             .updating($dragTranslationX) { value, state, _ in
                 state = value.translation.width
             }
             .onEnded { value in
-                let clampedTranslationX = runtimeContext.dragPagingState.clampedDisplayTranslationX(
-                    from: value.translation.width,
-                    maxContentOffsetX: runtimeContext.layoutMetrics.maxContentOffsetX)
-                let targetOffsetX = runtimeContext.dragPagingState.targetOffsetX(
-                    for: value.translation.width,
-                    computedUnitWidth: runtimeContext.layoutMetrics.unitWidth,
-                    computedViewportWidth: runtimeContext.layoutMetrics.viewportWidth)
-                let targetMonthIndex = runtimeContext.dragPagingState.targetMonthIndex(
-                    for: targetOffsetX,
-                    computedUnitWidth: runtimeContext.layoutMetrics.unitWidth)
-                settlingOffsetX = clampedTranslationX
+                settlingOffsetX = scrollState.makeSettlingOffsetX(
+                    from: value.translation.width)
                 onDispatchAction(
                     .settleDrag(
-                        .init(
-                            targetMonthIndex: targetMonthIndex,
-                            targetContentOffsetX: targetOffsetX)))
+                        scrollState.makeDragSettleContext(
+                            from: value.translation.width)))
                 settlingOffsetX = 0
             }
     }

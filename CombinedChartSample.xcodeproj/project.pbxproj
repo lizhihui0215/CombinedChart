@@ -10,7 +10,7 @@
 		26B2B2CA2F5D4A5E003B7D89 /* ChartViewportDerivedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2C92F5D4A5E003B7D89 /* ChartViewportDerivedState.swift */; };
 		26B2B2CE2F5D4AEB003B7D89 /* CombinedChartOrchestrationContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2CD2F5D4AEB003B7D89 /* CombinedChartOrchestrationContext.swift */; };
 		26B2B2D02F5D4B5D003B7D89 /* ChartLayoutMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2CF2F5D4B5D003B7D89 /* ChartLayoutMetrics.swift */; };
-		26B2B2D22F5D4BAC003B7D89 /* SectionRuntimeContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2D12F5D4BAC003B7D89 /* SectionRuntimeContext.swift */; };
+		26B2B2D22F5D4BAC003B7D89 /* SectionScrollState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2D12F5D4BAC003B7D89 /* SectionScrollState.swift */; };
 		26E3FC552F5CE7CB004D2007 /* CombinedChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FC4D2F5CE7CB004D2007 /* CombinedChartView.swift */; };
 		26E3FCC32F5D0893004D2007 /* ChartCoreModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCC22F5D0893004D2007 /* ChartCoreModels.swift */; };
 		26E3FCC52F5D0893004D2007 /* ChartResolvers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCC42F5D0893004D2007 /* ChartResolvers.swift */; };
@@ -75,7 +75,7 @@
 		26B2B2C92F5D4A5E003B7D89 /* ChartViewportDerivedState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartViewportDerivedState.swift; sourceTree = "<group>"; };
 		26B2B2CD2F5D4AEB003B7D89 /* CombinedChartOrchestrationContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedChartOrchestrationContext.swift; sourceTree = "<group>"; };
 		26B2B2CF2F5D4B5D003B7D89 /* ChartLayoutMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartLayoutMetrics.swift; sourceTree = "<group>"; };
-		26B2B2D12F5D4BAC003B7D89 /* SectionRuntimeContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionRuntimeContext.swift; sourceTree = "<group>"; };
+		26B2B2D12F5D4BAC003B7D89 /* SectionScrollState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionScrollState.swift; sourceTree = "<group>"; };
 		26E3FC4D2F5CE7CB004D2007 /* CombinedChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedChartView.swift; sourceTree = "<group>"; };
 		26E3FCC22F5D0893004D2007 /* ChartCoreModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartCoreModels.swift; sourceTree = "<group>"; };
 		26E3FCC42F5D0893004D2007 /* ChartResolvers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartResolvers.swift; sourceTree = "<group>"; };
@@ -214,7 +214,7 @@
 				26E3FCF42F5D1AEF004D2007 /* CombinedChartInteractionReducer.swift */,
 				26B2B2CD2F5D4AEB003B7D89 /* CombinedChartOrchestrationContext.swift */,
 				26B2B2CF2F5D4B5D003B7D89 /* ChartLayoutMetrics.swift */,
-				26B2B2D12F5D4BAC003B7D89 /* SectionRuntimeContext.swift */,
+				26B2B2D12F5D4BAC003B7D89 /* SectionScrollState.swift */,
 			);
 			path = Interaction;
 			sourceTree = "<group>";
@@ -467,7 +467,7 @@
 				26B2B2CE2F5D4AEB003B7D89 /* CombinedChartOrchestrationContext.swift in Sources */,
 				26B2B2CA2F5D4A5E003B7D89 /* ChartViewportDerivedState.swift in Sources */,
 				26E3FCD72F5D124F004D2007 /* CombinedChartPublicTypes.swift in Sources */,
-				26B2B2D22F5D4BAC003B7D89 /* SectionRuntimeContext.swift in Sources */,
+				26B2B2D22F5D4BAC003B7D89 /* SectionScrollState.swift in Sources */,
 				26E3FCCB2F5D0B50004D2007 /* ChartContainerOverlayRenderer.swift in Sources */,
 				26E3FCD32F5D10F9004D2007 /* CombinedChartPreview.swift in Sources */,
 				26E3FCF52F5D1AEF004D2007 /* CombinedChartInteractionReducer.swift in Sources */,

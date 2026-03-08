@@ -1,6 +1,14 @@
 import SwiftUI
 
 extension CombinedChartView {
+    struct YAxisLabelsContext {
+        let yAxisTickValues: [Double]
+        let tickPositions: [Double: CGFloat]
+        let plotAreaMinY: CGFloat?
+        let plotAreaHeight: CGFloat
+        let labelText: (Double) -> String
+    }
+
     struct ChartYAxisLabels: View {
         let context: YAxisLabelsContext
 

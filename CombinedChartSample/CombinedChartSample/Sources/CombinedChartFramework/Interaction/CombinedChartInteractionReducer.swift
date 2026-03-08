@@ -1,6 +1,42 @@
 import SwiftUI
 
 extension CombinedChartView {
+    enum ViewAction {
+        case selectPoint(index: Int?, emitsPointTap: Bool = true)
+        case selectMonthWindow(startMonthIndex: Int)
+        case settleDrag(DragSettleContext)
+        case selectPreviousPage
+        case selectNextPage
+    }
+
+    struct DragSettleContext: Equatable {
+        let targetMonthIndex: Int
+        let targetContentOffsetX: CGFloat
+    }
+
+    struct ViewportUpdateContext: Equatable {
+        let startIndex: Int
+        let contentOffsetX: CGFloat?
+    }
+
+    struct ViewportState: Equatable {
+        var startIndex: Int
+        var contentOffsetX: CGFloat
+
+        var visibleStartMonthIndex: Int {
+            get { startIndex }
+            set { startIndex = newValue }
+        }
+    }
+
+    struct PagingContext {
+        let monthsPerPage: Int
+        let maxStartMonthIndex: Int
+        let arrowScrollMode: ChartConfig.Pager.ArrowScrollMode
+        let currentYearRangeIndex: Int?
+        let yearPageRanges: [YearPageRange]
+    }
+
     struct InteractionState {
         let visibleSelection: VisibleSelection?
         let visiblePointIDs: [ChartPointID]
@@ -52,7 +88,9 @@ extension CombinedChartView {
 
         // MARK: - Selection
 
-        private static func selection(for index: Int?, state: InteractionState) -> VisibleSelection? {
+        private static func makeSelection(
+            for index: Int?,
+            state: InteractionState) -> VisibleSelection? {
             guard let index, state.visiblePointIDs.indices.contains(index) else {
                 return nil
             }
@@ -61,14 +99,23 @@ extension CombinedChartView {
                 pointID: state.visiblePointIDs[index])
         }
 
+        private static func selectionCommands(
+            for selection: VisibleSelection?,
+            emitsPointTap: Bool) -> [InteractionCommand] {
+            guard emitsPointTap, let selection else { return [] }
+            return [.emitPointTap(selection)]
+        }
+
         private static func selectionResult(
             for index: Int?,
             emitsPointTap: Bool,
             state: InteractionState) -> InteractionResult {
-            let selection = selection(for: index, state: state)
+            let selection = makeSelection(for: index, state: state)
             return .init(
                 mutations: [.selection(selection, emitsPointTap: emitsPointTap)],
-                commands: emitsPointTap ? selection.map { [.emitPointTap($0)] } ?? [] : [])
+                commands: selectionCommands(
+                    for: selection,
+                    emitsPointTap: emitsPointTap))
         }
 
         // MARK: - Navigation
@@ -76,22 +123,16 @@ extension CombinedChartView {
         private static func navigationResult(
             for direction: Int,
             state: InteractionState) -> InteractionResult {
-            .init(
-                mutations: viewportUpdateMutations(for: direction, state: state),
-                commands: [])
-        }
-
-        private static func viewportUpdateMutations(
-            for direction: Int,
-            state: InteractionState) -> [InteractionMutation] {
             guard let startIndex = targetStartIndex(
                 for: direction,
                 state: state)
-            else { return [] }
+            else {
+                return .init(mutations: [], commands: [])
+            }
 
-            return [viewportUpdateMutation(
+            return viewportUpdateResult(
                 startIndex: startIndex,
-                state: state)]
+                state: state)
         }
 
         private static func targetStartIndex(
@@ -128,27 +169,21 @@ extension CombinedChartView {
             context: DragSettleContext,
             state: InteractionState) -> InteractionResult {
             .init(
-                mutations: [settledDragMutation(context: context, state: state)],
+                mutations: [viewportUpdateMutation(
+                    startIndex: context.targetMonthIndex,
+                    contentOffsetX: context.targetContentOffsetX,
+                    state: state)],
                 commands: [])
         }
 
         private static func viewportUpdateMutation(
             startIndex: Int,
+            contentOffsetX: CGFloat? = nil,
             state: InteractionState) -> InteractionMutation {
             .viewportUpdate(
                 makeViewportUpdateContext(
                     startIndex: startIndex,
-                    contentOffsetX: nil,
-                    state: state))
-        }
-
-        private static func settledDragMutation(
-            context: DragSettleContext,
-            state: InteractionState) -> InteractionMutation {
-            .viewportUpdate(
-                makeViewportUpdateContext(
-                    startIndex: context.targetMonthIndex,
-                    contentOffsetX: context.targetContentOffsetX,
+                    contentOffsetX: contentOffsetX,
                     state: state))
         }
 

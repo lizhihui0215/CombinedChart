@@ -3,6 +3,10 @@ import SwiftUI
 extension CombinedChartView {
     // MARK: - Derived State
 
+    private var snapshot: CombinedChartViewOrchestrationSnapshot {
+        orchestrationContext.snapshot
+    }
+
     @ViewBuilder
     var pagerView: some View {
         if let pagerContext {
@@ -22,82 +26,28 @@ extension CombinedChartView {
             layoutState: layoutState)
     }
 
-    private var sortedGroups: [ChartDataGroup] {
-        orchestrationContext.sortedGroups
-    }
-
-    private var data: [ChartDataPoint] {
-        orchestrationContext.data
-    }
-
-    private var derivedState: ChartDerivedState {
-        orchestrationContext.derivedState
-    }
-
-    private var pagerState: PagerState {
-        derivedState.viewport.pagerState
-    }
-
-    private var yearPageRanges: [YearPageRange] {
-        pagerState.yearPageRanges
-    }
-
-    private var currentYearRangeIndex: Int? {
-        pagerState.currentYearRangeIndex
-    }
-
-    private var highlightedPagerEntry: PagerEntry? {
-        pagerState.highlightedEntry
-    }
-
-    private var pagerEntries: [PagerEntry] {
-        pagerState.entries
-    }
-
-    private var visibleMonthRange: ClosedRange<Int>? {
-        pagerState.visibleMonthRange
-    }
-
-    private var currentYearRange: YearPageRange? {
-        pagerState.currentYearRange
-    }
-
-    private var maxStartMonthIndex: Int {
-        max(0, data.count - config.monthsPerPage)
-    }
-
     var hasData: Bool {
-        derivedState.hasData
+        snapshot.hasData
     }
 
     var visibleStartLabel: String? {
-        derivedState.viewport.visibleStartLabel
+        snapshot.visibleStartLabel
     }
 
     var yAxisTickValues: [Double] {
-        derivedState.yAxisTickValues
+        snapshot.yAxisTickValues
     }
 
     var yAxisDisplayDomain: ClosedRange<Double> {
-        derivedState.yAxisDisplayDomain
+        snapshot.yAxisDisplayDomain
     }
 
     private var axisPointInfos: [ChartConfig.Axis.PointInfo] {
-        derivedState.axisPointInfos
+        snapshot.axisPointInfos
     }
 
     private var pagerContext: PagerContext? {
-        guard hasData else { return nil }
-        return .init(
-            entries: pagerEntries,
-            highlightedEntry: highlightedPagerEntry,
-            canSelectPreviousPage: viewportState.startIndex > 0,
-            canSelectNextPage: viewportState.startIndex < maxStartMonthIndex,
-            onSelectPreviousPage: { dispatch(.selectPreviousPage) },
-            onSelectEntry: { entry in
-                dispatch(.selectMonthWindow(startMonthIndex: entry.startMonthIndex))
-            },
-            onSelectNextPage: { dispatch(.selectNextPage) })
+        snapshot.makePagerContext(dispatch: dispatch)
     }
 
     private func yAxisLabel(for amount: Double) -> String {
@@ -108,34 +58,19 @@ extension CombinedChartView {
     }
 
     var sectionContext: SectionContext {
-        .init(
+        snapshot.makeSectionContext(
             config: config,
             selectedTab: selectedTab,
-            data: data,
-            yAxisTickValues: yAxisTickValues,
-            yAxisDisplayDomain: yAxisDisplayDomain,
             showDebugOverlay: showDebugOverlay,
             selectionOverlay: slots.selectionOverlay,
-            pagingContext: pagingContext,
             yAxisLabel: yAxisLabel(for:))
     }
 
     private var interactionState: InteractionState {
-        .init(
+        snapshot.makeInteractionState(
             visibleSelection: visibleSelection,
-            visiblePointIDs: data.map(\.id),
-            viewport: viewportState,
-            unitWidth: layoutState.unitWidth,
-            pagingContext: pagingContext)
-    }
-
-    private var pagingContext: PagingContext {
-        .init(
-            monthsPerPage: config.monthsPerPage,
-            maxStartMonthIndex: maxStartMonthIndex,
-            arrowScrollMode: config.pager.arrowScrollMode,
-            currentYearRangeIndex: currentYearRangeIndex,
-            yearPageRanges: yearPageRanges)
+            viewportState: viewportState,
+            unitWidth: layoutState.unitWidth)
     }
 
     // MARK: - Dispatch
@@ -180,18 +115,18 @@ extension CombinedChartView {
     private func reconcileVisibleSelection(_ visibleSelection: VisibleSelection?) {
         self.visibleSelection = CombinedChartView.SelectionResolver.reconciledSelection(
             visibleSelection,
-            dataPointIDs: data.map(\.id))
+            dataPointIDs: snapshot.data.map(\.id))
     }
 
     private func emitPointTap(for visibleSelection: VisibleSelection) {
         guard let resolvedIndex = CombinedChartView.SelectionResolver.resolvedVisibleIndex(
             for: visibleSelection,
-            dataPointIDs: data.map(\.id))
+            dataPointIDs: snapshot.data.map(\.id))
         else { return }
 
         onPointTap?(
             .init(
-                point: data[resolvedIndex].source,
+                point: snapshot.data[resolvedIndex].source,
                 index: resolvedIndex))
     }
 }

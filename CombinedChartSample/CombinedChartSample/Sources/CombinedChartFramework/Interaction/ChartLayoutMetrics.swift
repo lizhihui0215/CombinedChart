@@ -13,7 +13,7 @@ extension CombinedChartView {
             axisWidth: CGFloat,
             monthsPerPage: Int,
             dataCount: Int,
-            dragPagingState: DragViewportState,
+            dragState: DragViewportState,
             dragTranslationX: CGFloat,
             settlingOffsetX: CGFloat,
             maxStartMonthIndex: Int) {
@@ -22,7 +22,7 @@ extension CombinedChartView {
             unitWidth = viewportWidth / visibleCount
             chartWidth = max(viewportWidth, unitWidth * CGFloat(dataCount))
             maxContentOffsetX = CGFloat(maxStartMonthIndex) * unitWidth
-            currentContentOffsetX = dragPagingState.currentContentOffsetX(
+            currentContentOffsetX = dragState.currentContentOffsetX(
                 dragTranslationX: dragTranslationX,
                 settlingOffsetX: settlingOffsetX,
                 maxContentOffsetX: maxContentOffsetX)

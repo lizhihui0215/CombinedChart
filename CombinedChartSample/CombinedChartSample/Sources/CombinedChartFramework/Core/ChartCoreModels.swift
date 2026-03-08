@@ -196,36 +196,6 @@ extension CombinedChartView {
         }
     }
 
-    // MARK: - Interaction
-
-    enum ViewAction {
-        case selectPoint(index: Int?, emitsPointTap: Bool = true)
-        case selectMonthWindow(startMonthIndex: Int)
-        case settleDrag(DragSettleContext)
-        case selectPreviousPage
-        case selectNextPage
-    }
-
-    struct DragSettleContext: Equatable {
-        let targetMonthIndex: Int
-        let targetContentOffsetX: CGFloat
-    }
-
-    struct ViewportUpdateContext: Equatable {
-        let startIndex: Int
-        let contentOffsetX: CGFloat?
-    }
-
-    struct ViewportState: Equatable {
-        var startIndex: Int
-        var contentOffsetX: CGFloat
-
-        var visibleStartMonthIndex: Int {
-            get { startIndex }
-            set { startIndex = newValue }
-        }
-    }
-
     // MARK: - Section Contexts
 
     struct SectionContext {
@@ -264,14 +234,6 @@ extension CombinedChartView {
 
     // MARK: - Rendering Contexts
 
-    struct YAxisLabelsContext {
-        let yAxisTickValues: [Double]
-        let tickPositions: [Double: CGFloat]
-        let plotAreaMinY: CGFloat?
-        let plotAreaHeight: CGFloat
-        let labelText: (Double) -> String
-    }
-
     struct ChartRenderContext {
         let selectedTab: ChartTab
         let visibleData: [ChartDataPoint]
@@ -289,14 +251,6 @@ extension CombinedChartView {
     struct VisibleSelection: Equatable {
         let index: Int
         let pointID: ChartPointID
-    }
-
-    struct PagingContext {
-        let monthsPerPage: Int
-        let maxStartMonthIndex: Int
-        let arrowScrollMode: ChartConfig.Pager.ArrowScrollMode
-        let currentYearRangeIndex: Int?
-        let yearPageRanges: [YearPageRange]
     }
 
     // MARK: - Render Output Models
