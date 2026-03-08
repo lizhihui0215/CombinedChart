@@ -3,8 +3,8 @@ import SwiftUI
 extension CombinedChartView {
     // MARK: - Derived State
 
-    var orchestrationSnapshot: CombinedChartViewOrchestrationSnapshot {
-        orchestrationContext.snapshot
+    var interactionSnapshot: ChartInteractionSnapshot {
+        interactionContext.snapshot
     }
 
     @ViewBuilder
@@ -16,7 +16,7 @@ extension CombinedChartView {
         }
     }
 
-    private var orchestrationContext: CombinedChartViewOrchestrationContext {
+    private var interactionContext: ChartInteractionContext {
         .init(
             config: config,
             preparedData: preparedData,
@@ -34,7 +34,7 @@ extension CombinedChartView {
     }
 
     func makeSectionContext(
-        snapshot: CombinedChartViewOrchestrationSnapshot,
+        snapshot: ChartInteractionSnapshot,
         axisPointInfos: [ChartConfig.Axis.PointInfo]) -> ChartSectionContext {
         snapshot.makeSectionContext(
             config: config,
@@ -49,7 +49,7 @@ extension CombinedChartView {
     // MARK: - Dispatch
 
     func dispatch(_ action: ViewAction) {
-        let snapshot = orchestrationSnapshot
+        let snapshot = interactionSnapshot
         let interactionState = snapshot.makeInteractionState(
             visibleSelection: visibleSelection,
             viewportState: viewportState,

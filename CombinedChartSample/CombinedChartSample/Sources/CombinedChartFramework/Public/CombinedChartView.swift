@@ -58,7 +58,7 @@ public struct CombinedChartView: View {
         self.onPointTap = onPointTap
         _selectedTab = selectedTab
         _showDebugOverlay = showDebugOverlay
-        _preparedData = State(initialValue: PreparedData.make(from: groups))
+        _preparedData = State(initialValue: ChartPreparedData.make(from: groups))
         _visibleSelection = State(
             initialValue: groups.first?.points.first.map {
                 .init(
@@ -107,10 +107,10 @@ public struct CombinedChartView: View {
         contentOffsetX: 0)
     @State var layoutState: LayoutState = .empty
     @State var plotSyncState: PlotSyncState = .empty
-    @State var preparedData: PreparedData
+    @State var preparedData: ChartPreparedData
 
     public var body: some View {
-        let snapshot = orchestrationSnapshot
+        let snapshot = interactionSnapshot
         let visibleStartLabel = snapshot.visibleStartLabel
         let hasData = snapshot.hasData
         let axisPointInfos = snapshot.axisPointInfos
@@ -147,7 +147,7 @@ public struct CombinedChartView: View {
         }
         .frame(height: config.chartHeight)
         .onChange(of: groupsFingerprint) { _ in
-            preparedData = PreparedData.make(from: groups)
+            preparedData = ChartPreparedData.make(from: groups)
         }
     }
 
