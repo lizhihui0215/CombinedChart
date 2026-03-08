@@ -133,11 +133,11 @@ final class ChartInteractionReducerTests: XCTestCase {
         guard case .selection(let visibleSelection, let emitsPointTap) = result.mutations[0] else {
             return XCTFail("Expected selection mutation")
         }
-        XCTAssertEqual(visibleSelection?.visibleIndex, 1)
+        XCTAssertEqual(visibleSelection?.index, 1)
         XCTAssertEqual(visibleSelection?.pointID, .init(groupID: "2024", xKey: "2024-02"))
         XCTAssertTrue(emitsPointTap)
         XCTAssertEqual(result.commands, [.emitPointTap(.init(
-            visibleIndex: 1,
+            index: 1,
             pointID: .init(groupID: "2024", xKey: "2024-02")))])
     }
 

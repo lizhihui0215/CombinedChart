@@ -16,9 +16,9 @@ extension CombinedChartView {
         static func resolvedVisibleIndex(
             for selection: VisibleSelection,
             dataPointIDs: [ChartPointID]) -> Int? {
-            if dataPointIDs.indices.contains(selection.visibleIndex),
-               dataPointIDs[selection.visibleIndex] == selection.pointID {
-                return selection.visibleIndex
+            if dataPointIDs.indices.contains(selection.index),
+               dataPointIDs[selection.index] == selection.pointID {
+                return selection.index
             }
 
             return dataPointIDs.firstIndex(of: selection.pointID)
@@ -36,7 +36,7 @@ extension CombinedChartView {
             }
 
             return .init(
-                visibleIndex: resolvedVisibleIndex,
+                index: resolvedVisibleIndex,
                 pointID: dataPointIDs[resolvedVisibleIndex])
         }
     }

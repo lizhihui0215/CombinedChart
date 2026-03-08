@@ -123,7 +123,7 @@ extension CombinedChartView.ChartContainer {
         indicatorStyle: CombinedChartView.ChartPresentationMode.SelectionIndicatorStyle) -> CombinedChartView
         .SelectionLayout {
         let highlightWidth = selectionHighlightWidth(
-            at: selectionState.visibleIndex,
+            at: selectionState.index,
             xPosition: selectionState.xPosition,
             proxy: proxy)
 
@@ -190,12 +190,12 @@ extension CombinedChartView.ChartContainer {
 
     func selectionState(proxy: ChartProxy) -> CombinedChartView.ChartSelectionState? {
         guard let visibleSelection = overlayContext.visibleSelection,
-              overlayContext.visibleData.indices.contains(visibleSelection.visibleIndex)
+              overlayContext.visibleData.indices.contains(visibleSelection.index)
         else {
             return nil
         }
 
-        let point = overlayContext.visibleData[visibleSelection.visibleIndex]
+        let point = overlayContext.visibleData[visibleSelection.index]
         guard let xPos = proxy.position(forX: point.xKey) else {
             return nil
         }
@@ -203,7 +203,7 @@ extension CombinedChartView.ChartContainer {
         let value = point.trendLineValue(using: overlayContext.config)
         return CombinedChartView.ChartSelectionState(
             point: point,
-            visibleIndex: visibleSelection.visibleIndex,
+            index: visibleSelection.index,
             value: value,
             xPosition: xPos)
     }

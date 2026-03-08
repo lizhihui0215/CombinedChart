@@ -55,7 +55,7 @@ final class ChartResolversTests: XCTestCase {
     func testSelectionResolverPrefersMatchingVisibleIndexWhenPointIDMatches() {
         let resolvedIndex = CombinedChartView.SelectionResolver.resolvedVisibleIndex(
             for: .init(
-                visibleIndex: 1,
+                index: 1,
                 pointID: .init(groupID: "2024", xKey: "2024-02")),
             dataPointIDs: [
                 .init(groupID: "2024", xKey: "2024-01"),
@@ -69,7 +69,7 @@ final class ChartResolversTests: XCTestCase {
     func testSelectionResolverFallsBackToPointIDLookupWhenVisibleIndexIsStale() {
         let resolvedIndex = CombinedChartView.SelectionResolver.resolvedVisibleIndex(
             for: .init(
-                visibleIndex: 0,
+                index: 0,
                 pointID: .init(groupID: "2024", xKey: "2024-03")),
             dataPointIDs: [
                 .init(groupID: "2024", xKey: "2024-01"),
@@ -83,7 +83,7 @@ final class ChartResolversTests: XCTestCase {
     func testSelectionResolverReconcilesSelectionToUpdatedVisibleIndex() {
         let reconciledSelection = CombinedChartView.SelectionResolver.reconciledSelection(
             .init(
-                visibleIndex: 0,
+                index: 0,
                 pointID: .init(groupID: "2024", xKey: "2024-03")),
             dataPointIDs: [
                 .init(groupID: "2024", xKey: "2024-01"),
@@ -94,14 +94,14 @@ final class ChartResolversTests: XCTestCase {
         XCTAssertEqual(
             reconciledSelection,
             .init(
-                visibleIndex: 2,
+                index: 2,
                 pointID: .init(groupID: "2024", xKey: "2024-03")))
     }
 
     func testSelectionResolverDropsSelectionWhenPointIsMissing() {
         let reconciledSelection = CombinedChartView.SelectionResolver.reconciledSelection(
             .init(
-                visibleIndex: 1,
+                index: 1,
                 pointID: .init(groupID: "2024", xKey: "2024-99")),
             dataPointIDs: [
                 .init(groupID: "2024", xKey: "2024-01"),

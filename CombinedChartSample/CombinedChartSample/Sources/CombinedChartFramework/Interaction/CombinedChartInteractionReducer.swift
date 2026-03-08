@@ -52,20 +52,20 @@ extension CombinedChartView {
 
         // MARK: - Selection
 
-        private static func selection(for visibleIndex: Int?, state: InteractionState) -> VisibleSelection? {
-            guard let visibleIndex, state.visiblePointIDs.indices.contains(visibleIndex) else {
+        private static func selection(for index: Int?, state: InteractionState) -> VisibleSelection? {
+            guard let index, state.visiblePointIDs.indices.contains(index) else {
                 return nil
             }
             return .init(
-                visibleIndex: visibleIndex,
-                pointID: state.visiblePointIDs[visibleIndex])
+                index: index,
+                pointID: state.visiblePointIDs[index])
         }
 
         private static func selectionResult(
-            for visibleIndex: Int?,
+            for index: Int?,
             emitsPointTap: Bool,
             state: InteractionState) -> InteractionResult {
-            let selection = selection(for: visibleIndex, state: state)
+            let selection = selection(for: index, state: state)
             return .init(
                 mutations: [.selection(selection, emitsPointTap: emitsPointTap)],
                 commands: emitsPointTap ? selection.map { [.emitPointTap($0)] } ?? [] : [])

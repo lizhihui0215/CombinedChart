@@ -398,7 +398,7 @@ extension CombinedChartView {
     // MARK: - Rendering Models
 
     struct VisibleSelection: Equatable {
-        let visibleIndex: Int
+        let index: Int
         let pointID: ChartPointID
     }
 
@@ -414,7 +414,7 @@ extension CombinedChartView {
 
     struct ChartSelectionState {
         let point: ChartDataPoint
-        let visibleIndex: Int
+        let index: Int
         let value: Double
         let xPosition: CGFloat
     }

@@ -116,11 +116,11 @@ private extension CombinedChartView.ChartContainer {
 
         if marksContext.selectedTab.mode.showsSelectedPoint,
            let visibleSelection = marksContext.visibleSelection,
-           marksContext.visibleData.indices.contains(visibleSelection.visibleIndex) {
-            let value = marksContext.visibleData[visibleSelection.visibleIndex]
+           marksContext.visibleData.indices.contains(visibleSelection.index) {
+            let value = marksContext.visibleData[visibleSelection.index]
                 .trendLineValue(using: marksContext.config)
             PointMark(
-                x: .value("Selected Month", marksContext.visibleData[visibleSelection.visibleIndex].xKey),
+                x: .value("Selected Month", marksContext.visibleData[visibleSelection.index].xKey),
                 y: .value("Selected Value", value))
                 .foregroundStyle(lineColor(for: value))
                 .symbolSize(marksContext.config.line.selection.pointSize)
