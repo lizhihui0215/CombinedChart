@@ -27,7 +27,6 @@
 		26E3FCF52F5D1AEF004D2007 /* CombinedChartInteractionReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCF42F5D1AEF004D2007 /* CombinedChartInteractionReducer.swift */; };
 		26E3FD012F5D5000004D2007 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 26E3FD022F5D5000004D2007 /* SnapshotTesting */; };
 		A1000000000000000000000D /* CombinedChartFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* CombinedChartFramework.framework */; };
-		A1000000000000000000000F /* CombinedChartFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* CombinedChartFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,20 +52,6 @@
 			remoteInfo = CombinedChartFramework;
 		};
 /* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		A1000000000000000000000E /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				A1000000000000000000000F /* CombinedChartFramework.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		26785B822F3F0AC900541A34 /* CombinedChartSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CombinedChartSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -254,7 +239,6 @@
 			buildPhases = (
 				26785B7E2F3F0AC900541A34 /* Sources */,
 				26785B7F2F3F0AC900541A34 /* Frameworks */,
-				A1000000000000000000000E /* Embed Frameworks */,
 				26785B802F3F0AC900541A34 /* Resources */,
 				262939732F5C3C1900708CA7 /* ShellScript */,
 			);
@@ -798,10 +782,11 @@
 				DEVELOPMENT_TEAM = 3P8C7H426Z;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				MACH_O_TYPE = staticlib;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartFramework;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = NO;
+				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -819,10 +804,11 @@
 				DEVELOPMENT_TEAM = 3P8C7H426Z;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				MACH_O_TYPE = staticlib;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartFramework;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = NO;
+				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
