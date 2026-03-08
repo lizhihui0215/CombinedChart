@@ -19,22 +19,42 @@ extension CombinedChartView {
         case monthWindow(startMonthIndex: Int, contentOffsetX: CGFloat?)
     }
 
+    enum InteractionCommand: Equatable {
+        case emitPointTap(VisibleSelection)
+    }
+
+    struct InteractionResult {
+        let mutations: [InteractionMutation]
+        let commands: [InteractionCommand]
+    }
+
     enum InteractionReducer {
-        static func mutations(for action: ViewAction, state: InteractionState) -> [InteractionMutation] {
+        static func reduce(action: ViewAction, state: InteractionState) -> InteractionResult {
             switch action {
             case .selectPoint(let index, let emitsPointTap):
-                [.selection(selection(for: index, state: state), emitsPointTap: emitsPointTap)]
+                let selection = selection(for: index, state: state)
+                return .init(
+                    mutations: [.selection(selection, emitsPointTap: emitsPointTap)],
+                    commands: emitsPointTap ? selection.map { [.emitPointTap($0)] } ?? [] : [])
             case .selectMonthWindow(let startMonthIndex):
-                [monthWindowMutation(startMonthIndex: startMonthIndex, state: state)]
+                return .init(
+                    mutations: [monthWindowMutation(startMonthIndex: startMonthIndex, state: state)],
+                    commands: [])
             case .settleDrag(let targetMonthIndex, let targetContentOffsetX):
-                [settledDragMutation(
-                    targetMonthIndex: targetMonthIndex,
-                    targetContentOffsetX: targetContentOffsetX,
-                    state: state)]
+                return .init(
+                    mutations: [settledDragMutation(
+                        targetMonthIndex: targetMonthIndex,
+                        targetContentOffsetX: targetContentOffsetX,
+                        state: state)],
+                    commands: [])
             case .selectPreviousPage:
-                monthWindowMutations(for: -1, state: state)
+                return .init(
+                    mutations: monthWindowMutations(for: -1, state: state),
+                    commands: [])
             case .selectNextPage:
-                monthWindowMutations(for: 1, state: state)
+                return .init(
+                    mutations: monthWindowMutations(for: 1, state: state),
+                    commands: [])
             }
         }
 

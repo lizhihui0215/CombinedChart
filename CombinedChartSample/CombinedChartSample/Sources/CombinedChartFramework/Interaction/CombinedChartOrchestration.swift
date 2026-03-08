@@ -136,9 +136,12 @@ extension CombinedChartView {
     }
 
     func dispatch(_ action: ViewAction) {
-        let mutations = InteractionReducer.mutations(for: action, state: interactionState)
-        for mutation in mutations {
+        let result = InteractionReducer.reduce(action: action, state: interactionState)
+        for mutation in result.mutations {
             apply(mutation)
+        }
+        for command in result.commands {
+            perform(command)
         }
     }
 
@@ -150,17 +153,7 @@ extension CombinedChartView {
             self.visibleSelection = CombinedChartView.SelectionResolver.reconciledSelection(
                 visibleSelection,
                 dataPointIDs: dataPointIDs)
-            guard emitsPointTap,
-                  let visibleSelection = self.visibleSelection,
-                  let resolvedIndex = CombinedChartView.SelectionResolver.resolvedVisibleIndex(
-                      for: visibleSelection,
-                      dataPointIDs: dataPointIDs)
-            else { return }
-            let point = data[resolvedIndex].source
-            onPointTap?(
-                .init(
-                    point: point,
-                    index: resolvedIndex))
+            guard emitsPointTap else { return }
         case .monthWindow(let startMonthIndex, let nextContentOffsetX):
             visibleStartMonthIndex = startMonthIndex
             if let nextContentOffsetX {
@@ -169,6 +162,22 @@ extension CombinedChartView {
             visibleSelection = CombinedChartView.SelectionResolver.reconciledSelection(
                 visibleSelection,
                 dataPointIDs: dataPointIDs)
+        }
+    }
+
+    private func perform(_ command: InteractionCommand) {
+        switch command {
+        case .emitPointTap(let visibleSelection):
+            let dataPointIDs = data.map(\.id)
+            guard let resolvedIndex = CombinedChartView.SelectionResolver.resolvedVisibleIndex(
+                for: visibleSelection,
+                dataPointIDs: dataPointIDs)
+            else { return }
+            let point = data[resolvedIndex].source
+            onPointTap?(
+                .init(
+                    point: point,
+                    index: resolvedIndex))
         }
     }
 }
