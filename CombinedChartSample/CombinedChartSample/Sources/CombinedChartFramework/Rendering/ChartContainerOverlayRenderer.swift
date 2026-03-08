@@ -1,6 +1,20 @@
 import Charts
 import SwiftUI
 
+extension CombinedChartView {
+    struct ChartSelectionState {
+        let point: ChartDataPoint
+        let index: Int
+        let value: Double
+        let xPosition: CGFloat
+    }
+
+    struct SelectionLayout {
+        let highlightWidth: CGFloat
+        let indicatorFrame: CGRect
+    }
+}
+
 extension CombinedChartView.ChartContainer {
     func containerOverlay(proxy: ChartProxy) -> some View {
         GeometryReader { geometry in

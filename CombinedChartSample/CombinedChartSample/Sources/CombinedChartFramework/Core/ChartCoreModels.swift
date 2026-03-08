@@ -412,18 +412,6 @@ extension CombinedChartView {
 
     // MARK: - Render Output Models
 
-    struct ChartSelectionState {
-        let point: ChartDataPoint
-        let index: Int
-        let value: Double
-        let xPosition: CGFloat
-    }
-
-    struct SelectionLayout {
-        let highlightWidth: CGFloat
-        let indicatorFrame: CGRect
-    }
-
     struct BarSegment: Identifiable {
         let id = UUID()
         let start: Double
