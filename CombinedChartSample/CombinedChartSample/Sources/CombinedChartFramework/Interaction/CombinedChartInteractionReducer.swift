@@ -50,6 +50,8 @@ extension CombinedChartView {
             }
         }
 
+        // MARK: - Selection
+
         private static func selection(for visibleIndex: Int?, state: InteractionState) -> VisibleSelection? {
             guard let visibleIndex, state.visiblePointIDs.indices.contains(visibleIndex) else {
                 return nil
@@ -69,6 +71,16 @@ extension CombinedChartView {
                 commands: emitsPointTap ? selection.map { [.emitPointTap($0)] } ?? [] : [])
         }
 
+        // MARK: - Navigation
+
+        private static func navigationResult(
+            for direction: Int,
+            state: InteractionState) -> InteractionResult {
+            .init(
+                mutations: monthWindowMutations(for: direction, state: state),
+                commands: [])
+        }
+
         private static func monthWindowMutations(
             for direction: Int,
             state: InteractionState) -> [InteractionMutation] {
@@ -82,13 +94,27 @@ extension CombinedChartView {
                 state: state)]
         }
 
-        private static func navigationResult(
+        private static func targetStartMonthIndex(
             for direction: Int,
-            state: InteractionState) -> InteractionResult {
-            .init(
-                mutations: monthWindowMutations(for: direction, state: state),
-                commands: [])
+            state: InteractionState) -> Int? {
+            switch state.pagingContext.arrowScrollMode {
+            case .byPage:
+                return state.viewport.visibleStartMonthIndex + (direction * state.pagingContext.monthsPerPage)
+            case .byEntry:
+                guard let currentYearRangeIndex = state.pagingContext.currentYearRangeIndex else {
+                    return nil
+                }
+                let targetIndex = min(
+                    max(currentYearRangeIndex + direction, 0),
+                    max(state.pagingContext.yearPageRanges.count - 1, 0))
+                guard state.pagingContext.yearPageRanges.indices.contains(targetIndex) else {
+                    return nil
+                }
+                return state.pagingContext.yearPageRanges[targetIndex].startMonthIndex
+            }
         }
+
+        // MARK: - Viewport
 
         private static func monthWindowResult(
             startMonthIndex: Int,
@@ -145,26 +171,6 @@ extension CombinedChartView {
             return .init(
                 startMonthIndex: clampedStartMonthIndex,
                 contentOffsetX: resolvedContentOffsetX)
-        }
-
-        private static func targetStartMonthIndex(
-            for direction: Int,
-            state: InteractionState) -> Int? {
-            switch state.pagingContext.arrowScrollMode {
-            case .byPage:
-                return state.viewport.visibleStartMonthIndex + (direction * state.pagingContext.monthsPerPage)
-            case .byEntry:
-                guard let currentYearRangeIndex = state.pagingContext.currentYearRangeIndex else {
-                    return nil
-                }
-                let targetIndex = min(
-                    max(currentYearRangeIndex + direction, 0),
-                    max(state.pagingContext.yearPageRanges.count - 1, 0))
-                guard state.pagingContext.yearPageRanges.indices.contains(targetIndex) else {
-                    return nil
-                }
-                return state.pagingContext.yearPageRanges[targetIndex].startMonthIndex
-            }
         }
 
         private static func clampedStartMonthIndex(
