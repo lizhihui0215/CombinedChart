@@ -38,7 +38,5 @@ public struct CombinedChartView: View {
         visibleStartMonthIndex: 0,
         contentOffsetX: 0)
     @State var layoutState: LayoutState = .empty
-
-    @State var plotAreaInfo: PlotAreaInfo?
-    @State var yTickPositions: [Double: CGFloat] = [:]
+    @State var plotSyncState: PlotSyncState = .empty
 }

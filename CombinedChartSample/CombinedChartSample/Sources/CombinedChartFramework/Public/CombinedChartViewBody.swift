@@ -17,8 +17,7 @@ public extension CombinedChartView {
                         visibleSelection: visibleSelection,
                         viewportState: $viewportState,
                         layoutState: $layoutState,
-                        plotAreaInfo: $plotAreaInfo,
-                        yTickPositions: $yTickPositions,
+                        plotSyncState: $plotSyncState,
                         onDispatchAction: dispatch)
                 } else {
                     viewSlots.emptyState

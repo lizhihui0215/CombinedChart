@@ -6,8 +6,7 @@ extension CombinedChartView {
         let visibleSelection: VisibleSelection?
         @Binding var viewportState: ViewportState
         @Binding var layoutState: LayoutState
-        @Binding var plotAreaInfo: PlotAreaInfo?
-        @Binding var yTickPositions: [Double: CGFloat]
+        @Binding var plotSyncState: PlotSyncState
         let onDispatchAction: (ViewAction) -> Void
         @GestureState private var dragTranslationX: CGFloat = 0
         @State private var settlingOffsetX: CGFloat = 0
@@ -21,11 +20,11 @@ extension CombinedChartView {
                     HStack(alignment: .top, spacing: 8) {
                         ChartYAxisLabels(
                             yAxisTickValues: context.yAxisTickValues,
-                            tickPositions: yTickPositions,
-                            plotArea: plotAreaInfo,
+                            tickPositions: plotSyncState.yTickPositions,
+                            plotArea: plotSyncState.plotAreaInfo,
                             labelText: context.yAxisLabel)
 
-                        if let plotAreaInfo {
+                        if let plotAreaInfo = plotSyncState.plotAreaInfo {
                             Rectangle()
                                 .fill(.black)
                                 .frame(width: 1, height: plotAreaInfo.height)
@@ -93,15 +92,15 @@ private extension CombinedChartView.CombinedChartSection {
     func syncPlotArea(_ plotRect: CGRect, isDragging: Bool) {
         guard !isDragging else { return }
         let info = CombinedChartView.PlotAreaInfo(minY: plotRect.minY, height: plotRect.height)
-        if plotAreaInfo != info {
-            plotAreaInfo = info
+        if plotSyncState.plotAreaInfo != info {
+            plotSyncState.plotAreaInfo = info
         }
     }
 
     func syncYAxisTickPositions(_ positions: [Double: CGFloat], isDragging: Bool) {
         guard !isDragging else { return }
-        if yTickPositions != positions {
-            yTickPositions = positions
+        if plotSyncState.yTickPositions != positions {
+            plotSyncState.yTickPositions = positions
         }
     }
 
@@ -118,7 +117,7 @@ private extension CombinedChartView.CombinedChartSection {
             visibleData: context.data,
             yAxisTickValues: context.yAxisTickValues,
             yAxisDisplayDomain: context.yAxisDisplayDomain,
-            plotAreaHeight: plotAreaInfo?.height ?? 0,
+            plotAreaHeight: plotSyncState.plotAreaInfo?.height ?? 0,
             config: context.config,
             showDebugOverlay: context.showDebugOverlay,
             selectionOverlay: context.selectionOverlay,

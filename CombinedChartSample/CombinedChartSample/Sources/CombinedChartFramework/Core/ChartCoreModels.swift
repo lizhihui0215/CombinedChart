@@ -9,14 +9,20 @@ extension CombinedChartView {
         static let empty = Self(viewportWidth: 0, unitWidth: 0)
     }
 
+    struct PlotSyncState: Equatable {
+        var plotAreaInfo: PlotAreaInfo?
+        var yTickPositions: [Double: CGFloat]
+
+        static let empty = Self(plotAreaInfo: nil, yTickPositions: [:])
+    }
+
     struct CombinedChartViewOrchestrationContext {
         let config: ChartConfig
         let groups: [ChartGroup]
         let selectedTab: ChartTab
         let showDebugOverlay: Bool
         let viewSlots: ViewSlots
-        let visibleStartMonthIndex: Int
-        let contentOffsetX: CGFloat
+        let viewportState: ViewportState
         let layoutState: LayoutState
 
         var sortedGroups: [ChartDataGroup] {
@@ -34,8 +40,8 @@ extension CombinedChartView {
                 config: config,
                 sortedGroups: sortedGroups,
                 data: data,
-                visibleStartMonthIndex: visibleStartMonthIndex,
-                contentOffsetX: contentOffsetX,
+                visibleStartMonthIndex: viewportState.visibleStartMonthIndex,
+                contentOffsetX: viewportState.contentOffsetX,
                 unitWidth: layoutState.unitWidth)
         }
     }
