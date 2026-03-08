@@ -36,6 +36,7 @@ extension CombinedChartView {
             self.layoutMetrics = layoutMetrics
             renderContext = context.makeRenderContext(
                 plotAreaHeight: plotAreaHeight,
+                unitWidth: layoutMetrics.unitWidth,
                 visibleSelection: visibleSelection)
         }
 

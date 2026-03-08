@@ -35,6 +35,10 @@ extension CombinedChartView {
             derivedState.viewport.visibleStartLabel
         }
 
+        var visibleStartIndex: Int? {
+            derivedState.viewport.visibleStartIndex
+        }
+
         var yAxisTickValues: [Double] {
             derivedState.yAxisTickValues
         }

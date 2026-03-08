@@ -104,6 +104,7 @@ private extension CombinedChartView.ChartRenderer {
             selectedTab: context.selectedTab,
             visibleData: context.visibleData,
             yAxisTickValues: context.yAxisTickValues,
+            unitWidth: context.unitWidth,
             config: context.config,
             selectionOverlay: context.selectionOverlay,
             visibleSelection: context.visibleSelection)
@@ -196,14 +197,6 @@ private extension CombinedChartView.ChartRenderer {
                 y: .value("Selected Value", value))
                 .foregroundStyle(lineColor(for: value))
                 .symbolSize(marksContext.config.line.selection.pointSize)
-        }
-
-        if marksContext.showDebugOverlay {
-            ForEach(marksContext.visibleData, id: \.id) { item in
-                RuleMark(x: .value("Debug X", item.xKey))
-                    .foregroundStyle(Color.red.opacity(0.6))
-                    .lineStyle(StrokeStyle(lineWidth: 1.0, dash: [2, 3]))
-            }
         }
     }
 }

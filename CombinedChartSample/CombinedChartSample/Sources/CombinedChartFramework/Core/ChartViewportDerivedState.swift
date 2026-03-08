@@ -7,6 +7,7 @@ extension CombinedChartView {
         let currentYearRange: YearPageRange?
         let currentYearRangeIndex: Int?
         let highlightedEntry: PagerEntry?
+        let visibleStartIndex: Int?
         let visibleMonthRange: ClosedRange<Int>?
 
         init(
@@ -15,7 +16,8 @@ extension CombinedChartView {
             monthsPerPage: Int,
             startIndex: Int,
             contentOffsetX: CGFloat,
-            unitWidth: CGFloat) {
+            unitWidth: CGFloat,
+            visibleStartThreshold: CGFloat) {
             let yearPageRanges = Self.makeYearPageRanges(
                 from: sortedGroups,
                 monthsPerPage: monthsPerPage)
@@ -25,9 +27,14 @@ extension CombinedChartView {
                     displayTitle: $0.displayTitle,
                     startMonthIndex: $0.startMonthIndex)
             }
+            let visibleStartIndex = Self.makeVisibleStartIndex(
+                dataCount: dataCount,
+                contentOffsetX: contentOffsetX,
+                unitWidth: unitWidth,
+                progressThreshold: visibleStartThreshold)
             let currentYearRange = yearPageRanges.first {
-                $0.startMonthIndex <= startIndex &&
-                    $0.endMonthIndex >= startIndex
+                $0.startMonthIndex <= (visibleStartIndex ?? startIndex) &&
+                    $0.endMonthIndex >= (visibleStartIndex ?? startIndex)
             } ?? yearPageRanges.first
             let currentYearRangeIndex = currentYearRange.flatMap { currentYearRange in
                 yearPageRanges.firstIndex { $0.id == currentYearRange.id }
@@ -36,7 +43,8 @@ extension CombinedChartView {
                 dataCount: dataCount,
                 monthsPerPage: monthsPerPage,
                 contentOffsetX: contentOffsetX,
-                unitWidth: unitWidth)
+                unitWidth: unitWidth,
+                visibleStartThreshold: visibleStartThreshold)
             let highlightedRange = Self.fullyVisibleYearRange(
                 in: yearPageRanges,
                 visibleMonthRange: visibleMonthRange) ?? currentYearRange
@@ -49,6 +57,7 @@ extension CombinedChartView {
             self.currentYearRange = currentYearRange
             self.currentYearRangeIndex = currentYearRangeIndex
             self.highlightedEntry = highlightedEntry
+            self.visibleStartIndex = visibleStartIndex
             self.visibleMonthRange = visibleMonthRange
         }
 
@@ -81,15 +90,41 @@ extension CombinedChartView {
             return ranges
         }
 
+        private static func makeVisibleStartIndex(
+            dataCount: Int,
+            contentOffsetX: CGFloat,
+            unitWidth: CGFloat,
+            progressThreshold: CGFloat = 2.0 / 3.0) -> Int? {
+            guard dataCount > 0, unitWidth > 0 else { return nil }
+
+            let normalizedOffset = max(contentOffsetX / unitWidth, 0)
+            let baseIndex = min(
+                max(Int(floor(normalizedOffset)), 0),
+                max(0, dataCount - 1))
+            let progressIntoCurrentUnit = normalizedOffset - CGFloat(baseIndex)
+            let effectiveIndex = if progressIntoCurrentUnit < progressThreshold || baseIndex >= dataCount - 1 {
+                baseIndex
+            } else {
+                baseIndex + 1
+            }
+
+            return min(max(effectiveIndex, 0), dataCount - 1)
+        }
+
         private static func makeVisibleMonthRange(
             dataCount: Int,
             monthsPerPage: Int,
             contentOffsetX: CGFloat,
-            unitWidth: CGFloat) -> ClosedRange<Int>? {
-            guard dataCount > 0, unitWidth > 0 else { return nil }
-            let start = min(
-                max(Int(floor(contentOffsetX / unitWidth)), 0),
-                max(0, dataCount - 1))
+            unitWidth: CGFloat,
+            visibleStartThreshold: CGFloat) -> ClosedRange<Int>? {
+            guard let start = makeVisibleStartIndex(
+                dataCount: dataCount,
+                contentOffsetX: contentOffsetX,
+                unitWidth: unitWidth,
+                progressThreshold: visibleStartThreshold)
+            else {
+                return nil
+            }
             let visibleCount = max(1, monthsPerPage)
             let end = min(dataCount - 1, start + visibleCount - 1)
             return start...end
@@ -107,6 +142,7 @@ extension CombinedChartView {
     }
 
     struct ChartViewportDerivedState {
+        let visibleStartIndex: Int?
         let visibleStartLabel: String?
         let pagerState: PagerState
     }

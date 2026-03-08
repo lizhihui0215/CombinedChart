@@ -41,17 +41,22 @@ extension CombinedChartView {
                 yAxisDisplayDomain = yDomain
             }
 
+            let pagerState = PagerState(
+                sortedGroups: sortedGroups,
+                dataCount: data.count,
+                monthsPerPage: config.monthsPerPage,
+                startIndex: startIndex,
+                contentOffsetX: contentOffsetX,
+                unitWidth: unitWidth,
+                visibleStartThreshold: config.pager.visibleStartThreshold)
+            let visibleStartIndex = pagerState.visibleStartIndex
+
             viewport = .init(
-                visibleStartLabel: data.indices.contains(startIndex)
-                    ? data[startIndex].xLabel
-                    : nil,
-                pagerState: .init(
-                    sortedGroups: sortedGroups,
-                    dataCount: data.count,
-                    monthsPerPage: config.monthsPerPage,
-                    startIndex: startIndex,
-                    contentOffsetX: contentOffsetX,
-                    unitWidth: unitWidth))
+                visibleStartIndex: visibleStartIndex,
+                visibleStartLabel: visibleStartIndex.flatMap { index in
+                    data.indices.contains(index) ? data[index].xLabel : nil
+                },
+                pagerState: pagerState)
         }
     }
 }

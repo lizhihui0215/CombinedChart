@@ -8,6 +8,7 @@ extension CombinedChartView {
         let yAxisTickValues: [Double]
         let yAxisDisplayDomain: ClosedRange<Double>
         let plotAreaHeight: CGFloat
+        let unitWidth: CGFloat
         let config: ChartConfig
         let showDebugOverlay: Bool
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
@@ -34,6 +35,7 @@ extension CombinedChartView {
         let selectedTab: ChartTab
         let visibleData: [ChartDataPoint]
         let yAxisTickValues: [Double]
+        let unitWidth: CGFloat
         let config: ChartConfig
         let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
         let visibleSelection: VisibleSelection?

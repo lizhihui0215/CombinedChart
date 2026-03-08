@@ -30,6 +30,7 @@ extension CombinedChartView.ChartRenderer {
             ZStack(alignment: .topLeading) {
                 trendLineOverlay(plotRect: plotRect, proxy: proxy)
                 selectionOverlay(plotRect: plotRect, proxy: proxy)
+                debugOverlay(plotRect: plotRect, proxy: proxy)
                 tapSelectionOverlay(plotRect: plotRect, proxy: proxy)
             }
         }
@@ -85,6 +86,49 @@ extension CombinedChartView.ChartRenderer {
 
             selectionOverlayView(context: context)
                 .mask(plotMask(for: plotRect))
+        }
+    }
+
+    @ViewBuilder
+    func debugOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
+        if marksContext.showDebugOverlay {
+            debugGuides(plotRect: plotRect, proxy: proxy)
+                .mask(plotMask(for: plotRect))
+        }
+    }
+
+    func debugGuides(plotRect: CGRect, proxy: ChartProxy) -> some View {
+        ZStack {
+            Path { path in
+                for point in overlayContext.visibleData {
+                    guard let xPosition = proxy.position(forX: point.xKey) else { continue }
+                    path.move(to: CGPoint(x: xPosition, y: plotRect.minY))
+                    path.addLine(to: CGPoint(x: xPosition, y: plotRect.maxY))
+                }
+            }
+            .stroke(
+                Color.red.opacity(0.6),
+                style: StrokeStyle(lineWidth: 1.0, dash: [2, 3]))
+
+            Path { path in
+                for xPosition in thresholdGuideXPositions(proxy: proxy) {
+                    path.move(to: CGPoint(x: xPosition, y: plotRect.minY))
+                    path.addLine(to: CGPoint(x: xPosition, y: plotRect.maxY))
+                }
+            }
+            .stroke(
+                Color.blue.opacity(0.7),
+                style: StrokeStyle(lineWidth: 1.0, dash: [6, 4]))
+        }
+    }
+
+    func thresholdGuideXPositions(proxy: ChartProxy) -> [CGFloat] {
+        let threshold = overlayContext.config.pager.visibleStartThreshold
+        guard !overlayContext.visibleData.isEmpty else { return [] }
+
+        return overlayContext.visibleData.compactMap { point in
+            guard let xPosition = proxy.position(forX: point.xKey) else { return nil }
+            return xPosition + (overlayContext.unitWidth * (threshold - 0.5))
         }
     }
 

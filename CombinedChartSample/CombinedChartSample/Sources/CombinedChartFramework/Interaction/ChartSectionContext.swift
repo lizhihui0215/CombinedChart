@@ -21,6 +21,7 @@ extension CombinedChartView {
 
         func makeRenderContext(
             plotAreaHeight: CGFloat,
+            unitWidth: CGFloat,
             visibleSelection: VisibleSelection?) -> ChartRenderContext {
             .init(
                 selectedTab: selectedTab,
@@ -28,6 +29,7 @@ extension CombinedChartView {
                 yAxisTickValues: yAxisTickValues,
                 yAxisDisplayDomain: yAxisDisplayDomain,
                 plotAreaHeight: plotAreaHeight,
+                unitWidth: unitWidth,
                 config: config,
                 showDebugOverlay: showDebugOverlay,
                 selectionOverlay: selectionOverlay,

@@ -111,6 +111,7 @@ public struct CombinedChartView: View {
 
     public var body: some View {
         let snapshot = interactionSnapshot
+        let visibleStartIndex = snapshot.visibleStartIndex
         let visibleStartLabel = snapshot.visibleStartLabel
         let hasData = snapshot.hasData
         let axisPointInfos = snapshot.axisPointInfos
@@ -121,7 +122,7 @@ public struct CombinedChartView: View {
 
         VStack(spacing: 12) {
             if showDebugOverlay, let visibleStartLabel {
-                Text("Visible start index: \(viewportState.startIndex) (\(visibleStartLabel))")
+                Text("Visible start index: \(visibleStartIndex ?? viewportState.startIndex) (\(visibleStartLabel))")
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -146,30 +147,8 @@ public struct CombinedChartView: View {
             }
         }
         .frame(height: config.chartHeight)
-        .onChange(of: groupsFingerprint) { _ in
+        .onChange(of: groups) { _ in
             preparedData = ChartPreparedData.make(from: groups)
         }
-    }
-
-    var groupsFingerprint: Int {
-        var hasher = Hasher()
-
-        for group in groups {
-            hasher.combine(group.id)
-            hasher.combine(group.groupOrder)
-            hasher.combine(group.points.count)
-
-            for point in group.points {
-                hasher.combine(point.id)
-                hasher.combine(point.xKey)
-                hasher.combine(point.xLabel)
-                for key in ChartSeriesKey.allCases {
-                    hasher.combine(key)
-                    hasher.combine(point.values[key] ?? 0)
-                }
-            }
-        }
-
-        return hasher.finalize()
     }
 }

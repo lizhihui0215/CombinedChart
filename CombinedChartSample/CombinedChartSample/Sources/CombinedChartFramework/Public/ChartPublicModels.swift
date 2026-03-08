@@ -259,7 +259,7 @@ public extension CombinedChartView {
     }
 
     /// One logical chart point.
-    struct ChartPoint: Identifiable {
+    struct ChartPoint: Identifiable, Equatable {
         public let id: ChartPointID
         public let xKey: String
         public let xLabel: String
@@ -279,7 +279,7 @@ public extension CombinedChartView {
     }
 
     /// A grouped series of chart points, typically representing one year or category.
-    struct ChartGroup: Identifiable {
+    struct ChartGroup: Identifiable, Equatable {
         public let id: String
         public let displayTitle: String
         public let groupOrder: Int

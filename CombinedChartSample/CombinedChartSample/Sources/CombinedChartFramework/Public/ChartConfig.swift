@@ -241,15 +241,34 @@ public extension ChartConfig {
         public let isVisible: Bool
         public let arrowScrollMode: ArrowScrollMode
         public let dragScrollMode: DragScrollMode
+        /// The scroll progress required before the next x-axis unit becomes the visible start.
+        ///
+        /// Use a value between `0` and `1`:
+        ///
+        /// - `0`: switch to the next unit as soon as scrolling begins
+        /// - `1`: wait until the current unit has been fully scrolled past
+        ///
+        /// The default value `2 / 3` switches once roughly two thirds of the leading unit has
+        /// been scrolled past.
+        public let visibleStartThreshold: CGFloat
 
         /// Creates pager configuration.
+        ///
+        /// - Parameters:
+        ///   - isVisible: A Boolean value that determines whether the pager is shown.
+        ///   - arrowScrollMode: The navigation behavior used for pager arrows.
+        ///   - dragScrollMode: The settling behavior used for drag gestures.
+        ///   - visibleStartThreshold: The proportion of the leading x-axis unit that must be scrolled
+        ///     past before the next unit becomes the visible start. Values are clamped to `0...1`.
         public init(
             isVisible: Bool = true,
             arrowScrollMode: ArrowScrollMode = .byPage,
-            dragScrollMode: DragScrollMode = .freeSnapping) {
+            dragScrollMode: DragScrollMode = .freeSnapping,
+            visibleStartThreshold: CGFloat = 2.0 / 3.0) {
             self.isVisible = isVisible
             self.arrowScrollMode = arrowScrollMode
             self.dragScrollMode = dragScrollMode
+            self.visibleStartThreshold = min(max(visibleStartThreshold, 0), 1)
         }
     }
 }

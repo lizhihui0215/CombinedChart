@@ -134,11 +134,13 @@ enum ChartSampleData {
 
     static func makeConfig(
         dragScrollMode: CombinedChartView.Config.Pager.DragScrollMode = .freeSnapping,
-        chartHeight: CGFloat = 420) -> CombinedChartView.Config {
+        chartHeight: CGFloat = 420,
+        visibleStartThreshold: CGFloat = 2.0 / 3.0,
+        barWidth: CGFloat = 40) -> CombinedChartView.Config {
         CombinedChartView.Config(
             monthsPerPage: 4,
             chartHeight: chartHeight,
-            bar: makeBarConfig(),
+            bar: makeBarConfig(barWidth: barWidth),
             line: CombinedChartView.Config.Line(
                 positiveLineColor: .red,
                 negativeLineColor: .yellow,
@@ -161,16 +163,17 @@ enum ChartSampleData {
                 yAxisWidth: 40),
             pager: .init(
                 isVisible: true,
-                dragScrollMode: dragScrollMode))
+                dragScrollMode: dragScrollMode,
+                visibleStartThreshold: visibleStartThreshold))
     }
 
-    private static func makeBarConfig() -> CombinedChartView.Config.Bar {
+    private static func makeBarConfig(barWidth: CGFloat) -> CombinedChartView.Config.Bar {
         CombinedChartView.Config.Bar(
             series: makeBarSeries(),
             trendBarColorStyle: .unified(Color.gray.opacity(0.45)),
             segmentGap: 2,
             segmentGapColor: Color(uiColor: .systemBackground),
-            barWidth: 40)
+            barWidth: barWidth)
     }
 
     private static func makeBarSeries() -> [CombinedChartView.Config.Bar.SeriesStyle] {
