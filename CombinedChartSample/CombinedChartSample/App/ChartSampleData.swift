@@ -12,6 +12,15 @@ import UIKit
 // swiftlint:disable line_length
 
 enum ChartSampleData {
+    enum DatasetOption: String, CaseIterable, Identifiable {
+        case current = "Current"
+        case positiveDominant = "Positive Dominant"
+
+        var id: Self {
+            self
+        }
+    }
+
     struct Response: Decodable {
         let groups: [Group]
     }
@@ -99,7 +108,9 @@ enum ChartSampleData {
     }
     """
 
-    static func makeGroups(variance: Double = 0.5) -> [CombinedChartView.DataGroup] {
+    static func makeGroups(
+        dataset: DatasetOption = .current,
+        variance: Double = 0.5) -> [CombinedChartView.DataGroup] {
         let decoder = JSONDecoder()
         guard let data = json.data(using: .utf8),
               let decoded = try? decoder.decode(Response.self, from: data)
@@ -127,7 +138,9 @@ enum ChartSampleData {
                         id: .init(groupID: group.id, xKey: point.xKey),
                         xKey: point.xKey,
                         xLabel: point.xLabel,
-                        values: randomizedValues)
+                        values: adjustedValues(
+                            for: dataset,
+                            values: randomizedValues))
                 })
         }
     }
@@ -232,5 +245,22 @@ enum ChartSampleData {
         let lowerBound = 1.0 - variance
         let upperBound = 1.0 + variance
         return lowerBound + ((upperBound - lowerBound) * normalized)
+    }
+
+    private static func adjustedValues(
+        for dataset: DatasetOption,
+        values: [ChartSeriesKey: Double]) -> [ChartSeriesKey: Double] {
+        switch dataset {
+        case .current:
+            return values
+        case .positiveDominant:
+            var adjusted = values
+            adjusted[.saving] = (values[.saving] ?? 0) * 1.8
+            adjusted[.investment] = (values[.investment] ?? 0) * 2.2
+            adjusted[.otherLiquid] = (values[.otherLiquid] ?? 0) * 1.9
+            adjusted[.otherNonLiquid] = (values[.otherNonLiquid] ?? 0) * 1.7
+            adjusted[.liabilities] = (values[.liabilities] ?? 0) * 0.22
+            return adjusted
+        }
     }
 }

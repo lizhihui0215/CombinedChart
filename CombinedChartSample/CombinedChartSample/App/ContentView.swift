@@ -45,6 +45,7 @@ struct ContentView: View {
     }
 
     private struct UITestLaunchConfiguration {
+        let dataset: ChartSampleData.DatasetOption
         let selectedTab: CombinedChartView.Tab
         let dragMode: DragModeOption
         let showDebugOverlay: Bool
@@ -54,6 +55,7 @@ struct ContentView: View {
 
         init(processInfo: ProcessInfo = .processInfo) {
             let arguments = processInfo.arguments
+            let datasetValue = Self.argumentValue(after: "-snapshot-dataset", in: arguments)
             let selectedTabID = Self.argumentValue(after: "-snapshot-selected-tab", in: arguments)
             let dragModeValue = Self.argumentValue(after: "-snapshot-drag-mode", in: arguments)
             let chartHeightValue = Self.argumentValue(after: "-snapshot-chart-height", in: arguments)
@@ -62,6 +64,13 @@ struct ContentView: View {
                 in: arguments)
             let barWidthValue = Self.argumentValue(after: "-snapshot-bar-width", in: arguments)
 
+            dataset = datasetValue
+                .flatMap { rawValue in
+                    ChartSampleData.DatasetOption.allCases.first(where: {
+                        $0.rawValue
+                            .caseInsensitiveCompare(rawValue.replacingOccurrences(of: "-", with: " ")) == .orderedSame
+                    })
+                } ?? .current
             selectedTab = CombinedChartView.Tab.defaults.first(where: { $0.id == selectedTabID }) ?? .totalTrend
             dragMode = dragModeValue.flatMap { DragModeOption(launchArgumentValue: $0) } ?? .freeSnapping
             showDebugOverlay = arguments.contains("-snapshot-show-debug-overlay")
@@ -85,8 +94,8 @@ struct ContentView: View {
         }
     }
 
-    private let groups = ChartSampleData.makeGroups(variance: 0.6)
     private let tabs = CombinedChartView.Tab.defaults
+    @State private var dataset: ChartSampleData.DatasetOption
     @State private var selectedTab: CombinedChartView.Tab
     @State private var showDebugOverlay: Bool
     @State private var dragMode: DragModeOption
@@ -96,12 +105,17 @@ struct ContentView: View {
 
     init() {
         let launchConfiguration = UITestLaunchConfiguration()
+        _dataset = State(initialValue: launchConfiguration.dataset)
         _selectedTab = State(initialValue: launchConfiguration.selectedTab)
         _showDebugOverlay = State(initialValue: launchConfiguration.showDebugOverlay)
         _dragMode = State(initialValue: launchConfiguration.dragMode)
         _chartHeight = State(initialValue: launchConfiguration.chartHeight)
         _visibleStartThreshold = State(initialValue: launchConfiguration.visibleStartThreshold)
         _barWidth = State(initialValue: launchConfiguration.barWidth)
+    }
+
+    private var groups: [CombinedChartView.DataGroup] {
+        ChartSampleData.makeGroups(dataset: dataset, variance: 0.6)
     }
 
     private var config: CombinedChartView.Config {
@@ -136,6 +150,13 @@ struct ContentView: View {
                 Picker("", selection: $selectedTab) {
                     ForEach(tabs) { tab in
                         Text(tab.title).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Picker("Dataset", selection: $dataset) {
+                    ForEach(ChartSampleData.DatasetOption.allCases) { option in
+                        Text(option.rawValue).tag(option)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -223,9 +244,9 @@ struct ContentView: View {
 private extension ContentView {
     var statCards: some View {
         HStack(spacing: 12) {
+            statCard(title: "Dataset", value: dataset.rawValue)
             statCard(title: "Viewport", value: selectedTab.title)
             statCard(title: "Drag", value: dragMode.rawValue)
-            statCard(title: "Height", value: "\(Int(chartHeight))pt")
         }
     }
 
