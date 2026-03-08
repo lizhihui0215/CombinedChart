@@ -1,6 +1,6 @@
 import SwiftUI
 
-private struct LineAndBarChartPreviewHost: View {
+private struct CombinedChartPreviewHost: View {
     private let groups = CombinedChartPreviewData.groups
     private let config = CombinedChartPreviewData.config
     private let tabs = CombinedChartView.ChartTab.defaults
@@ -45,7 +45,7 @@ private struct LineAndBarChartPreviewHost: View {
 }
 
 #Preview {
-    LineAndBarChartPreviewHost()
+    CombinedChartPreviewHost()
 }
 
 private enum CombinedChartPreviewData {
