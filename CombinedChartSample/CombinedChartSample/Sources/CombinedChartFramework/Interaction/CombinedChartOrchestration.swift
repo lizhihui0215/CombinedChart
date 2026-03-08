@@ -1,6 +1,8 @@
 import SwiftUI
 
 extension CombinedChartView {
+    // MARK: - Derived State
+
     @ViewBuilder
     var pagerView: some View {
         if let pagerContext {
@@ -140,6 +142,8 @@ extension CombinedChartView {
             yearPageRanges: yearPageRanges)
     }
 
+    // MARK: - Dispatch
+
     func dispatch(_ action: ViewAction) {
         let result = InteractionReducer.reduce(action: action, state: interactionState)
         for mutation in result.mutations {
@@ -149,6 +153,8 @@ extension CombinedChartView {
             perform(command)
         }
     }
+
+    // MARK: - Apply
 
     private func apply(_ mutation: InteractionMutation) {
         switch mutation {
@@ -164,17 +170,21 @@ extension CombinedChartView {
         }
     }
 
-    private func reconcileVisibleSelection(_ visibleSelection: VisibleSelection?) {
-        self.visibleSelection = CombinedChartView.SelectionResolver.reconciledSelection(
-            visibleSelection,
-            dataPointIDs: data.map(\.id))
-    }
+    // MARK: - Perform
 
     private func perform(_ command: InteractionCommand) {
         switch command {
         case .emitPointTap(let visibleSelection):
             emitPointTap(for: visibleSelection)
         }
+    }
+
+    // MARK: - Helpers
+
+    private func reconcileVisibleSelection(_ visibleSelection: VisibleSelection?) {
+        self.visibleSelection = CombinedChartView.SelectionResolver.reconciledSelection(
+            visibleSelection,
+            dataPointIDs: data.map(\.id))
     }
 
     private func emitPointTap(for visibleSelection: VisibleSelection) {
