@@ -4,11 +4,6 @@ import SwiftUI
 extension CombinedChartView {
     // MARK: - Selection
 
-    struct SelectionCandidate {
-        let index: Int
-        let xPosition: CGFloat
-    }
-
     enum SelectionResolver {
         static func nearestIndex(
             to tapLocation: CGPoint,
@@ -47,11 +42,6 @@ extension CombinedChartView {
     }
 
     // MARK: - Line
-
-    struct ResolvedLinePoint {
-        let position: CGPoint
-        let value: Double
-    }
 
     enum LineSegmentResolver {
         static func makeSegments(
@@ -177,5 +167,15 @@ extension CombinedChartView {
                 return color
             }
         }
+    }
+
+    struct SelectionCandidate {
+        let index: Int
+        let xPosition: CGFloat
+    }
+
+    struct ResolvedLinePoint {
+        let position: CGPoint
+        let value: Double
     }
 }
