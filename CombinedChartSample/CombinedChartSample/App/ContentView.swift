@@ -131,21 +131,21 @@ struct ContentView: View {
             VStack(spacing: 16) {
                 HStack {
                     Text("HKD")
-                        .font(.headline)
+                        .font(ChartSampleData.SampleAppearance.Typography.screenTitle)
                     Spacer()
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Scroll Debug Playground")
-                        .font(.subheadline.weight(.semibold))
+                        .font(ChartSampleData.SampleAppearance.Typography.cardTitle)
                     Text(
                         "Use this page to verify horizontal chart scrolling inside a longer vertically scrollable screen.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
+                        .foregroundStyle(ChartSampleData.SampleAppearance.Colors.secondaryText)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
-                .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                .background(ChartSampleData.SampleAppearance.Colors.surface, in: RoundedRectangle(cornerRadius: 16))
 
                 Picker("", selection: $selectedTab) {
                     ForEach(tabs) { tab in
@@ -162,7 +162,7 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
 
                 Toggle("Debug axis alignment", isOn: $showDebugOverlay)
-                    .font(.caption)
+                    .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
                     .toggleStyle(SwitchToggleStyle(tint: .gray))
 
                 Picker("Drag Mode", selection: $dragMode) {
@@ -176,11 +176,11 @@ struct ContentView: View {
                 VStack(spacing: 6) {
                     HStack {
                         Text("Chart Height")
-                            .font(.caption)
+                            .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
                         Spacer()
                         Text("\(Int(chartHeight)) pt")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                            .font(ChartSampleData.SampleAppearance.Typography.valueCaption)
+                            .foregroundStyle(ChartSampleData.SampleAppearance.Colors.secondaryText)
                     }
 
                     Slider(value: $chartHeight, in: 240...720, step: 10)
@@ -190,11 +190,11 @@ struct ContentView: View {
                 VStack(spacing: 6) {
                     HStack {
                         Text("Visible Start Threshold")
-                            .font(.caption)
+                            .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
                         Spacer()
                         Text(String(format: "%.2f", visibleStartThreshold))
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                            .font(ChartSampleData.SampleAppearance.Typography.valueCaption)
+                            .foregroundStyle(ChartSampleData.SampleAppearance.Colors.secondaryText)
                     }
 
                     Slider(value: $visibleStartThreshold, in: 0...1, step: 0.01)
@@ -204,11 +204,11 @@ struct ContentView: View {
                 VStack(spacing: 6) {
                     HStack {
                         Text("Bar Width")
-                            .font(.caption)
+                            .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
                         Spacer()
                         Text("\(Int(barWidth)) pt")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                            .font(ChartSampleData.SampleAppearance.Typography.valueCaption)
+                            .foregroundStyle(ChartSampleData.SampleAppearance.Colors.secondaryText)
                     }
 
                     Slider(value: $barWidth, in: 8...80, step: 1)
@@ -253,36 +253,36 @@ private extension ContentView {
     func statCard(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
+                .foregroundStyle(ChartSampleData.SampleAppearance.Colors.secondaryText)
             Text(value)
-                .font(.headline.monospaced())
+                .font(ChartSampleData.SampleAppearance.Typography.statValue)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(ChartSampleData.SampleAppearance.Colors.surface, in: RoundedRectangle(cornerRadius: 14))
     }
 
     func debugChecklist(title: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
-                .font(.subheadline.weight(.semibold))
+                .font(ChartSampleData.SampleAppearance.Typography.sectionTitle)
             ForEach(0..<4, id: \.self) { index in
                 HStack(alignment: .top, spacing: 10) {
                     Circle()
-                        .fill(Color.blue.opacity(0.8))
+                        .fill(ChartSampleData.SampleAppearance.Colors.checklistBullet)
                         .frame(width: 8, height: 8)
                         .padding(.top, 5)
                     Text(
                         "Debug note \(index + 1): verify horizontal chart dragging stays responsive while the page continues to scroll vertically.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
+                        .foregroundStyle(ChartSampleData.SampleAppearance.Colors.secondaryText)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(ChartSampleData.SampleAppearance.Colors.surface, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
