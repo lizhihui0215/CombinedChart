@@ -57,6 +57,7 @@ extension CombinedChartView {
                 if isSameSideOrZero(start.value, end.value) {
                     segments.append(
                         LineSegmentPath(
+                            id: "\(index)-whole",
                             path: linePath(from: start.position, to: end.position),
                             color: color(start.value)))
                     continue
@@ -73,10 +74,12 @@ extension CombinedChartView {
 
                 segments.append(
                     LineSegmentPath(
+                        id: "\(index)-leading",
                         path: linePath(from: start.position, to: intersection),
                         color: color(start.value)))
                 segments.append(
                     LineSegmentPath(
+                        id: "\(index)-trailing",
                         path: linePath(from: intersection, to: end.position),
                         color: color(end.value)))
             }

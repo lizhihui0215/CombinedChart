@@ -34,6 +34,26 @@ final class ChartResolversTests: XCTestCase {
         XCTAssertFalse(CombinedChartView.LineSegmentResolver.isSameSideOrZero(3, -2))
     }
 
+    func testLineSegmentResolverProducesStableSegmentIDs() {
+        let points = [
+            (position: CGPoint(x: 0, y: 0), value: 3.0),
+            (position: CGPoint(x: 10, y: 10), value: -2.0),
+            (position: CGPoint(x: 20, y: 5), value: -1.0)
+        ]
+
+        let firstIDs = CombinedChartView.LineSegmentResolver.makeSegments(
+            points: points,
+            color: { _ in .red })
+            .map(\.id)
+        let secondIDs = CombinedChartView.LineSegmentResolver.makeSegments(
+            points: points,
+            color: { _ in .red })
+            .map(\.id)
+
+        XCTAssertEqual(firstIDs, ["0-leading", "0-trailing", "1-whole"])
+        XCTAssertEqual(secondIDs, firstIDs)
+    }
+
     func testBarSegmentResolverAdjustsSegmentBounds() {
         let bounds = CombinedChartView.BarSegmentResolver.adjustedSegmentBounds(
             start: 10,

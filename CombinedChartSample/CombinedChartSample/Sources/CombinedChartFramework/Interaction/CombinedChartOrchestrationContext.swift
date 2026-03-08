@@ -1,6 +1,21 @@
 import SwiftUI
 
 extension CombinedChartView {
+    struct PreparedData {
+        let sortedGroups: [ChartDataGroup]
+        let data: [ChartDataPoint]
+
+        static func make(from groups: [ChartGroup]) -> Self {
+            let sortedGroups = groups
+                .map { ChartDataGroup(source: $0) }
+                .sorted { $0.groupOrder < $1.groupOrder }
+
+            return .init(
+                sortedGroups: sortedGroups,
+                data: sortedGroups.flatMap(\.points))
+        }
+    }
+
     struct CombinedChartViewOrchestrationSnapshot {
         let data: [ChartDataPoint]
         let derivedState: ChartDerivedState
@@ -81,18 +96,16 @@ extension CombinedChartView {
 
     struct CombinedChartViewOrchestrationContext {
         let config: ChartConfig
-        let groups: [ChartGroup]
+        let preparedData: PreparedData
         let viewportState: ViewportState
         let layoutState: LayoutState
 
         var sortedGroups: [ChartDataGroup] {
-            groups
-                .map { ChartDataGroup(source: $0) }
-                .sorted { $0.groupOrder < $1.groupOrder }
+            preparedData.sortedGroups
         }
 
         var data: [ChartDataPoint] {
-            sortedGroups.flatMap(\.points)
+            preparedData.data
         }
 
         var derivedState: ChartDerivedState {

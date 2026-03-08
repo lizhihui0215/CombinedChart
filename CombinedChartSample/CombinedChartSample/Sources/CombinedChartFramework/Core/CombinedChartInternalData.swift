@@ -63,6 +63,7 @@ extension CombinedChartView {
 
     struct ChartDataGroup: Identifiable {
         let source: ChartGroup
+        let points: [ChartDataPoint]
 
         var id: String {
             source.id
@@ -76,8 +77,9 @@ extension CombinedChartView {
             source.groupOrder
         }
 
-        var points: [ChartDataPoint] {
-            source.points.map { .init(source: $0) }
+        init(source: ChartGroup) {
+            self.source = source
+            points = source.points.map { .init(source: $0) }
         }
     }
 

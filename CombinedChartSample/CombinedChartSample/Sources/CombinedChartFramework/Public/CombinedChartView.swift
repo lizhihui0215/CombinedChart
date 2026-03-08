@@ -58,6 +58,7 @@ public struct CombinedChartView: View {
         self.onPointTap = onPointTap
         _selectedTab = selectedTab
         _showDebugOverlay = showDebugOverlay
+        _preparedData = State(initialValue: PreparedData.make(from: groups))
         _visibleSelection = State(
             initialValue: groups.first?.points.first.map {
                 .init(
@@ -106,8 +107,18 @@ public struct CombinedChartView: View {
         contentOffsetX: 0)
     @State var layoutState: LayoutState = .empty
     @State var plotSyncState: PlotSyncState = .empty
+    @State var preparedData: PreparedData
 
     public var body: some View {
+        let snapshot = orchestrationSnapshot
+        let visibleStartLabel = snapshot.visibleStartLabel
+        let hasData = snapshot.hasData
+        let axisPointInfos = snapshot.axisPointInfos
+        let sectionContext = makeSectionContext(
+            snapshot: snapshot,
+            axisPointInfos: axisPointInfos)
+        let pagerContext = snapshot.makePagerContext(dispatch: dispatch)
+
         VStack(spacing: 12) {
             if showDebugOverlay, let visibleStartLabel {
                 Text("Visible start index: \(viewportState.startIndex) (\(visibleStartLabel))")
@@ -130,10 +141,31 @@ public struct CombinedChartView: View {
                 }
             }
 
-            if hasData, config.pager.isVisible {
-                pagerView
+            if hasData, config.pager.isVisible, let pagerContext {
+                pagerView(context: pagerContext)
             }
         }
         .frame(height: config.chartHeight)
+        .onChange(of: groupsFingerprint) { _ in
+            preparedData = PreparedData.make(from: groups)
+        }
+    }
+
+    var groupsFingerprint: Int {
+        var hasher = Hasher()
+
+        for group in groups {
+            hasher.combine(group.id)
+            hasher.combine(group.groupOrder)
+            hasher.combine(group.points.count)
+
+            for point in group.points {
+                hasher.combine(point.id)
+                hasher.combine(point.xLabel)
+                hasher.combine(point.values.count)
+            }
+        }
+
+        return hasher.finalize()
     }
 }

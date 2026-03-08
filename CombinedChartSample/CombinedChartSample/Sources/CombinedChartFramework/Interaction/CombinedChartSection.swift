@@ -13,6 +13,9 @@ extension CombinedChartView {
 
         var body: some View {
             GeometryReader { geometry in
+                let renderContext = context.makeRenderContext(
+                    plotAreaHeight: plotSyncState.plotAreaHeight,
+                    visibleSelection: visibleSelection)
                 let scrollState = makeScrollState(for: geometry)
                 let isDragging = dragTranslationX != 0
 
@@ -30,25 +33,22 @@ extension CombinedChartView {
                         }
                     }
 
-                    ZStack(alignment: .topLeading) {
-                        ChartContainer(
-                            context: scrollState.renderContext,
-                            onSelectIndex: { onDispatchAction(.selectPoint(index: $0)) },
-                            onPlotAreaChange: { plotRect in
-                                syncPlotArea(plotRect, isDragging: isDragging)
-                            },
-                            onYAxisTickPositions: { positions in
-                                syncYAxisTickPositions(positions, isDragging: isDragging)
-                            })
-                            .frame(width: scrollState.layoutMetrics.chartWidth)
-                            .frame(maxHeight: .infinity)
-                    }
-                    .compositingGroup()
-                    .offset(x: scrollState.layoutMetrics.currentContentOffsetX)
-                    .frame(width: scrollState.layoutMetrics.viewportWidth, alignment: .leading)
-                    .clipped()
-                    .contentShape(Rectangle())
-                    .gesture(dragGesture(scrollState: scrollState))
+                    ChartContainer(
+                        context: renderContext,
+                        onSelectIndex: { onDispatchAction(.selectPoint(index: $0)) },
+                        onPlotAreaChange: { plotRect in
+                            syncPlotArea(plotRect, isDragging: isDragging)
+                        },
+                        onYAxisTickPositions: { positions in
+                            syncYAxisTickPositions(positions, isDragging: isDragging)
+                        })
+                        .frame(width: scrollState.layoutMetrics.chartWidth)
+                        .frame(maxHeight: .infinity)
+                        .offset(x: scrollState.layoutMetrics.currentContentOffsetX)
+                        .frame(width: scrollState.layoutMetrics.viewportWidth, alignment: .leading)
+                        .clipped()
+                        .contentShape(Rectangle())
+                        .gesture(dragGesture(scrollState: scrollState))
                 }
                 .onAppear {
                     syncViewport(scrollState: scrollState)
@@ -68,8 +68,6 @@ private extension CombinedChartView.CombinedChartSection {
         .init(
             context: context,
             viewportState: viewportState,
-            plotAreaHeight: plotSyncState.plotAreaHeight,
-            visibleSelection: visibleSelection,
             availableWidth: geometry.size.width,
             dragTranslationX: dragTranslationX,
             settlingOffsetX: settlingOffsetX)

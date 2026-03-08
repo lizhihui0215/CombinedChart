@@ -263,7 +263,7 @@ extension CombinedChartView {
     }
 
     struct LineSegmentPath: Identifiable {
-        let id = UUID()
+        let id: String
         let path: Path
         let color: Color
     }

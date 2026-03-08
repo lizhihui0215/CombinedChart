@@ -13,6 +13,11 @@ extension CombinedChartView {
         let highlightWidth: CGFloat
         let indicatorFrame: CGRect
     }
+
+    struct PlotSyncPayload: Equatable {
+        let plotRect: CGRect
+        let yAxisTickPositions: [Double: CGFloat]
+    }
 }
 
 extension CombinedChartView.ChartContainer {
@@ -33,17 +38,23 @@ extension CombinedChartView.ChartContainer {
     @ViewBuilder
     func syncPlotOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
         if hasValidPlotFrame(plotRect) {
-            let currentRect = plotRect
-            let positions = yAxisTickPositions(plotRect: plotRect, proxy: proxy)
+            let payload = CombinedChartView.PlotSyncPayload(
+                plotRect: plotRect,
+                yAxisTickPositions: yAxisTickPositions(plotRect: plotRect, proxy: proxy))
 
             Color.clear
-                .onAppear { onPlotAreaChange(currentRect) }
-                .onChange(of: currentRect) { onPlotAreaChange($0) }
-
-            Color.clear
-                .onAppear { onYAxisTickPositions(positions) }
-                .onChange(of: positions) { onYAxisTickPositions($0) }
+                .onAppear {
+                    applyPlotSyncPayload(payload)
+                }
+                .onChange(of: payload) { newValue in
+                    applyPlotSyncPayload(newValue)
+                }
         }
+    }
+
+    func applyPlotSyncPayload(_ payload: CombinedChartView.PlotSyncPayload) {
+        onPlotAreaChange(payload.plotRect)
+        onYAxisTickPositions(payload.yAxisTickPositions)
     }
 
     func hasValidPlotFrame(_ plotRect: CGRect) -> Bool {
