@@ -62,6 +62,44 @@ extension CombinedChartView {
                 maxContentOffsetX: layoutMetrics.maxContentOffsetX)
         }
 
+        func makeDragSettleContext(
+            for proposedContentOffsetX: CGFloat) -> DragSettleContext {
+            let clampedProposedOffsetX = min(
+                max(proposedContentOffsetX, 0),
+                layoutMetrics.maxContentOffsetX)
+
+            let targetOffsetX: CGFloat
+            switch dragState.dragScrollMode {
+            case .byPage:
+                let delta = clampedProposedOffsetX - dragState.contentOffsetX
+                let threshold = layoutMetrics.viewportWidth * 0.2
+                let pageDelta: Int = if delta >= threshold {
+                    pagingContext.monthsPerPage
+                } else if delta <= -threshold {
+                    -pagingContext.monthsPerPage
+                } else {
+                    0
+                }
+                let targetMonthIndex = min(
+                    max(dragState.startIndex + pageDelta, 0),
+                    pagingContext.maxStartMonthIndex)
+                targetOffsetX = CGFloat(targetMonthIndex) * layoutMetrics.unitWidth
+            case .freeSnapping:
+                let snappedMonthIndex = min(
+                    max(Int(round(clampedProposedOffsetX / layoutMetrics.unitWidth)), 0),
+                    pagingContext.maxStartMonthIndex)
+                targetOffsetX = CGFloat(snappedMonthIndex) * layoutMetrics.unitWidth
+            case .free:
+                targetOffsetX = clampedProposedOffsetX
+            }
+
+            return .init(
+                targetMonthIndex: dragState.targetMonthIndex(
+                    for: targetOffsetX,
+                    computedUnitWidth: layoutMetrics.unitWidth),
+                targetContentOffsetX: targetOffsetX)
+        }
+
         func syncViewport(
             layoutState: inout LayoutState,
             viewportState: inout ViewportState) {

@@ -10,11 +10,12 @@ extension CombinedChartView {
         let onDispatchAction: (ViewAction) -> Void
         @GestureState private var dragTranslationX: CGFloat = 0
         @State private var settlingOffsetX: CGFloat = 0
+        @State private var isDraggingScroll = false
 
         var body: some View {
             GeometryReader { geometry in
                 let scrollState = makeScrollState(for: geometry)
-                let isDragging = dragTranslationX != 0
+                let isDragging = dragTranslationX != 0 || isDraggingScroll
 
                 HStack(alignment: .top, spacing: 0) {
                     HStack(alignment: .top, spacing: 8) {
@@ -30,22 +31,7 @@ extension CombinedChartView {
                         }
                     }
 
-                    ChartRenderer(
-                        context: scrollState.renderContext,
-                        onSelectIndex: { onDispatchAction(.selectPoint(index: $0)) },
-                        onPlotAreaChange: { plotRect in
-                            syncPlotArea(plotRect, isDragging: isDragging)
-                        },
-                        onYAxisTickPositions: { positions in
-                            syncYAxisTickPositions(positions, isDragging: isDragging)
-                        })
-                        .frame(width: scrollState.layoutMetrics.chartWidth)
-                        .frame(maxHeight: .infinity)
-                        .offset(x: scrollState.layoutMetrics.currentContentOffsetX)
-                        .frame(width: scrollState.layoutMetrics.viewportWidth, alignment: .leading)
-                        .clipped()
-                        .contentShape(Rectangle())
-                        .gesture(dragGesture(scrollState: scrollState))
+                    chartContainer(scrollState: scrollState, isDragging: isDragging)
                 }
                 .onAppear {
                     syncViewport(scrollState: scrollState)
@@ -90,6 +76,58 @@ private extension CombinedChartView.CombinedChartSection {
             viewportState: &viewportState)
     }
 
+    @ViewBuilder
+    func chartContainer(
+        scrollState: CombinedChartView.ChartScrollState,
+        isDragging: Bool) -> some View {
+        switch resolvedScrollImplementation {
+        case .uiKitScrollView:
+            uiKitChartContainer(scrollState: scrollState, isDragging: isDragging)
+        default:
+            swiftUIGestureChartContainer(scrollState: scrollState, isDragging: isDragging)
+        }
+    }
+
+    func chartContent(isDragging: Bool, scrollState: CombinedChartView.ChartScrollState) -> some View {
+        CombinedChartView.ChartRenderer(
+            context: scrollState.renderContext,
+            onSelectIndex: { onDispatchAction(.selectPoint(index: $0)) },
+            onPlotAreaChange: { plotRect in
+                syncPlotArea(plotRect, isDragging: isDragging)
+            },
+            onYAxisTickPositions: { positions in
+                syncYAxisTickPositions(positions, isDragging: isDragging)
+            })
+    }
+
+    func swiftUIGestureChartContainer(
+        scrollState: CombinedChartView.ChartScrollState,
+        isDragging: Bool) -> some View {
+        chartContent(isDragging: isDragging, scrollState: scrollState)
+            .frame(width: scrollState.layoutMetrics.chartWidth)
+            .frame(maxHeight: .infinity)
+            .offset(x: scrollState.layoutMetrics.currentContentOffsetX)
+            .frame(width: scrollState.layoutMetrics.viewportWidth, alignment: .leading)
+            .clipped()
+            .contentShape(Rectangle())
+            .gesture(dragGesture(scrollState: scrollState))
+    }
+
+    var resolvedScrollImplementation: ChartConfig.Pager.ScrollImplementation {
+        switch context.config.pager.scrollImplementation {
+        case .automatic:
+            if #available(iOS 17, *) {
+                .uiKitScrollView
+            } else {
+                .swiftUIGesture
+            }
+        case .swiftUIGesture:
+            .swiftUIGesture
+        case .uiKitScrollView:
+            .uiKitScrollView
+        }
+    }
+
     // MARK: - Gesture
 
     func dragGesture(scrollState: CombinedChartView.ChartScrollState) -> some Gesture {
@@ -106,5 +144,27 @@ private extension CombinedChartView.CombinedChartSection {
                             from: value.translation.width)))
                 settlingOffsetX = 0
             }
+    }
+}
+
+private extension CombinedChartView.CombinedChartSection {
+    func uiKitChartContainer(
+        scrollState: CombinedChartView.ChartScrollState,
+        isDragging: Bool) -> some View {
+        ChartUIKitScrollContainer(
+            viewportWidth: scrollState.layoutMetrics.viewportWidth,
+            chartWidth: scrollState.layoutMetrics.chartWidth,
+            contentOffsetX: viewportState.contentOffsetX,
+            onContentOffsetChange: { viewportState.contentOffsetX = $0 },
+            onDraggingChange: { isDraggingScroll = $0 },
+            onWillEndDragging: { proposedOffsetX in
+                let settleContext = scrollState.makeDragSettleContext(for: proposedOffsetX)
+                onDispatchAction(.settleDrag(settleContext))
+                return settleContext.targetContentOffsetX
+            },
+            content: chartContent(isDragging: isDragging, scrollState: scrollState))
+            .frame(width: scrollState.layoutMetrics.viewportWidth)
+            .frame(maxHeight: .infinity)
+            .clipped()
     }
 }

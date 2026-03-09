@@ -179,6 +179,7 @@ enum ChartSampleData {
 
     static func makeConfig(
         dragScrollMode: CombinedChartView.Config.Pager.DragScrollMode = .freeSnapping,
+        scrollImplementation: CombinedChartView.Config.Pager.ScrollImplementation = .automatic,
         chartHeight: CGFloat = 420,
         visibleStartThreshold: CGFloat = 2.0 / 3.0,
         barWidth: CGFloat = 40) -> CombinedChartView.Config {
@@ -209,6 +210,7 @@ enum ChartSampleData {
             pager: .init(
                 isVisible: true,
                 dragScrollMode: dragScrollMode,
+                scrollImplementation: scrollImplementation,
                 visibleStartThreshold: visibleStartThreshold))
     }
 

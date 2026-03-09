@@ -10,6 +10,40 @@ import SwiftUI
 import UIKit
 
 struct ContentView: View {
+    enum ScrollImplementationOption: String, CaseIterable, Identifiable {
+        case automatic = "Automatic"
+        case swiftUI = "SwiftUI Gesture"
+        case uiKit = "UIKit ScrollView"
+
+        var id: Self {
+            self
+        }
+
+        var scrollImplementation: CombinedChartView.Config.Pager.ScrollImplementation {
+            switch self {
+            case .automatic:
+                .automatic
+            case .swiftUI:
+                .swiftUIGesture
+            case .uiKit:
+                .uiKitScrollView
+            }
+        }
+
+        init?(launchArgumentValue: String) {
+            switch launchArgumentValue {
+            case "automatic":
+                self = .automatic
+            case "swiftUI":
+                self = .swiftUI
+            case "uiKit":
+                self = .uiKit
+            default:
+                return nil
+            }
+        }
+    }
+
     enum DragModeOption: String, CaseIterable, Identifiable {
         case byPage = "By Page"
         case freeSnapping = "Free Snapping"
@@ -48,6 +82,7 @@ struct ContentView: View {
         let dataset: ChartSampleData.DatasetOption
         let selectedTab: CombinedChartView.Tab
         let dragMode: DragModeOption
+        let scrollImplementation: ScrollImplementationOption
         let showDebugOverlay: Bool
         let chartHeight: CGFloat
         let visibleStartThreshold: CGFloat
@@ -58,6 +93,7 @@ struct ContentView: View {
             let datasetValue = Self.argumentValue(after: "-snapshot-dataset", in: arguments)
             let selectedTabID = Self.argumentValue(after: "-snapshot-selected-tab", in: arguments)
             let dragModeValue = Self.argumentValue(after: "-snapshot-drag-mode", in: arguments)
+            let scrollImplementationValue = Self.argumentValue(after: "-snapshot-scroll-implementation", in: arguments)
             let chartHeightValue = Self.argumentValue(after: "-snapshot-chart-height", in: arguments)
             let visibleStartThresholdValue = Self.argumentValue(
                 after: "-snapshot-visible-start-threshold",
@@ -73,6 +109,8 @@ struct ContentView: View {
                 } ?? .current
             selectedTab = CombinedChartView.Tab.defaults.first(where: { $0.id == selectedTabID }) ?? .totalTrend
             dragMode = dragModeValue.flatMap { DragModeOption(launchArgumentValue: $0) } ?? .freeSnapping
+            scrollImplementation = scrollImplementationValue
+                .flatMap { ScrollImplementationOption(launchArgumentValue: $0) } ?? .automatic
             showDebugOverlay = arguments.contains("-snapshot-show-debug-overlay")
             chartHeight = chartHeightValue
                 .flatMap { Double($0) }
@@ -99,6 +137,7 @@ struct ContentView: View {
     @State private var selectedTab: CombinedChartView.Tab
     @State private var showDebugOverlay: Bool
     @State private var dragMode: DragModeOption
+    @State private var scrollImplementation: ScrollImplementationOption
     @State private var chartHeight: CGFloat
     @State private var visibleStartThreshold: CGFloat
     @State private var barWidth: CGFloat
@@ -109,6 +148,7 @@ struct ContentView: View {
         _selectedTab = State(initialValue: launchConfiguration.selectedTab)
         _showDebugOverlay = State(initialValue: launchConfiguration.showDebugOverlay)
         _dragMode = State(initialValue: launchConfiguration.dragMode)
+        _scrollImplementation = State(initialValue: launchConfiguration.scrollImplementation)
         _chartHeight = State(initialValue: launchConfiguration.chartHeight)
         _visibleStartThreshold = State(initialValue: launchConfiguration.visibleStartThreshold)
         _barWidth = State(initialValue: launchConfiguration.barWidth)
@@ -121,6 +161,7 @@ struct ContentView: View {
     private var config: CombinedChartView.Config {
         ChartSampleData.makeConfig(
             dragScrollMode: dragMode.dragScrollMode,
+            scrollImplementation: scrollImplementation.scrollImplementation,
             chartHeight: chartHeight,
             visibleStartThreshold: visibleStartThreshold,
             barWidth: barWidth)
@@ -167,6 +208,14 @@ struct ContentView: View {
 
                 Picker("Drag Mode", selection: $dragMode) {
                     ForEach(DragModeOption.allCases) { option in
+                        Text(option.rawValue).tag(option)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Picker("Scroll Implementation", selection: $scrollImplementation) {
+                    ForEach(ScrollImplementationOption.allCases) { option in
                         Text(option.rawValue).tag(option)
                     }
                 }
@@ -247,6 +296,7 @@ private extension ContentView {
             statCard(title: "Dataset", value: dataset.rawValue)
             statCard(title: "Viewport", value: selectedTab.title)
             statCard(title: "Drag", value: dragMode.rawValue)
+            statCard(title: "Scroll", value: scrollImplementation.rawValue)
         }
     }
 

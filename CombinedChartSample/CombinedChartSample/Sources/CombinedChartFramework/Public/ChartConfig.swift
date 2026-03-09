@@ -271,9 +271,17 @@ public extension ChartConfig {
             case free
         }
 
+        /// Describes which scrolling engine powers horizontal chart interaction.
+        public enum ScrollImplementation {
+            case automatic
+            case swiftUIGesture
+            case uiKitScrollView
+        }
+
         public let isVisible: Bool
         public let arrowScrollMode: ArrowScrollMode
         public let dragScrollMode: DragScrollMode
+        public let scrollImplementation: ScrollImplementation
         public let titleFont: Font
         public let titleColor: Color
         public let activeControlColor: Color
@@ -295,6 +303,7 @@ public extension ChartConfig {
         ///   - isVisible: A Boolean value that determines whether the pager is shown.
         ///   - arrowScrollMode: The navigation behavior used for pager arrows.
         ///   - dragScrollMode: The settling behavior used for drag gestures.
+        ///   - scrollImplementation: The scroll engine used to power horizontal chart interaction.
         ///   - titleFont: Font used to render the current pager title.
         ///   - titleColor: Color used to render the current pager title.
         ///   - activeControlColor: Color used for enabled pager controls.
@@ -305,6 +314,7 @@ public extension ChartConfig {
             isVisible: Bool = true,
             arrowScrollMode: ArrowScrollMode = .byPage,
             dragScrollMode: DragScrollMode = .freeSnapping,
+            scrollImplementation: ScrollImplementation = .automatic,
             titleFont: Font = .callout.weight(.semibold),
             titleColor: Color = .primary,
             activeControlColor: Color = .primary,
@@ -313,6 +323,7 @@ public extension ChartConfig {
             self.isVisible = isVisible
             self.arrowScrollMode = arrowScrollMode
             self.dragScrollMode = dragScrollMode
+            self.scrollImplementation = scrollImplementation
             self.titleFont = titleFont
             self.titleColor = titleColor
             self.activeControlColor = activeControlColor
