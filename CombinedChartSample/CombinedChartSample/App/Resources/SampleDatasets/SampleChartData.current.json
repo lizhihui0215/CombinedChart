@@ -1,0 +1,43 @@
+
+{
+  "groups": [
+    {
+      "id": "2020",
+      "title": "2020",
+      "sortKey": 2020,
+      "points": [
+        {"xKey": "2020-01", "xLabel": "2020-01", "values": {"saving": 9000.0, "investment": 22000.0, "otherLiquid": 3800.0, "otherNonLiquid": 5100.0, "liabilities": 3300.0}},
+        {"xKey": "2020-02", "xLabel": "2020-02", "values": {"saving": 9360.0, "investment": 21560.0, "otherLiquid": 3990.0, "otherNonLiquid": 5270.0, "liabilities": 3256.0}},
+        {"xKey": "2020-03", "xLabel": "2020-03", "values": {"saving": 9180.0, "investment": 22660.0, "otherLiquid": 3895.0, "otherNonLiquid": 5440.0, "liabilities": 3289.0}},
+        {"xKey": "2020-04", "xLabel": "2020-04", "values": {"saving": 9540.0, "investment": 22220.0, "otherLiquid": 4085.0, "otherNonLiquid": 5610.0, "liabilities": 3322.0}},
+        {"xKey": "2020-05", "xLabel": "2020-05", "values": {"saving": 9720.0, "investment": 22880.0, "otherLiquid": 4180.0, "otherNonLiquid": 5695.0, "liabilities": 3344.0}},
+        {"xKey": "2020-06", "xLabel": "2020-06", "values": {"saving": 9900.0, "investment": 23320.0, "otherLiquid": 4275.0, "otherNonLiquid": 5780.0, "liabilities": 3366.0}},
+        {"xKey": "2020-07", "xLabel": "2020-07", "values": {"saving": 10080.0, "investment": 23540.0, "otherLiquid": 4370.0, "otherNonLiquid": 5865.0, "liabilities": 3388.0}},
+        {"xKey": "2020-08", "xLabel": "2020-08", "values": {"saving": 10260.0, "investment": 23760.0, "otherLiquid": 4465.0, "otherNonLiquid": 5950.0, "liabilities": 3410.0}},
+        {"xKey": "2020-09", "xLabel": "2020-09", "values": {"saving": 10440.0, "investment": 24200.0, "otherLiquid": 4560.0, "otherNonLiquid": 6035.0, "liabilities": 3432.0}},
+        {"xKey": "2020-10", "xLabel": "2020-10", "values": {"saving": 10620.0, "investment": 24420.0, "otherLiquid": 4655.0, "otherNonLiquid": 6120.0, "liabilities": 3454.0}},
+        {"xKey": "2020-11", "xLabel": "2020-11", "values": {"saving": 10800.0, "investment": 24640.0, "otherLiquid": 4750.0, "otherNonLiquid": 6205.0, "liabilities": 3476.0}},
+        {"xKey": "2020-12", "xLabel": "2020-12", "values": {"saving": 10980.0, "investment": 24860.0, "otherLiquid": 4845.0, "otherNonLiquid": 6290.0, "liabilities": 3498.0}}
+      ]
+    },
+    {
+      "id": "2021",
+      "title": "2021",
+      "sortKey": 2021,
+      "points": [
+        {"xKey": "2021-01", "xLabel": "2021-01", "values": {"saving": 11160.0, "investment": 25080.0, "otherLiquid": 4940.0, "otherNonLiquid": 6375.0, "liabilities": 3520.0}},
+        {"xKey": "2021-02", "xLabel": "2021-02", "values": {"saving": 11340.0, "investment": 25300.0, "otherLiquid": 5035.0, "otherNonLiquid": 6460.0, "liabilities": 3542.0}},
+        {"xKey": "2021-03", "xLabel": "2021-03", "values": {"saving": 11520.0, "investment": 25520.0, "otherLiquid": 5130.0, "otherNonLiquid": 6545.0, "liabilities": 3564.0}},
+        {"xKey": "2021-04", "xLabel": "2021-04", "values": {"saving": 11700.0, "investment": 25740.0, "otherLiquid": 5225.0, "otherNonLiquid": 6630.0, "liabilities": 3586.0}},
+        {"xKey": "2021-05", "xLabel": "2021-05", "values": {"saving": 11880.0, "investment": 25960.0, "otherLiquid": 5320.0, "otherNonLiquid": 6715.0, "liabilities": 3608.0}},
+        {"xKey": "2021-06", "xLabel": "2021-06", "values": {"saving": 12060.0, "investment": 26180.0, "otherLiquid": 5415.0, "otherNonLiquid": 6800.0, "liabilities": 3630.0}},
+        {"xKey": "2021-07", "xLabel": "2021-07", "values": {"saving": 12240.0, "investment": 26400.0, "otherLiquid": 5510.0, "otherNonLiquid": 6885.0, "liabilities": 3652.0}},
+        {"xKey": "2021-08", "xLabel": "2021-08", "values": {"saving": 12420.0, "investment": 26620.0, "otherLiquid": 5605.0, "otherNonLiquid": 6970.0, "liabilities": 3674.0}},
+        {"xKey": "2021-09", "xLabel": "2021-09", "values": {"saving": 12600.0, "investment": 26840.0, "otherLiquid": 5700.0, "otherNonLiquid": 7055.0, "liabilities": 3696.0}},
+        {"xKey": "2021-10", "xLabel": "2021-10", "values": {"saving": 12780.0, "investment": 27060.0, "otherLiquid": 5795.0, "otherNonLiquid": 7140.0, "liabilities": 3718.0}},
+        {"xKey": "2021-11", "xLabel": "2021-11", "values": {"saving": 12960.0, "investment": 27280.0, "otherLiquid": 5890.0, "otherNonLiquid": 7225.0, "liabilities": 3740.0}},
+        {"xKey": "2021-12", "xLabel": "2021-12", "values": {"saving": 13140.0, "investment": 27500.0, "otherLiquid": 5985.0, "otherNonLiquid": 7310.0, "liabilities": 3762.0}}
+      ]
+    }
+  ]
+}

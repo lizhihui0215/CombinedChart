@@ -215,7 +215,7 @@ struct ContentView: View {
             selectionLineColorOption = .fixed
             showDebugLog = false
             showDataControls = true
-            showInteractionControls = true
+            showInteractionControls = false
             showLayoutControls = false
             showVisualControls = false
         }
@@ -275,14 +275,13 @@ struct ContentView: View {
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 headerCard
                 configPanel
-                statCards
                 chartCard
                 debugNotes
             }
-            .padding()
+            .padding(12)
         }
         .accessibilityIdentifier("combined-chart-root")
     }
@@ -290,7 +289,7 @@ struct ContentView: View {
 
 private extension ContentView {
     var headerCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("HKD")
                     .font(ChartSampleData.SampleAppearance.Typography.screenTitle)
@@ -299,25 +298,22 @@ private extension ContentView {
 
             Text("Chart Config Playground")
                 .font(ChartSampleData.SampleAppearance.Typography.cardTitle)
-            Text("Compact sample page for tuning the public chart configuration surface and comparing scroll engines.")
+            Text("Tune the public chart config surface and compare interaction engines.")
                 .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
                 .foregroundStyle(ChartSampleData.SampleAppearance.Colors.secondaryText)
+
+            summaryPills
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(14)
         .background(ChartSampleData.SampleAppearance.Colors.surface, in: RoundedRectangle(cornerRadius: 16))
     }
 
     var configPanel: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             DisclosureGroup("Data & Debug", isExpanded: $controls.showDataControls) {
                 VStack(spacing: 10) {
-                    Picker("Dataset", selection: $controls.dataset) {
-                        ForEach(ChartSampleData.DatasetOption.allCases) { option in
-                            Text(option.rawValue).tag(option)
-                        }
-                    }
-                    .pickerStyle(.segmented)
+                    compactPicker("Dataset", selection: $controls.dataset)
 
                     Toggle("Debug axis alignment", isOn: $controls.showDebugOverlay)
                         .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
@@ -326,7 +322,7 @@ private extension ContentView {
                         .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
                         .toggleStyle(SwitchToggleStyle(tint: .gray))
                 }
-                .padding(.top, 8)
+                .padding(.top, 6)
             }
 
             DisclosureGroup("Interaction", isExpanded: $controls.showInteractionControls) {
@@ -337,7 +333,7 @@ private extension ContentView {
                     Toggle("Pager Visible", isOn: $controls.pagerVisible)
                         .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
                 }
-                .padding(.top, 8)
+                .padding(.top, 6)
             }
 
             DisclosureGroup("Layout", isExpanded: $controls.showLayoutControls) {
@@ -367,7 +363,7 @@ private extension ContentView {
                         format: "%.2f",
                         identifier: "visible-start-threshold-slider")
                 }
-                .padding(.top, 8)
+                .padding(.top, 6)
             }
 
             DisclosureGroup("Visual", isExpanded: $controls.showVisualControls) {
@@ -408,20 +404,20 @@ private extension ContentView {
                     compactPicker("Trend Bar Color", selection: $controls.trendBarColorOption)
                     compactPicker("Selection Line", selection: $controls.selectionLineColorOption)
                 }
-                .padding(.top, 8)
+                .padding(.top, 6)
             }
         }
         .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
-        .padding(16)
+        .padding(14)
         .background(ChartSampleData.SampleAppearance.Colors.surface, in: RoundedRectangle(cornerRadius: 16))
     }
 
-    var statCards: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
-            statCard(title: "Dataset", value: controls.dataset.rawValue)
-            statCard(title: "Viewport", value: controls.selectedTab.title)
-            statCard(title: "Drag", value: controls.dragMode.rawValue)
-            statCard(title: "Scroll", value: controls.scrollImplementation.rawValue)
+    var summaryPills: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+            summaryPill(title: "Dataset", value: controls.dataset.rawValue)
+            summaryPill(title: "Viewport", value: controls.selectedTab.title)
+            summaryPill(title: "Drag", value: controls.dragMode.rawValue)
+            summaryPill(title: "Scroll", value: controls.scrollImplementation.rawValue)
         }
     }
 
@@ -449,7 +445,7 @@ private extension ContentView {
                 },
                 onDebugStateChange: { latestDebugState = $0 })
         }
-        .padding(16)
+        .padding(12)
         .background(ChartSampleData.SampleAppearance.Colors.surface, in: RoundedRectangle(cornerRadius: 16))
     }
 
@@ -487,7 +483,7 @@ private extension ContentView {
             debugRow("Chart Width", value: latestDebugState.map { String(format: "%.1f", $0.chartWidth) } ?? "-")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(14)
         .background(ChartSampleData.SampleAppearance.Colors.surface, in: RoundedRectangle(cornerRadius: 16))
     }
 
@@ -501,7 +497,7 @@ private extension ContentView {
         }
     }
 
-    func statCard(title: String, value: String) -> some View {
+    func summaryPill(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
@@ -510,8 +506,9 @@ private extension ContentView {
                 .font(ChartSampleData.SampleAppearance.Typography.statValue)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(ChartSampleData.SampleAppearance.Colors.surface, in: RoundedRectangle(cornerRadius: 14))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.white.opacity(0.001), in: RoundedRectangle(cornerRadius: 12))
     }
 
     func compactPicker<Option: CaseIterable & Identifiable & RawRepresentable & Hashable>(
