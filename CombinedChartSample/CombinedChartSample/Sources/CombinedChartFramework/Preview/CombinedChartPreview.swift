@@ -8,38 +8,19 @@ private struct CombinedChartPreviewHost: View {
     @State private var showDebugOverlay = false
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("HKD")
-                    .font(.headline)
-                Spacer()
-            }
-
-            Picker("", selection: $selectedTab) {
-                ForEach(tabs) { tab in
-                    Text(tab.title).tag(tab)
-                }
-            }
-            .pickerStyle(.segmented)
-
-            Toggle("Debug axis alignment", isOn: $showDebugOverlay)
-                .font(.caption)
-                .toggleStyle(SwitchToggleStyle(tint: .gray))
-
-            CombinedChartView(
-                config: config,
-                groups: groups,
-                tabs: tabs,
-                selectedTab: $selectedTab,
-                showDebugOverlay: $showDebugOverlay,
-                onPointTap: { context in
-                    print(
-                        "Tapped point:",
-                        "groupID=\(context.point.id.groupID)",
-                        "xKey=\(context.point.xKey)",
-                        "index=\(context.index)")
-                })
-        }
+        CombinedChartView(
+            config: config,
+            groups: groups,
+            tabs: tabs,
+            selectedTab: $selectedTab,
+            showDebugOverlay: $showDebugOverlay,
+            onPointTap: { context in
+                print(
+                    "Tapped point:",
+                    "groupID=\(context.point.id.groupID)",
+                    "xKey=\(context.point.xKey)",
+                    "index=\(context.index)")
+            })
         .padding()
     }
 }

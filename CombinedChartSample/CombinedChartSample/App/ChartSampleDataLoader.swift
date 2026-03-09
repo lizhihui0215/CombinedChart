@@ -15,18 +15,29 @@ enum ChartSampleDataLoader {
         let candidateBundles = [Bundle.main, Bundle(for: BundleToken.self)]
 
         for bundle in candidateBundles {
-            guard let url = bundle.url(
-                forResource: resourceName,
-                withExtension: "json",
-                subdirectory: resourceSubdirectory),
-                let data = try? Data(contentsOf: url),
-                let response = try? decoder.decode(ChartSampleData.Response.self, from: data)
-            else {
-                continue
-            }
+            let candidateURLs: [URL?] = [
+                bundle.url(
+                    forResource: resourceName,
+                    withExtension: "json",
+                    subdirectory: resourceSubdirectory),
+                bundle.url(forResource: resourceName, withExtension: "json"),
+                bundle.url(
+                    forResource: resourceName,
+                    withExtension: "json",
+                    subdirectory: "Resources/\(resourceSubdirectory)")
+            ]
 
-            cachedResponses[resourceName] = response
-            return response
+            for candidateURL in candidateURLs {
+                guard let candidateURL,
+                      let data = try? Data(contentsOf: candidateURL),
+                      let response = try? decoder.decode(ChartSampleData.Response.self, from: data)
+                else {
+                    continue
+                }
+
+                cachedResponses[resourceName] = response
+                return response
+            }
         }
 
         return nil
