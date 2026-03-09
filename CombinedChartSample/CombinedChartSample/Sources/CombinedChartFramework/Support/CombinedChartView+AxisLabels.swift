@@ -11,7 +11,7 @@ extension CombinedChartView {
         let labelColor: Color
     }
 
-    struct ChartYAxisLabels: View {
+    struct YAxisLabels: View {
         let context: YAxisLabelsContext
 
         var body: some View {

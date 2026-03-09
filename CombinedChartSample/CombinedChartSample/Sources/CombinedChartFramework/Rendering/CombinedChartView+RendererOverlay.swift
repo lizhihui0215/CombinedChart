@@ -20,7 +20,7 @@ extension CombinedChartView {
     }
 }
 
-extension CombinedChartView.ChartRenderer {
+extension CombinedChartView.Renderer {
     func containerOverlay(proxy: ChartProxy) -> some View {
         GeometryReader { geometry in
             let plotRect = geometry[proxy.plotAreaFrame]

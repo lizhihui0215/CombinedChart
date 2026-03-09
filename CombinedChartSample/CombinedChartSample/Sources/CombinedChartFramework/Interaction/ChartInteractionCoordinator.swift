@@ -15,7 +15,7 @@ extension CombinedChartView {
         if let pager = slots.pager {
             pager(context)
         } else {
-            CombinedChartPager(context: context)
+            Pager(context: context)
         }
     }
 

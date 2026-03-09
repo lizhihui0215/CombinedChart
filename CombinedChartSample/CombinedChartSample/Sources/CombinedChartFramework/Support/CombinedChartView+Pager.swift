@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension CombinedChartView {
-    struct CombinedChartPager: View {
+    struct Pager: View {
         let context: PagerContext
 
         private var highlightedEntryTitle: String? {

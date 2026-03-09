@@ -2,7 +2,7 @@ import OSLog
 import SwiftUI
 
 extension CombinedChartView {
-    struct CombinedChartSection: View {
+    struct Section: View {
         private let logger = ChartLog.logger(.section)
         let context: ChartSectionContext
         let visibleSelection: VisibleSelection?
@@ -26,7 +26,7 @@ extension CombinedChartView {
 
                 HStack(alignment: .top, spacing: 0) {
                     HStack(alignment: .top, spacing: 8) {
-                        ChartYAxisLabels(
+                        YAxisLabels(
                             context: context.makeYAxisLabelsContext(
                                 plotSyncState: plotSyncState))
 
@@ -53,7 +53,7 @@ extension CombinedChartView {
     }
 }
 
-private extension CombinedChartView.CombinedChartSection {
+private extension CombinedChartView.Section {
     // MARK: - Scroll State
 
     func makeScrollState(for geometry: GeometryProxy) -> CombinedChartView.ChartScrollState {
@@ -143,7 +143,7 @@ private extension CombinedChartView.CombinedChartSection {
     }
 
     func chartContent(isDragging: Bool, scrollState: CombinedChartView.ChartScrollState) -> some View {
-        CombinedChartView.ChartRenderer(
+        CombinedChartView.Renderer(
             context: scrollState.renderContext,
             onSelectIndex: { onDispatchAction(.selectPoint(index: $0)) },
             onPlotAreaChange: { plotRect in
@@ -227,7 +227,7 @@ private extension CombinedChartView.CombinedChartSection {
     }
 }
 
-private extension CombinedChartView.CombinedChartSection {
+private extension CombinedChartView.Section {
     func uiKitChartContainer(
         scrollState: CombinedChartView.ChartScrollState,
         isDragging: Bool) -> some View {

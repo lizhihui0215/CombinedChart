@@ -1,7 +1,7 @@
 import Charts
 import SwiftUI
 
-extension CombinedChartView.ChartRenderer {
+extension CombinedChartView.Renderer {
     @AxisContentBuilder
     func chartXAxis(axisContext: CombinedChartView.AxisRenderContext) -> some AxisContent {
         AxisMarks(values: axisContext.monthValues) { value in

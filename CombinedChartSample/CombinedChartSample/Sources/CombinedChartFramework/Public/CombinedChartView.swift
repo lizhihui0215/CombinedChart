@@ -150,7 +150,7 @@ public struct CombinedChartView: View {
 
             Group {
                 if hasData {
-                    CombinedChartSection(
+                    Section(
                         context: sectionContext,
                         visibleSelection: visibleSelection,
                         viewportState: $viewportState,
