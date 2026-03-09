@@ -1,3 +1,4 @@
+import OSLog
 import SwiftUI
 import UIKit
 
@@ -7,7 +8,9 @@ struct ChartUIKitScrollContainer<Content: View>: UIViewRepresentable {
     let contentOffsetX: CGFloat
     let onContentOffsetChange: (CGFloat) -> Void
     let onDraggingChange: (Bool) -> Void
+    let onDeceleratingChange: (Bool) -> Void
     let onWillEndDragging: (CGFloat) -> CGFloat
+    let isLoggingEnabled: Bool
     let content: Content
 
     func makeCoordinator() -> Coordinator {
@@ -63,6 +66,7 @@ struct ChartUIKitScrollContainer<Content: View>: UIViewRepresentable {
     }
 
     final class Coordinator: NSObject, UIScrollViewDelegate {
+        private let logger = ChartLog.logger(.uiKitScroll)
         var parent: ChartUIKitScrollContainer
         let hostingController: UIHostingController<Content>
         var isDragging = false
@@ -75,7 +79,9 @@ struct ChartUIKitScrollContainer<Content: View>: UIViewRepresentable {
                 contentOffsetX: 0,
                 onContentOffsetChange: { _ in },
                 onDraggingChange: { _ in },
+                onDeceleratingChange: { _ in },
                 onWillEndDragging: { $0 },
+                isLoggingEnabled: false,
                 content: rootView)
             hostingController = UIHostingController(rootView: rootView)
             hostingController.view.clipsToBounds = true
@@ -87,6 +93,9 @@ struct ChartUIKitScrollContainer<Content: View>: UIViewRepresentable {
 
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
             isDragging = true
+            if parent.isLoggingEnabled {
+                logger.debug("UIKit drag began. offsetX=\(scrollView.contentOffset.x, format: .fixed(precision: 2))")
+            }
             parent.onDraggingChange(true)
         }
 
@@ -94,20 +103,41 @@ struct ChartUIKitScrollContainer<Content: View>: UIViewRepresentable {
             _ scrollView: UIScrollView,
             withVelocity velocity: CGPoint,
             targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+            if parent.isLoggingEnabled {
+                logger.debug(
+                    """
+                    UIKit drag will end. \
+                    velocityX=\(velocity.x, format: .fixed(precision: 2)) \
+                    proposedOffsetX=\(targetContentOffset.pointee.x, format: .fixed(precision: 2))
+                    """)
+            }
             let targetOffsetX = parent.onWillEndDragging(targetContentOffset.pointee.x)
             targetContentOffset.pointee.x = targetOffsetX
+            parent.onDeceleratingChange(true)
         }
 
         func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
             if !decelerate {
                 isDragging = false
+                if parent.isLoggingEnabled {
+                    logger
+                        .debug(
+                            "UIKit drag ended without deceleration. offsetX=\(scrollView.contentOffset.x, format: .fixed(precision: 2))")
+                }
                 parent.onDraggingChange(false)
+                parent.onDeceleratingChange(false)
             }
         }
 
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
             isDragging = false
+            if parent.isLoggingEnabled {
+                logger
+                    .debug(
+                        "UIKit deceleration ended. offsetX=\(scrollView.contentOffset.x, format: .fixed(precision: 2))")
+            }
             parent.onDraggingChange(false)
+            parent.onDeceleratingChange(false)
         }
     }
 }

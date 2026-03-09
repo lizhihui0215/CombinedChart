@@ -1,6 +1,9 @@
+import OSLog
 import SwiftUI
 
 extension CombinedChartView {
+    private static let interactionLogger = ChartLog.logger(.interaction)
+
     // MARK: - Derived State
 
     var interactionSnapshot: ChartInteractionSnapshot {
@@ -79,6 +82,9 @@ extension CombinedChartView {
     func dispatch(_ action: ViewAction) {
         let snapshot = interactionSnapshot
         let interactionState = makeInteractionState(snapshot: snapshot)
+        if config.debug.isLoggingEnabled {
+            Self.interactionLogger.debug("Dispatching action: \(String(describing: action), privacy: .public)")
+        }
         let result = InteractionReducer.reduce(action: action, state: interactionState)
         for mutation in result.mutations {
             apply(mutation, dataPointIDs: snapshot.dataPointIDs)
@@ -95,6 +101,10 @@ extension CombinedChartView {
         dataPointIDs: [ChartPointID]) {
         switch mutation {
         case .selection(let visibleSelection, let emitsPointTap):
+            if config.debug.isLoggingEnabled, let visibleSelection {
+                Self.interactionLogger.debug(
+                    "Applying selection mutation. index=\(visibleSelection.index) pointID=\(String(describing: visibleSelection.pointID), privacy: .public)")
+            }
             reconcileVisibleSelection(visibleSelection, dataPointIDs: dataPointIDs)
             guard emitsPointTap else { return }
         case .viewportUpdate(let context):
@@ -140,6 +150,15 @@ extension CombinedChartView {
             dataPointIDs: dataPointIDs)
         else { return }
 
+        if config.debug.isLoggingEnabled {
+            Self.interactionLogger.debug(
+                """
+                Emitting point tap. \
+                resolvedIndex=\(resolvedIndex) \
+                groupID=\(data[resolvedIndex].source.id.groupID, privacy: .public) \
+                xKey=\(data[resolvedIndex].source.xKey, privacy: .public)
+                """)
+        }
         onPointTap?(
             .init(
                 point: data[resolvedIndex].source,

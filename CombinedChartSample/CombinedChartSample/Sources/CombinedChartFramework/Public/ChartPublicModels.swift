@@ -15,6 +15,76 @@ public extension CombinedChartView {
     typealias PagerItem = PagerEntry
     typealias SelectionOverlay = SelectionOverlayContext
 
+    /// Realtime debug state emitted by the chart while rendering and dragging.
+    struct DebugState: Equatable {
+        public let selectedTabTitle: String
+        public let scrollImplementationTitle: String
+        public let dragScrollModeTitle: String
+        public let isDragging: Bool
+        public let isDecelerating: Bool
+        public let startIndex: Int
+        public let visibleStartIndex: Int?
+        public let visibleStartLabel: String?
+        public let visibleStartThreshold: CGFloat
+        public let contentOffsetX: CGFloat
+        public let dragTranslationX: CGFloat
+        public let targetContentOffsetX: CGFloat
+        public let targetMonthIndex: Int
+        public let viewportWidth: CGFloat
+        public let unitWidth: CGFloat
+        public let chartWidth: CGFloat
+        public let selectedPointIndex: Int?
+        public let selectedPointGroupID: String?
+        public let selectedPointXKey: String?
+        public let selectedPointXLabel: String?
+        public let selectedPointValue: Double?
+
+        public init(
+            selectedTabTitle: String,
+            scrollImplementationTitle: String,
+            dragScrollModeTitle: String,
+            isDragging: Bool,
+            isDecelerating: Bool,
+            startIndex: Int,
+            visibleStartIndex: Int?,
+            visibleStartLabel: String?,
+            visibleStartThreshold: CGFloat,
+            contentOffsetX: CGFloat,
+            dragTranslationX: CGFloat,
+            targetContentOffsetX: CGFloat,
+            targetMonthIndex: Int,
+            viewportWidth: CGFloat,
+            unitWidth: CGFloat,
+            chartWidth: CGFloat,
+            selectedPointIndex: Int?,
+            selectedPointGroupID: String?,
+            selectedPointXKey: String?,
+            selectedPointXLabel: String?,
+            selectedPointValue: Double?) {
+            self.selectedTabTitle = selectedTabTitle
+            self.scrollImplementationTitle = scrollImplementationTitle
+            self.dragScrollModeTitle = dragScrollModeTitle
+            self.isDragging = isDragging
+            self.isDecelerating = isDecelerating
+            self.startIndex = startIndex
+            self.visibleStartIndex = visibleStartIndex
+            self.visibleStartLabel = visibleStartLabel
+            self.visibleStartThreshold = visibleStartThreshold
+            self.contentOffsetX = contentOffsetX
+            self.dragTranslationX = dragTranslationX
+            self.targetContentOffsetX = targetContentOffsetX
+            self.targetMonthIndex = targetMonthIndex
+            self.viewportWidth = viewportWidth
+            self.unitWidth = unitWidth
+            self.chartWidth = chartWidth
+            self.selectedPointIndex = selectedPointIndex
+            self.selectedPointGroupID = selectedPointGroupID
+            self.selectedPointXKey = selectedPointXKey
+            self.selectedPointXLabel = selectedPointXLabel
+            self.selectedPointValue = selectedPointValue
+        }
+    }
+
     /// A default empty-state view used when no groups are available.
     struct DefaultEmptyStateView: View {
         public init() {}

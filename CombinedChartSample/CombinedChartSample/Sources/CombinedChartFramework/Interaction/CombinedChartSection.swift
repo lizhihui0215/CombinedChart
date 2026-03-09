@@ -1,21 +1,28 @@
+import OSLog
 import SwiftUI
 
 extension CombinedChartView {
     struct CombinedChartSection: View {
+        private let logger = ChartLog.logger(.section)
         let context: ChartSectionContext
         let visibleSelection: VisibleSelection?
         @Binding var viewportState: ViewportState
         @Binding var layoutState: LayoutState
         @Binding var plotSyncState: PlotSyncState
+        let onDebugStateChange: ((DebugState) -> Void)?
         let onDispatchAction: (ViewAction) -> Void
         @GestureState private var dragTranslationX: CGFloat = 0
         @State private var settlingOffsetX: CGFloat = 0
         @State private var isDraggingScroll = false
+        @State private var isDeceleratingScroll = false
 
         var body: some View {
             GeometryReader { geometry in
                 let scrollState = makeScrollState(for: geometry)
                 let isDragging = dragTranslationX != 0 || isDraggingScroll
+                let debugState = makeDebugState(
+                    scrollState: scrollState,
+                    isDragging: isDragging)
 
                 HStack(alignment: .top, spacing: 0) {
                     HStack(alignment: .top, spacing: 8) {
@@ -35,10 +42,12 @@ extension CombinedChartView {
                 }
                 .onAppear {
                     syncViewport(scrollState: scrollState)
+                    onDebugStateChange?(debugState)
                 }
                 .onChange(of: geometry.size) { _ in
                     syncViewport(scrollState: scrollState)
                 }
+                .onChange(of: debugState) { onDebugStateChange?($0) }
             }
         }
     }
@@ -74,6 +83,51 @@ private extension CombinedChartView.CombinedChartSection {
         scrollState.syncViewport(
             layoutState: &_layoutState.wrappedValue,
             viewportState: &viewportState)
+    }
+
+    func makeDebugState(
+        scrollState: CombinedChartView.ChartScrollState,
+        isDragging: Bool) -> CombinedChartView.DebugState {
+        let effectiveContentOffsetX = max(-scrollState.layoutMetrics.currentContentOffsetX, 0)
+        let targetSettleContext = scrollState.makeDragSettleContext(from: dragTranslationX)
+        let visibleStartIndex = CombinedChartView.PagerState.makeVisibleStartIndex(
+            dataCount: context.data.count,
+            contentOffsetX: effectiveContentOffsetX,
+            unitWidth: scrollState.layoutMetrics.unitWidth,
+            progressThreshold: context.config.pager.visibleStartThreshold)
+        let visibleStartLabel = visibleStartIndex.flatMap {
+            context.data.indices.contains($0) ? context.data[$0].xLabel : nil
+        }
+        let selectedPointIndex = visibleSelection?.index
+        let selectedPoint = selectedPointIndex.flatMap {
+            context.data.indices.contains($0) ? context.data[$0].source : nil
+        }
+        let selectedPointValue = selectedPointIndex.flatMap {
+            context.data.indices.contains($0) ? context.data[$0].trendLineValue(using: context.config) : nil
+        }
+
+        return .init(
+            selectedTabTitle: context.selectedTab.title,
+            scrollImplementationTitle: scrollImplementationTitle,
+            dragScrollModeTitle: dragScrollModeTitle,
+            isDragging: isDragging,
+            isDecelerating: isDeceleratingScroll,
+            startIndex: viewportState.startIndex,
+            visibleStartIndex: visibleStartIndex,
+            visibleStartLabel: visibleStartLabel,
+            visibleStartThreshold: context.config.pager.visibleStartThreshold,
+            contentOffsetX: effectiveContentOffsetX,
+            dragTranslationX: dragTranslationX,
+            targetContentOffsetX: targetSettleContext.targetContentOffsetX,
+            targetMonthIndex: targetSettleContext.targetMonthIndex,
+            viewportWidth: scrollState.layoutMetrics.viewportWidth,
+            unitWidth: scrollState.layoutMetrics.unitWidth,
+            chartWidth: scrollState.layoutMetrics.chartWidth,
+            selectedPointIndex: selectedPointIndex,
+            selectedPointGroupID: selectedPoint?.id.groupID,
+            selectedPointXKey: selectedPoint?.xKey,
+            selectedPointXLabel: selectedPoint?.xLabel,
+            selectedPointValue: selectedPointValue)
     }
 
     @ViewBuilder
@@ -128,6 +182,28 @@ private extension CombinedChartView.CombinedChartSection {
         }
     }
 
+    var scrollImplementationTitle: String {
+        switch resolvedScrollImplementation {
+        case .automatic:
+            "Automatic"
+        case .swiftUIGesture:
+            "SwiftUI Gesture"
+        case .uiKitScrollView:
+            "UIKit ScrollView"
+        }
+    }
+
+    var dragScrollModeTitle: String {
+        switch context.config.pager.dragScrollMode {
+        case .byPage:
+            "By Page"
+        case .freeSnapping:
+            "Free Snapping"
+        case .free:
+            "Free"
+        }
+    }
+
     // MARK: - Gesture
 
     func dragGesture(scrollState: CombinedChartView.ChartScrollState) -> some Gesture {
@@ -136,6 +212,10 @@ private extension CombinedChartView.CombinedChartSection {
                 state = value.translation.width
             }
             .onEnded { value in
+                if context.config.debug.isLoggingEnabled {
+                    logger.debug(
+                        "SwiftUI drag ended. translationX=\(value.translation.width, format: .fixed(precision: 2)) startIndex=\(viewportState.startIndex)")
+                }
                 settlingOffsetX = scrollState.makeSettlingOffsetX(
                     from: value.translation.width)
                 onDispatchAction(
@@ -157,11 +237,22 @@ private extension CombinedChartView.CombinedChartSection {
             contentOffsetX: viewportState.contentOffsetX,
             onContentOffsetChange: { viewportState.contentOffsetX = $0 },
             onDraggingChange: { isDraggingScroll = $0 },
+            onDeceleratingChange: { isDeceleratingScroll = $0 },
             onWillEndDragging: { proposedOffsetX in
                 let settleContext = scrollState.makeDragSettleContext(for: proposedOffsetX)
+                if context.config.debug.isLoggingEnabled {
+                    logger.debug(
+                        """
+                        UIKit settle requested. \
+                        proposedOffsetX=\(proposedOffsetX, format: .fixed(precision: 2)) \
+                        targetOffsetX=\(settleContext.targetContentOffsetX, format: .fixed(precision: 2)) \
+                        targetIndex=\(settleContext.targetMonthIndex)
+                        """)
+                }
                 onDispatchAction(.settleDrag(settleContext))
                 return settleContext.targetContentOffsetX
             },
+            isLoggingEnabled: context.config.debug.isLoggingEnabled,
             content: chartContent(isDragging: isDragging, scrollState: scrollState))
             .frame(width: scrollState.layoutMetrics.viewportWidth)
             .frame(maxHeight: .infinity)

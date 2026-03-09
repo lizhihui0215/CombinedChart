@@ -1,4 +1,19 @@
+import OSLog
 import SwiftUI
+
+enum ChartLog {
+    static let subsystem = "CombinedChartFramework"
+
+    enum Category: String {
+        case section = "Section"
+        case interaction = "Interaction"
+        case uiKitScroll = "UIKitScroll"
+    }
+
+    static func logger(_ category: Category) -> Logger {
+        Logger(subsystem: subsystem, category: category.rawValue)
+    }
+}
 
 /// A reusable combined bar-and-line chart view.
 ///
@@ -26,6 +41,7 @@ public struct CombinedChartView: View {
     let tabs: [Tab]
     let slots: Slots
     let onPointTap: ((Selection) -> Void)?
+    let onDebugStateChange: ((DebugState) -> Void)?
     @Binding var selectedTab: Tab
     @Binding var showDebugOverlay: Bool
 
@@ -50,12 +66,14 @@ public struct CombinedChartView: View {
         selectedTab: Binding<Tab> = .constant(.totalTrend),
         showDebugOverlay: Binding<Bool> = .constant(false),
         slots: Slots = .default,
-        onPointTap: ((Selection) -> Void)? = nil) {
+        onPointTap: ((Selection) -> Void)? = nil,
+        onDebugStateChange: ((DebugState) -> Void)? = nil) {
         self.config = config
         self.groups = groups
         self.tabs = tabs
         self.slots = slots
         self.onPointTap = onPointTap
+        self.onDebugStateChange = onDebugStateChange
         _selectedTab = selectedTab
         _showDebugOverlay = showDebugOverlay
         _preparedData = State(initialValue: ChartPreparedData.make(from: groups))
@@ -89,7 +107,8 @@ public struct CombinedChartView: View {
         selectedTab: Binding<Tab> = .constant(.totalTrend),
         showDebugOverlay: Binding<Bool> = .constant(false),
         viewSlots: Slots,
-        onPointTap: ((Selection) -> Void)? = nil) {
+        onPointTap: ((Selection) -> Void)? = nil,
+        onDebugStateChange: ((DebugState) -> Void)? = nil) {
         self.init(
             config: config,
             groups: groups,
@@ -97,7 +116,8 @@ public struct CombinedChartView: View {
             selectedTab: selectedTab,
             showDebugOverlay: showDebugOverlay,
             slots: viewSlots,
-            onPointTap: onPointTap)
+            onPointTap: onPointTap,
+            onDebugStateChange: onDebugStateChange)
     }
 
     // UI state.
@@ -136,6 +156,7 @@ public struct CombinedChartView: View {
                         viewportState: $viewportState,
                         layoutState: $layoutState,
                         plotSyncState: $plotSyncState,
+                        onDebugStateChange: onDebugStateChange,
                         onDispatchAction: dispatch)
                 } else {
                     slots.emptyState

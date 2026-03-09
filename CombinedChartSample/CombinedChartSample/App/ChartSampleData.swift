@@ -178,24 +178,41 @@ enum ChartSampleData {
     }
 
     static func makeConfig(
+        monthsPerPage: Int = 4,
+        arrowScrollMode: CombinedChartView.Config.Pager.ArrowScrollMode = .byPage,
         dragScrollMode: CombinedChartView.Config.Pager.DragScrollMode = .freeSnapping,
         scrollImplementation: CombinedChartView.Config.Pager.ScrollImplementation = .automatic,
         chartHeight: CGFloat = 420,
         visibleStartThreshold: CGFloat = 2.0 / 3.0,
-        barWidth: CGFloat = 40) -> CombinedChartView.Config {
+        barWidth: CGFloat = 40,
+        segmentGap: CGFloat = 2,
+        lineWidth: CGFloat = 1,
+        selectionPointSize: CGFloat = 20,
+        minimumSelectionWidth: CGFloat = 24,
+        yAxisWidth: CGFloat = 40,
+        zeroLineWidth: CGFloat = 1,
+        gridLineWidth: CGFloat = 0.5,
+        isPagerVisible: Bool = true,
+        trendBarColorStyle: CombinedChartView.Config.Bar.TrendBarColorStyle = .unified(Palette.trendBar),
+        selectionLineColorStyle: CombinedChartView.Config.Line
+            .LineColorStrategy = .fixedLine(Palette.selectionLine),
+        debugLoggingEnabled: Bool = false) -> CombinedChartView.Config {
         CombinedChartView.Config(
-            monthsPerPage: 4,
+            monthsPerPage: monthsPerPage,
             chartHeight: chartHeight,
-            bar: makeBarConfig(barWidth: barWidth),
+            bar: makeBarConfig(
+                barWidth: barWidth,
+                segmentGap: segmentGap,
+                trendBarColorStyle: trendBarColorStyle),
             line: CombinedChartView.Config.Line(
                 positiveLineColor: Palette.positiveLine,
                 negativeLineColor: Palette.negativeLine,
-                lineWidth: 1,
+                lineWidth: lineWidth,
                 selection: .init(
-                    pointSize: 20,
-                    selectionLineColorStrategy: .fixedLine(Palette.selectionLine),
+                    pointSize: selectionPointSize,
+                    selectionLineColorStrategy: selectionLineColorStyle,
                     fillColor: Palette.selectionFill,
-                    minimumSelectionWidth: 24)),
+                    minimumSelectionWidth: minimumSelectionWidth)),
             axis: CombinedChartView.Config.Axis(
                 xAxisLabel: { context in
                     context.point.xLabel
@@ -204,21 +221,27 @@ enum ChartSampleData {
                     let value = context.value
                     return value == 0 ? "0" : "\(Int(value / 1000))K"
                 },
+                gridLineWidth: gridLineWidth,
                 zeroLineColor: Palette.zeroLine,
-                zeroLineWidth: 1,
-                yAxisWidth: 40),
+                zeroLineWidth: zeroLineWidth,
+                yAxisWidth: yAxisWidth),
             pager: .init(
-                isVisible: true,
+                isVisible: isPagerVisible,
+                arrowScrollMode: arrowScrollMode,
                 dragScrollMode: dragScrollMode,
                 scrollImplementation: scrollImplementation,
-                visibleStartThreshold: visibleStartThreshold))
+                visibleStartThreshold: visibleStartThreshold),
+            debug: .init(isLoggingEnabled: debugLoggingEnabled))
     }
 
-    private static func makeBarConfig(barWidth: CGFloat) -> CombinedChartView.Config.Bar {
+    private static func makeBarConfig(
+        barWidth: CGFloat,
+        segmentGap: CGFloat,
+        trendBarColorStyle: CombinedChartView.Config.Bar.TrendBarColorStyle) -> CombinedChartView.Config.Bar {
         CombinedChartView.Config.Bar(
             series: makeBarSeries(),
-            trendBarColorStyle: .unified(Palette.trendBar),
-            segmentGap: 2,
+            trendBarColorStyle: trendBarColorStyle,
+            segmentGap: segmentGap,
             segmentGapColor: Palette.segmentGap,
             barWidth: barWidth)
     }

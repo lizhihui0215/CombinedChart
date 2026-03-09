@@ -90,7 +90,7 @@ extension CombinedChartView {
             return ranges
         }
 
-        private static func makeVisibleStartIndex(
+        static func makeVisibleStartIndex(
             dataCount: Int,
             contentOffsetX: CGFloat,
             unitWidth: CGFloat,

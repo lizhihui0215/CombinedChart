@@ -338,16 +338,19 @@ public extension ChartConfig {
         public let statusColor: Color
         public let pointGuideColor: Color
         public let thresholdGuideColor: Color
+        public let isLoggingEnabled: Bool
 
         public init(
             statusFont: Font = .caption.monospaced(),
             statusColor: Color = .secondary,
             pointGuideColor: Color = Color.red.opacity(0.6),
-            thresholdGuideColor: Color = Color.blue.opacity(0.7)) {
+            thresholdGuideColor: Color = Color.blue.opacity(0.7),
+            isLoggingEnabled: Bool = false) {
             self.statusFont = statusFont
             self.statusColor = statusColor
             self.pointGuideColor = pointGuideColor
             self.thresholdGuideColor = thresholdGuideColor
+            self.isLoggingEnabled = isLoggingEnabled
         }
     }
 }
