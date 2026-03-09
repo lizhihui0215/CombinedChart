@@ -180,9 +180,15 @@ public extension ChartConfig {
 
     /// Configuration for trend line rendering and line-based selection styling.
     struct Line {
+        public enum LineType: Equatable {
+            case linear
+            case smoothed(tension: CGFloat)
+        }
+
         public let positiveLineColor: Color
         public let negativeLineColor: Color
         public let lineWidth: CGFloat
+        public let lineType: LineType
         public let selection: Selection
 
         /// Creates line configuration.
@@ -190,10 +196,12 @@ public extension ChartConfig {
             positiveLineColor: Color,
             negativeLineColor: Color,
             lineWidth: CGFloat,
+            lineType: LineType = .linear,
             selection: Selection) {
             self.positiveLineColor = positiveLineColor
             self.negativeLineColor = negativeLineColor
             self.lineWidth = lineWidth
+            self.lineType = lineType
             self.selection = selection
         }
     }

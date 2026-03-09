@@ -46,20 +46,30 @@ extension CombinedChartView {
     enum LineSegmentResolver {
         static func makeSegments(
             points: [(position: CGPoint, value: Double)],
+            style: ChartConfig.Line.LineType,
             color: (Double) -> Color) -> [LineSegmentPath] {
             guard points.count > 1 else { return [] }
-            var segments: [LineSegmentPath] = []
+            let contiguousSegments = makeContiguousSegments(points: points)
+
+            return contiguousSegments.enumerated().map { index, segment in
+                LineSegmentPath(
+                    id: "\(index)-segment",
+                    path: path(for: segment.points, style: style),
+                    color: color(segment.value))
+            }
+        }
+
+        private static func makeContiguousSegments(
+            points: [(position: CGPoint, value: Double)]) -> [(points: [CGPoint], value: Double)] {
+            var segments: [(points: [CGPoint], value: Double)] = []
 
             for index in 0..<(points.count - 1) {
                 let start = points[index]
                 let end = points[index + 1]
 
                 if isSameSideOrZero(start.value, end.value) {
-                    segments.append(
-                        LineSegmentPath(
-                            id: "\(index)-whole",
-                            path: linePath(from: start.position, to: end.position),
-                            color: color(start.value)))
+                    append(point: start.position, value: start.value, to: &segments)
+                    append(point: end.position, value: start.value, to: &segments)
                     continue
                 }
 
@@ -72,19 +82,27 @@ extension CombinedChartView {
                     continue
                 }
 
-                segments.append(
-                    LineSegmentPath(
-                        id: "\(index)-leading",
-                        path: linePath(from: start.position, to: intersection),
-                        color: color(start.value)))
-                segments.append(
-                    LineSegmentPath(
-                        id: "\(index)-trailing",
-                        path: linePath(from: intersection, to: end.position),
-                        color: color(end.value)))
+                append(point: start.position, value: start.value, to: &segments)
+                append(point: intersection, value: start.value, to: &segments)
+                append(point: intersection, value: end.value, to: &segments)
+                append(point: end.position, value: end.value, to: &segments)
             }
 
-            return segments
+            return segments.filter { $0.points.count > 1 }
+        }
+
+        private static func append(
+            point: CGPoint,
+            value: Double,
+            to segments: inout [(points: [CGPoint], value: Double)]) {
+            if let lastIndex = segments.indices.last,
+               isSameSideOrZero(segments[lastIndex].value, value) {
+                if segments[lastIndex].points.last != point {
+                    segments[lastIndex].points.append(point)
+                }
+            } else {
+                segments.append((points: [point], value: value))
+            }
         }
 
         static func isSameSideOrZero(_ startValue: Double, _ endValue: Double) -> Bool {
@@ -108,6 +126,58 @@ extension CombinedChartView {
             var path = Path()
             path.move(to: start)
             path.addLine(to: end)
+            return path
+        }
+
+        private static func path(
+            for points: [CGPoint],
+            style: ChartConfig.Line.LineType) -> Path {
+            switch style {
+            case .linear:
+                polylinePath(points: points)
+            case .smoothed(let tension):
+                smoothedPath(points: points, tension: tension)
+            }
+        }
+
+        private static func polylinePath(points: [CGPoint]) -> Path {
+            var path = Path()
+            guard let first = points.first else { return path }
+
+            path.move(to: first)
+            for point in points.dropFirst() {
+                path.addLine(to: point)
+            }
+            return path
+        }
+
+        private static func smoothedPath(points: [CGPoint], tension: CGFloat) -> Path {
+            guard points.count > 2 else {
+                return polylinePath(points: points)
+            }
+
+            let clampedTension = max(0, min(tension, 1))
+            let factor = clampedTension / 6.0
+
+            var path = Path()
+            path.move(to: points[0])
+
+            for index in 0..<(points.count - 1) {
+                let previous = index > 0 ? points[index - 1] : points[index]
+                let current = points[index]
+                let next = points[index + 1]
+                let following = index + 2 < points.count ? points[index + 2] : next
+
+                let controlPoint1 = CGPoint(
+                    x: current.x + (next.x - previous.x) * factor,
+                    y: current.y + (next.y - previous.y) * factor)
+                let controlPoint2 = CGPoint(
+                    x: next.x - (following.x - current.x) * factor,
+                    y: next.y - (following.y - current.y) * factor)
+
+                path.addCurve(to: next, control1: controlPoint1, control2: controlPoint2)
+            }
+
             return path
         }
     }

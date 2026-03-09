@@ -113,6 +113,8 @@ struct ContentView: View {
         }
     }
 
+    typealias LineTypeOption = ChartSampleData.LineTypeOption
+
     private struct UITestLaunchConfiguration {
         let dataset: ChartSampleData.DatasetOption
         let selectedTab: CombinedChartView.Tab
@@ -178,6 +180,8 @@ struct ContentView: View {
         var monthsPerPage: CGFloat
         var segmentGap: CGFloat
         var lineWidth: CGFloat
+        var lineType: LineTypeOption
+        var lineTension: CGFloat
         var selectionPointSize: CGFloat
         var minimumSelectionWidth: CGFloat
         var yAxisWidth: CGFloat
@@ -205,6 +209,8 @@ struct ContentView: View {
             monthsPerPage = 4
             segmentGap = 2
             lineWidth = 1
+            lineType = .linear
+            lineTension = 0.45
             selectionPointSize = 20
             minimumSelectionWidth = 24
             yAxisWidth = 40
@@ -262,6 +268,7 @@ struct ContentView: View {
             barWidth: controls.barWidth,
             segmentGap: controls.segmentGap,
             lineWidth: controls.lineWidth,
+            lineType: controls.lineType.makeStyle(tension: controls.lineTension),
             selectionPointSize: controls.selectionPointSize,
             minimumSelectionWidth: controls.minimumSelectionWidth,
             yAxisWidth: controls.yAxisWidth,
@@ -375,6 +382,15 @@ private extension ContentView {
                         step: 0.5,
                         suffix: " pt",
                         format: "%.1f")
+                    compactPicker("Line Type", selection: $controls.lineType)
+                    if controls.lineType == .smoothed {
+                        sliderRow(
+                            "Line Tension",
+                            value: $controls.lineTension,
+                            range: 0.1...1.0,
+                            step: 0.05,
+                            format: "%.2f")
+                    }
                     sliderRow(
                         "Selection Point",
                         value: $controls.selectionPointSize,

@@ -21,7 +21,7 @@ private struct CombinedChartPreviewHost: View {
                     "xKey=\(context.point.xKey)",
                     "index=\(context.index)")
             })
-        .padding()
+            .padding()
     }
 }
 

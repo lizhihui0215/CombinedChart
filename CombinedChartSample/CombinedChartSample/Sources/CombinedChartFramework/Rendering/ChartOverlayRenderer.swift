@@ -317,6 +317,7 @@ extension CombinedChartView.ChartRenderer {
 
         return CombinedChartView.LineSegmentResolver.makeSegments(
             points: resolvedPoints,
+            style: overlayContext.config.line.lineType,
             color: overlayLineColor(for:))
     }
 

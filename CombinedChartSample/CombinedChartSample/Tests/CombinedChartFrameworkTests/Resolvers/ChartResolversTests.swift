@@ -43,14 +43,16 @@ final class ChartResolversTests: XCTestCase {
 
         let firstIDs = CombinedChartView.LineSegmentResolver.makeSegments(
             points: points,
+            style: .linear,
             color: { _ in .red })
             .map(\.id)
         let secondIDs = CombinedChartView.LineSegmentResolver.makeSegments(
             points: points,
+            style: .linear,
             color: { _ in .red })
             .map(\.id)
 
-        XCTAssertEqual(firstIDs, ["0-leading", "0-trailing", "1-whole"])
+        XCTAssertEqual(firstIDs, ["0-segment", "1-segment"])
         XCTAssertEqual(secondIDs, firstIDs)
     }
 

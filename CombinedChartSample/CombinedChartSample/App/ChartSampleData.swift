@@ -44,6 +44,24 @@ enum ChartSampleData {
         static let segmentGap = Color(uiColor: .systemBackground)
     }
 
+    enum LineTypeOption: String, CaseIterable, Identifiable {
+        case linear = "Linear"
+        case smoothed = "Smoothed"
+
+        var id: Self {
+            self
+        }
+
+        func makeStyle(tension: CGFloat) -> CombinedChartView.Config.Line.LineType {
+            switch self {
+            case .linear:
+                .linear
+            case .smoothed:
+                .smoothed(tension: tension)
+            }
+        }
+    }
+
     enum DatasetOption: String, CaseIterable, Identifiable {
         case current = "Current"
         case positiveYAxisDominant = "Positive Y Dominant"
@@ -147,6 +165,7 @@ enum ChartSampleData {
         barWidth: CGFloat = 40,
         segmentGap: CGFloat = 2,
         lineWidth: CGFloat = 1,
+        lineType: CombinedChartView.Config.Line.LineType = .linear,
         selectionPointSize: CGFloat = 20,
         minimumSelectionWidth: CGFloat = 24,
         yAxisWidth: CGFloat = 40,
@@ -168,6 +187,7 @@ enum ChartSampleData {
                 positiveLineColor: Palette.positiveLine,
                 negativeLineColor: Palette.negativeLine,
                 lineWidth: lineWidth,
+                lineType: lineType,
                 selection: .init(
                     pointSize: selectionPointSize,
                     selectionLineColorStrategy: selectionLineColorStyle,
