@@ -4,18 +4,18 @@ import SwiftUI
 extension CombinedChartView {
     /// Encapsulates the Chart to keep SwiftUI type-checking fast.
     struct Renderer: View {
-        let context: ChartRenderContext
+        let context: RenderContext
         let onSelectIndex: (Int) -> Void
         let onPlotAreaChange: (CGRect) -> Void
         let onYAxisTickPositions: ([Double: CGFloat]) -> Void
-        let axisRenderContext: CombinedChartView.AxisRenderContext
-        let marksContext: CombinedChartView.MarksRenderContext
-        let overlayContext: CombinedChartView.OverlayRenderContext
+        let axisRenderContext: CombinedChartView.AxisContext
+        let marksContext: CombinedChartView.MarksContext
+        let overlayContext: CombinedChartView.OverlayContext
         let usesTrendBarColor: Bool
         private let barMarkItems: [BarMarkItem]
 
         init(
-            context: ChartRenderContext,
+            context: RenderContext,
             onSelectIndex: @escaping (Int) -> Void,
             onPlotAreaChange: @escaping (CGRect) -> Void,
             onYAxisTickPositions: @escaping ([Double: CGFloat]) -> Void) {
@@ -75,7 +75,7 @@ private extension CombinedChartView.Renderer {
     }
 
     static func makeAxisRenderContext(
-        context: CombinedChartView.ChartRenderContext) -> CombinedChartView.AxisRenderContext {
+        context: CombinedChartView.RenderContext) -> CombinedChartView.AxisContext {
         let pointInfos = context.visibleData.enumerated().map { index, point in
             point.axisPointInfo(index: index)
         }
@@ -87,7 +87,7 @@ private extension CombinedChartView.Renderer {
     }
 
     static func makeMarksRenderContext(
-        context: CombinedChartView.ChartRenderContext) -> CombinedChartView.MarksRenderContext {
+        context: CombinedChartView.RenderContext) -> CombinedChartView.MarksContext {
         .init(
             selectedTab: context.selectedTab,
             visibleData: context.visibleData,
@@ -99,7 +99,7 @@ private extension CombinedChartView.Renderer {
     }
 
     static func makeOverlayRenderContext(
-        context: CombinedChartView.ChartRenderContext) -> CombinedChartView.OverlayRenderContext {
+        context: CombinedChartView.RenderContext) -> CombinedChartView.OverlayContext {
         .init(
             selectedTab: context.selectedTab,
             visibleData: context.visibleData,
@@ -111,7 +111,7 @@ private extension CombinedChartView.Renderer {
     }
 
     static func resolveUsesTrendBarColor(
-        for marksContext: CombinedChartView.MarksRenderContext) -> Bool {
+        for marksContext: CombinedChartView.MarksContext) -> Bool {
         guard marksContext.selectedTab.mode.barColorStyle == .unifiedTrendColor else {
             return false
         }
@@ -125,7 +125,7 @@ private extension CombinedChartView.Renderer {
 
     static func makeBarMarkItems(
         visibleData: [CombinedChartView.ChartDataPoint],
-        marksContext: CombinedChartView.MarksRenderContext,
+        marksContext: CombinedChartView.MarksContext,
         useTrendBarColor: Bool) -> [BarMarkItem] {
         let gap = CombinedChartView.BarSegmentResolver.gapValue(
             plotAreaHeight: marksContext.plotAreaHeight,

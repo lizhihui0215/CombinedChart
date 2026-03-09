@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension CombinedChartView {
-    struct ChartSectionContext {
+    struct SectionContext {
         let config: ChartConfig
         let selectedTab: ChartTab
         let data: [ChartDataPoint]
@@ -24,7 +24,7 @@ extension CombinedChartView {
         func makeRenderContext(
             plotAreaHeight: CGFloat,
             unitWidth: CGFloat,
-            visibleSelection: VisibleSelection?) -> ChartRenderContext {
+            visibleSelection: VisibleSelection?) -> RenderContext {
             .init(
                 selectedTab: selectedTab,
                 visibleData: data,

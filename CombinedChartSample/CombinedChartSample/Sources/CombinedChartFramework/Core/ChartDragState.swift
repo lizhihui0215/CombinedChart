@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension CombinedChartView {
-    struct ChartDragState {
+    struct DragState {
         let contentOffsetX: CGFloat
         let startIndex: Int
         let monthsPerPage: Int

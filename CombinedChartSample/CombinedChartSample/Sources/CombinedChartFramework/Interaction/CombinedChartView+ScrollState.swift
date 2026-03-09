@@ -1,27 +1,27 @@
 import SwiftUI
 
 extension CombinedChartView {
-    struct ChartScrollState {
+    struct ScrollState {
         let pagingContext: PagingContext
-        let dragState: ChartDragState
-        let layoutMetrics: ChartLayoutMetrics
-        let renderContext: ChartRenderContext
+        let dragState: DragState
+        let layoutMetrics: LayoutMetrics
+        let renderContext: RenderContext
 
         init(
-            context: ChartSectionContext,
+            context: SectionContext,
             viewportState: ViewportState,
             plotAreaHeight: CGFloat,
             visibleSelection: VisibleSelection?,
             availableWidth: CGFloat,
             dragTranslationX: CGFloat,
             settlingOffsetX: CGFloat) {
-            let dragState = ChartDragState(
+            let dragState = DragState(
                 contentOffsetX: viewportState.contentOffsetX,
                 startIndex: viewportState.startIndex,
                 monthsPerPage: context.pagingContext.monthsPerPage,
                 maxStartMonthIndex: context.pagingContext.maxStartMonthIndex,
                 dragScrollMode: context.config.pager.dragScrollMode)
-            let layoutMetrics = ChartLayoutMetrics(
+            let layoutMetrics = LayoutMetrics(
                 availableWidth: availableWidth,
                 axisWidth: context.config.axis.yAxisWidth,
                 monthsPerPage: context.pagingContext.monthsPerPage,

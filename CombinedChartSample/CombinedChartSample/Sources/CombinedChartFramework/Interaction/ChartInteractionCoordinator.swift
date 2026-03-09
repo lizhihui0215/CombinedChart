@@ -6,7 +6,7 @@ extension CombinedChartView {
 
     // MARK: - Derived State
 
-    var interactionSnapshot: ChartInteractionSnapshot {
+    var interactionSnapshot: Snapshot {
         interactionContext.snapshot
     }
 
@@ -19,7 +19,7 @@ extension CombinedChartView {
         }
     }
 
-    private var interactionContext: ChartInteractionContext {
+    private var interactionContext: InteractionContext {
         .init(
             config: config,
             preparedData: preparedData,
@@ -37,8 +37,8 @@ extension CombinedChartView {
     }
 
     func makeSectionContext(
-        snapshot: ChartInteractionSnapshot,
-        axisPointInfos: [ChartConfig.Axis.PointInfo]) -> ChartSectionContext {
+        snapshot: Snapshot,
+        axisPointInfos: [ChartConfig.Axis.PointInfo]) -> SectionContext {
         .init(
             config: config,
             selectedTab: selectedTab,
@@ -53,7 +53,7 @@ extension CombinedChartView {
             })
     }
 
-    func makePagerContext(snapshot: ChartInteractionSnapshot) -> PagerContext? {
+    func makePagerContext(snapshot: Snapshot) -> PagerContext? {
         guard snapshot.hasData else { return nil }
         return .init(
             config: config,
@@ -68,7 +68,7 @@ extension CombinedChartView {
             onSelectNextPage: { dispatch(.selectNextPage) })
     }
 
-    func makeInteractionState(snapshot: ChartInteractionSnapshot) -> InteractionState {
+    func makeInteractionState(snapshot: Snapshot) -> InteractionState {
         .init(
             visibleSelection: visibleSelection,
             visiblePointIDs: snapshot.dataPointIDs,

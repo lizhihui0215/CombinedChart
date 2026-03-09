@@ -1,13 +1,13 @@
 import SwiftUI
 
 extension CombinedChartView {
-    struct ChartDerivedState {
+    struct DerivedState {
         let hasData: Bool
         let axisPointInfos: [ChartConfig.Axis.PointInfo]
         let yDomain: ClosedRange<Double>
         let yAxisTickValues: [Double]
         let yAxisDisplayDomain: ClosedRange<Double>
-        let viewport: ChartViewportDerivedState
+        let viewport: ViewportDerivedState
 
         init(
             config: ChartConfig,

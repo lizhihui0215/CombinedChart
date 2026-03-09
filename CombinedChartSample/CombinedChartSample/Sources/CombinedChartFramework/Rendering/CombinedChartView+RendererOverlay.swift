@@ -2,7 +2,7 @@ import Charts
 import SwiftUI
 
 extension CombinedChartView {
-    struct ChartSelectionState {
+    struct SelectionState {
         let point: ChartDataPoint
         let index: Int
         let value: Double
@@ -14,7 +14,7 @@ extension CombinedChartView {
         let indicatorFrame: CGRect
     }
 
-    struct PlotSyncPayload: Equatable {
+    struct SyncPayload: Equatable {
         let plotRect: CGRect
         let yAxisTickPositions: [Double: CGFloat]
     }
@@ -39,7 +39,7 @@ extension CombinedChartView.Renderer {
     @ViewBuilder
     func syncPlotOverlay(plotRect: CGRect, proxy: ChartProxy) -> some View {
         if hasValidPlotFrame(plotRect) {
-            let payload = CombinedChartView.PlotSyncPayload(
+            let payload = CombinedChartView.SyncPayload(
                 plotRect: plotRect,
                 yAxisTickPositions: yAxisTickPositions(plotRect: plotRect, proxy: proxy))
 
@@ -53,7 +53,7 @@ extension CombinedChartView.Renderer {
         }
     }
 
-    func applyPlotSyncPayload(_ payload: CombinedChartView.PlotSyncPayload) {
+    func applyPlotSyncPayload(_ payload: CombinedChartView.SyncPayload) {
         onPlotAreaChange(payload.plotRect)
         onYAxisTickPositions(payload.yAxisTickPositions)
     }
@@ -167,7 +167,7 @@ extension CombinedChartView.Renderer {
     }
 
     func selectionOverlayContext(
-        selectionState: CombinedChartView.ChartSelectionState,
+        selectionState: CombinedChartView.SelectionState,
         plotRect: CGRect,
         proxy: ChartProxy) -> CombinedChartView.SelectionOverlayContext {
         let indicatorStyle = overlayContext.selectedTab.mode.selectionIndicatorStyle
@@ -186,7 +186,7 @@ extension CombinedChartView.Renderer {
     }
 
     func selectionLayout(
-        for selectionState: CombinedChartView.ChartSelectionState,
+        for selectionState: CombinedChartView.SelectionState,
         plotRect: CGRect,
         proxy: ChartProxy,
         indicatorStyle: CombinedChartView.ChartPresentationMode.SelectionIndicatorStyle) -> CombinedChartView
@@ -257,7 +257,7 @@ extension CombinedChartView.Renderer {
             .position(x: plotRect.midX, y: plotRect.midY)
     }
 
-    func selectionState(proxy: ChartProxy) -> CombinedChartView.ChartSelectionState? {
+    func selectionState(proxy: ChartProxy) -> CombinedChartView.SelectionState? {
         guard let visibleSelection = overlayContext.visibleSelection,
               overlayContext.visibleData.indices.contains(visibleSelection.index)
         else {
@@ -270,7 +270,7 @@ extension CombinedChartView.Renderer {
         }
 
         let value = point.trendLineValue(using: overlayContext.config)
-        return CombinedChartView.ChartSelectionState(
+        return CombinedChartView.SelectionState(
             point: point,
             index: visibleSelection.index,
             value: value,

@@ -76,7 +76,7 @@ public struct CombinedChartView: View {
         self.onDebugStateChange = onDebugStateChange
         _selectedTab = selectedTab
         _showDebugOverlay = showDebugOverlay
-        _preparedData = State(initialValue: ChartPreparedData.make(from: groups))
+        _preparedData = State(initialValue: PreparedData.make(from: groups))
         _visibleSelection = State(
             initialValue: groups.first?.points.first.map {
                 .init(
@@ -127,7 +127,7 @@ public struct CombinedChartView: View {
         contentOffsetX: 0)
     @State var layoutState: LayoutState = .empty
     @State var plotSyncState: PlotSyncState = .empty
-    @State var preparedData: ChartPreparedData
+    @State var preparedData: PreparedData
 
     public var body: some View {
         let snapshot = interactionSnapshot
@@ -169,7 +169,7 @@ public struct CombinedChartView: View {
         }
         .frame(height: config.chartHeight)
         .onChange(of: groups) { _ in
-            preparedData = ChartPreparedData.make(from: groups)
+            preparedData = PreparedData.make(from: groups)
         }
     }
 }

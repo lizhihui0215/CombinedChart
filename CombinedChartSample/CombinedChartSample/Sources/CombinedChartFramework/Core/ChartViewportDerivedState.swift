@@ -141,7 +141,7 @@ extension CombinedChartView {
         }
     }
 
-    struct ChartViewportDerivedState {
+    struct ViewportDerivedState {
         let visibleStartIndex: Int?
         let visibleStartLabel: String?
         let pagerState: PagerState

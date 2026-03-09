@@ -2,7 +2,7 @@ import Charts
 import SwiftUI
 
 extension CombinedChartView {
-    struct ChartRenderContext {
+    struct RenderContext {
         let selectedTab: ChartTab
         let visibleData: [ChartDataPoint]
         let yAxisTickValues: [Double]
@@ -15,13 +15,13 @@ extension CombinedChartView {
         let visibleSelection: VisibleSelection?
     }
 
-    struct AxisRenderContext {
+    struct AxisContext {
         let monthValues: [String]
         let pointInfos: [ChartConfig.Axis.PointInfo]
         let pointInfoByKey: [String: ChartConfig.Axis.PointInfo]
     }
 
-    struct MarksRenderContext {
+    struct MarksContext {
         let selectedTab: ChartTab
         let visibleData: [ChartDataPoint]
         let yAxisDisplayDomain: ClosedRange<Double>
@@ -31,7 +31,7 @@ extension CombinedChartView {
         let visibleSelection: VisibleSelection?
     }
 
-    struct OverlayRenderContext {
+    struct OverlayContext {
         let selectedTab: ChartTab
         let visibleData: [ChartDataPoint]
         let yAxisTickValues: [Double]

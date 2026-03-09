@@ -4,7 +4,7 @@ import SwiftUI
 extension CombinedChartView {
     struct Section: View {
         private let logger = ChartLog.logger(.section)
-        let context: ChartSectionContext
+        let context: SectionContext
         let visibleSelection: VisibleSelection?
         @Binding var viewportState: ViewportState
         @Binding var layoutState: LayoutState
@@ -56,7 +56,7 @@ extension CombinedChartView {
 private extension CombinedChartView.Section {
     // MARK: - Scroll State
 
-    func makeScrollState(for geometry: GeometryProxy) -> CombinedChartView.ChartScrollState {
+    func makeScrollState(for geometry: GeometryProxy) -> CombinedChartView.ScrollState {
         .init(
             context: context,
             viewportState: viewportState,
@@ -79,14 +79,14 @@ private extension CombinedChartView.Section {
         plotSyncState.updateYAxisTickPositions(positions)
     }
 
-    func syncViewport(scrollState: CombinedChartView.ChartScrollState) {
+    func syncViewport(scrollState: CombinedChartView.ScrollState) {
         scrollState.syncViewport(
             layoutState: &_layoutState.wrappedValue,
             viewportState: &viewportState)
     }
 
     func makeDebugState(
-        scrollState: CombinedChartView.ChartScrollState,
+        scrollState: CombinedChartView.ScrollState,
         isDragging: Bool) -> CombinedChartView.DebugState {
         let effectiveContentOffsetX = max(-scrollState.layoutMetrics.currentContentOffsetX, 0)
         let targetSettleContext = scrollState.makeDragSettleContext(from: dragTranslationX)
@@ -132,7 +132,7 @@ private extension CombinedChartView.Section {
 
     @ViewBuilder
     func chartContainer(
-        scrollState: CombinedChartView.ChartScrollState,
+        scrollState: CombinedChartView.ScrollState,
         isDragging: Bool) -> some View {
         switch resolvedScrollImplementation {
         case .uiKitScrollView:
@@ -142,7 +142,7 @@ private extension CombinedChartView.Section {
         }
     }
 
-    func chartContent(isDragging: Bool, scrollState: CombinedChartView.ChartScrollState) -> some View {
+    func chartContent(isDragging: Bool, scrollState: CombinedChartView.ScrollState) -> some View {
         CombinedChartView.Renderer(
             context: scrollState.renderContext,
             onSelectIndex: { onDispatchAction(.selectPoint(index: $0)) },
@@ -155,7 +155,7 @@ private extension CombinedChartView.Section {
     }
 
     func swiftUIGestureChartContainer(
-        scrollState: CombinedChartView.ChartScrollState,
+        scrollState: CombinedChartView.ScrollState,
         isDragging: Bool) -> some View {
         chartContent(isDragging: isDragging, scrollState: scrollState)
             .frame(width: scrollState.layoutMetrics.chartWidth)
@@ -206,7 +206,7 @@ private extension CombinedChartView.Section {
 
     // MARK: - Gesture
 
-    func dragGesture(scrollState: CombinedChartView.ChartScrollState) -> some Gesture {
+    func dragGesture(scrollState: CombinedChartView.ScrollState) -> some Gesture {
         DragGesture()
             .updating($dragTranslationX) { value, state, _ in
                 state = value.translation.width
@@ -229,7 +229,7 @@ private extension CombinedChartView.Section {
 
 private extension CombinedChartView.Section {
     func uiKitChartContainer(
-        scrollState: CombinedChartView.ChartScrollState,
+        scrollState: CombinedChartView.ScrollState,
         isDragging: Bool) -> some View {
         ChartUIKitScrollContainer(
             viewportWidth: scrollState.layoutMetrics.viewportWidth,

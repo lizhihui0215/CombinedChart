@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension CombinedChartView {
-    struct ChartPreparedData {
+    struct PreparedData {
         let sortedGroups: [ChartDataGroup]
         let data: [ChartDataPoint]
         let dataPointIDs: [ChartPointID]
@@ -24,10 +24,10 @@ extension CombinedChartView {
         }
     }
 
-    struct ChartInteractionSnapshot {
+    struct Snapshot {
         let data: [ChartDataPoint]
         let dataPointIDs: [ChartPointID]
-        let derivedState: ChartDerivedState
+        let derivedState: DerivedState
         let pagingContext: PagingContext
         let canSelectPreviousPage: Bool
         let canSelectNextPage: Bool
@@ -61,9 +61,9 @@ extension CombinedChartView {
         }
     }
 
-    struct ChartInteractionContext {
+    struct InteractionContext {
         let config: ChartConfig
-        let preparedData: ChartPreparedData
+        let preparedData: PreparedData
         let viewportState: ViewportState
         let layoutState: LayoutState
 
@@ -75,7 +75,7 @@ extension CombinedChartView {
             preparedData.data
         }
 
-        var derivedState: ChartDerivedState {
+        var derivedState: DerivedState {
             .init(
                 config: config,
                 sortedGroups: sortedGroups,
@@ -86,7 +86,7 @@ extension CombinedChartView {
                 unitWidth: layoutState.unitWidth)
         }
 
-        var snapshot: ChartInteractionSnapshot {
+        var snapshot: Snapshot {
             let derivedState = derivedState
             let pagerState = derivedState.viewport.pagerState
             let pagingContext = PagingContext(

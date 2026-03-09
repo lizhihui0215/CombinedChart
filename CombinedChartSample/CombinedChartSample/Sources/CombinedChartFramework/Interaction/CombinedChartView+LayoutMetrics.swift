@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension CombinedChartView {
-    struct ChartLayoutMetrics {
+    struct LayoutMetrics {
         let viewportWidth: CGFloat
         let unitWidth: CGFloat
         let chartWidth: CGFloat
@@ -13,7 +13,7 @@ extension CombinedChartView {
             axisWidth: CGFloat,
             monthsPerPage: Int,
             dataCount: Int,
-            dragState: ChartDragState,
+            dragState: DragState,
             dragTranslationX: CGFloat,
             settlingOffsetX: CGFloat,
             maxStartMonthIndex: Int) {

@@ -3,7 +3,7 @@ import SwiftUI
 
 extension CombinedChartView.Renderer {
     @AxisContentBuilder
-    func chartXAxis(axisContext: CombinedChartView.AxisRenderContext) -> some AxisContent {
+    func chartXAxis(axisContext: CombinedChartView.AxisContext) -> some AxisContent {
         AxisMarks(values: axisContext.monthValues) { value in
             AxisValueLabel(centered: true) {
                 if let key = value.as(String.self) {
