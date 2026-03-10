@@ -1,5 +1,7 @@
 # iOS 16 Known Issues
 
+[English](iOS16-Known-Issues.en.md) | 简体中文
+
 本文记录当前 `CombinedChartFramework` 在 iOS 16 运行与维护层面的已知限制、风险点和推荐配置。  
 需要先明确一点：项目当前声明支持 iOS 16，但 iOS 16 并不是当前架构下最理想的平台运行面，它更多是“兼容目标”，而非“最佳体验目标”。
 

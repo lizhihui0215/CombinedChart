@@ -1,5 +1,7 @@
 # CombinedChartFramework Crash Notes
 
+[English](Crash-Notes.en.md) | 简体中文
+
 本文用于记录当前项目的稳定性观察、潜在崩溃热点和排障建议。  
 需要先明确一点：截至 2026-03-10，仓库内 `crash/` 目录没有有效的 crash 产物，因此本文主要基于源码结构、构建验证结果和已记录的问题线索做架构级分析，而不是完整的线上事故复盘。
 

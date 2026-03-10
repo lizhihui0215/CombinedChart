@@ -1,5 +1,7 @@
 # CombinedChartFramework Roadmap
 
+[English](Roadmap.en.md) | 简体中文
+
 本文从架构演进角度定义当前项目的中短期路线图。  
 它不是功能 wishlist，而是围绕“能否成为可持续演进的图表框架”来排序优先级。
 

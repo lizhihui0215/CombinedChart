@@ -1,5 +1,7 @@
 # CombinedChartFramework Migration Notes
 
+[English](Migration-Notes.en.md) | 简体中文
+
 本文用于说明当前仓库从早期实现向当前 API 形态迁移时的原则、步骤和风险。  
 它关注的是“如何稳定演进”，而不是简单列出替换项。
 

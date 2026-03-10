@@ -1,5 +1,7 @@
 # CombinedChartFramework API Notes
 
+[English](API-Notes.en.md) | 简体中文
+
 本文基于 2026-03-10 的仓库现状编写，目标是从框架设计者视角说明当前公共 API 的边界、语义和推荐使用方式。
 
 ## 1. API 设计目标
