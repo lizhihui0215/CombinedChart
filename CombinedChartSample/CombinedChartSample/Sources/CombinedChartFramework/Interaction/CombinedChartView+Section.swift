@@ -231,7 +231,7 @@ private extension CombinedChartView.Section {
     func uiKitChartContainer(
         scrollState: CombinedChartView.ScrollState,
         isDragging: Bool) -> some View {
-        ChartUIKitScrollContainer(
+        CombinedChartView.UIKitScrollContainer(
             viewportWidth: scrollState.layoutMetrics.viewportWidth,
             chartWidth: scrollState.layoutMetrics.chartWidth,
             contentOffsetX: viewportState.contentOffsetX,

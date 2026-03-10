@@ -18,7 +18,7 @@
 		26B2B2CE2F5D4AEB003B7D89 /* ChartInteractionSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2CD2F5D4AEB003B7D89 /* ChartInteractionSnapshot.swift */; };
 		26B2B2D02F5D4B5D003B7D89 /* CombinedChartView+LayoutMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2CF2F5D4B5D003B7D89 /* CombinedChartView+LayoutMetrics.swift */; };
 		26B2B2D22F5D4BAC003B7D89 /* CombinedChartView+ScrollState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2D12F5D4BAC003B7D89 /* CombinedChartView+ScrollState.swift */; };
-		26B2F9CF2F5EBE4F0049D0A5 /* ChartUIKitScrollContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2F9CE2F5EBE4F0049D0A5 /* ChartUIKitScrollContainer.swift */; };
+		26B2F9CF2F5EBE4F0049D0A5 /* CombinedChartView+UIKitScrollContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2F9CE2F5EBE4F0049D0A5 /* CombinedChartView+UIKitScrollContainer.swift */; };
 		26E3FC552F5CE7CB004D2007 /* CombinedChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FC4D2F5CE7CB004D2007 /* CombinedChartView.swift */; };
 		26E3FCC52F5D0893004D2007 /* ChartResolvers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCC42F5D0893004D2007 /* ChartResolvers.swift */; };
 		26E3FCC72F5D0A42004D2007 /* CombinedChartView+Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E3FCC62F5D0A42004D2007 /* CombinedChartView+Renderer.swift */; };
@@ -74,7 +74,7 @@
 		26B2B2CD2F5D4AEB003B7D89 /* ChartInteractionSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartInteractionSnapshot.swift; sourceTree = "<group>"; };
 		26B2B2CF2F5D4B5D003B7D89 /* CombinedChartView+LayoutMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CombinedChartView+LayoutMetrics.swift"; sourceTree = "<group>"; };
 		26B2B2D12F5D4BAC003B7D89 /* CombinedChartView+ScrollState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CombinedChartView+ScrollState.swift"; sourceTree = "<group>"; };
-		26B2F9CE2F5EBE4F0049D0A5 /* ChartUIKitScrollContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartUIKitScrollContainer.swift; sourceTree = "<group>"; };
+		26B2F9CE2F5EBE4F0049D0A5 /* CombinedChartView+UIKitScrollContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CombinedChartView+UIKitScrollContainer.swift"; sourceTree = "<group>"; };
 		26E3FC4D2F5CE7CB004D2007 /* CombinedChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedChartView.swift; sourceTree = "<group>"; };
 		26E3FCC42F5D0893004D2007 /* ChartResolvers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartResolvers.swift; sourceTree = "<group>"; };
 		26E3FCC62F5D0A42004D2007 /* CombinedChartView+Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CombinedChartView+Renderer.swift"; sourceTree = "<group>"; };
@@ -215,7 +215,7 @@
 				26B2B2CF2F5D4B5D003B7D89 /* CombinedChartView+LayoutMetrics.swift */,
 				26B2B2D12F5D4BAC003B7D89 /* CombinedChartView+ScrollState.swift */,
 				2676F9E92F5D7D9B00C13C46 /* CombinedChartView+SectionContext.swift */,
-				26B2F9CE2F5EBE4F0049D0A5 /* ChartUIKitScrollContainer.swift */,
+				26B2F9CE2F5EBE4F0049D0A5 /* CombinedChartView+UIKitScrollContainer.swift */,
 			);
 			path = Interaction;
 			sourceTree = "<group>";
@@ -486,7 +486,7 @@
 				26E3FCD52F5D122C004D2007 /* ChartConfig.swift in Sources */,
 				26E3FCCF2F5D0E80004D2007 /* ChartInteractionCoordinator.swift in Sources */,
 				26E3FCCD2F5D0C48004D2007 /* CombinedChartView+Section.swift in Sources */,
-				26B2F9CF2F5EBE4F0049D0A5 /* ChartUIKitScrollContainer.swift in Sources */,
+				26B2F9CF2F5EBE4F0049D0A5 /* CombinedChartView+UIKitScrollContainer.swift in Sources */,
 				2676F9EA2F5D7D9B00C13C46 /* CombinedChartView+SectionContext.swift in Sources */,
 				2676F9EC2F5D7D9B00C13C46 /* CombinedChartView+RenderContext.swift in Sources */,
 				26E3FCD92F5D12C9004D2007 /* ChartDataModels.swift in Sources */,
@@ -807,7 +807,7 @@
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 3P8C7H426Z;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 16;
 				MACH_O_TYPE = staticlib;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartFramework;
@@ -829,7 +829,7 @@
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 3P8C7H426Z;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 16;
 				MACH_O_TYPE = staticlib;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bernard.CombinedChartFramework;
