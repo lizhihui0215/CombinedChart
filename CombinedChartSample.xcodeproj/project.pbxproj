@@ -14,6 +14,9 @@
 		2676F9F22F5D804A00C13C46 /* ChartViewState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2676F9F12F5D804A00C13C46 /* ChartViewState.swift */; };
 		2676F9F42F5D804A00C13C46 /* ChartDragState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2676F9F32F5D804A00C13C46 /* ChartDragState.swift */; };
 		2676F9F62F5D804A00C13C46 /* ChartDerivedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2676F9F52F5D804A00C13C46 /* ChartDerivedState.swift */; };
+		267944A92F61247800F40999 /* ChartRenderingLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267944A82F61247800F40999 /* ChartRenderingLayout.swift */; };
+		26A472A92F605B8700DBCB85 /* CombinedChartView+RendererCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A472A82F605B8700DBCB85 /* CombinedChartView+RendererCanvas.swift */; };
+		26A472AB2F605DF700DBCB85 /* CombinedChartView+RendererCharts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A472AA2F605DF700DBCB85 /* CombinedChartView+RendererCharts.swift */; };
 		26B2B2CA2F5D4A5E003B7D89 /* ChartViewportDerivedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2C92F5D4A5E003B7D89 /* ChartViewportDerivedState.swift */; };
 		26B2B2CE2F5D4AEB003B7D89 /* ChartInteractionSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2CD2F5D4AEB003B7D89 /* ChartInteractionSnapshot.swift */; };
 		26B2B2D02F5D4B5D003B7D89 /* CombinedChartView+LayoutMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B2B2CF2F5D4B5D003B7D89 /* CombinedChartView+LayoutMetrics.swift */; };
@@ -70,6 +73,9 @@
 		26785B822F3F0AC900541A34 /* CombinedChartSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CombinedChartSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		26785B8F2F3F0AC900541A34 /* CombinedChartSampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CombinedChartSampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		26785B992F3F0AC900541A34 /* CombinedChartSampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CombinedChartSampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		267944A82F61247800F40999 /* ChartRenderingLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartRenderingLayout.swift; sourceTree = "<group>"; };
+		26A472A82F605B8700DBCB85 /* CombinedChartView+RendererCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CombinedChartView+RendererCanvas.swift"; sourceTree = "<group>"; };
+		26A472AA2F605DF700DBCB85 /* CombinedChartView+RendererCharts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CombinedChartView+RendererCharts.swift"; sourceTree = "<group>"; };
 		26B2B2C92F5D4A5E003B7D89 /* ChartViewportDerivedState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartViewportDerivedState.swift; sourceTree = "<group>"; };
 		26B2B2CD2F5D4AEB003B7D89 /* ChartInteractionSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartInteractionSnapshot.swift; sourceTree = "<group>"; };
 		26B2B2CF2F5D4B5D003B7D89 /* CombinedChartView+LayoutMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CombinedChartView+LayoutMetrics.swift"; sourceTree = "<group>"; };
@@ -107,6 +113,11 @@
 		26785B9C2F3F0AC900541A34 /* CombinedChartSampleUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = CombinedChartSampleUITests;
+			sourceTree = "<group>";
+		};
+		26A472952F60256900DBCB85 /* Docs */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Docs;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -149,6 +160,7 @@
 			isa = PBXGroup;
 			children = (
 				26E3FCF62F5D1D63004D2007 /* CombinedChartSample.xctestplan */,
+				26A472952F60256900DBCB85 /* Docs */,
 				26785B842F3F0AC900541A34 /* App */,
 				26785B922F3F0AC900541A34 /* Tests */,
 				26785B9C2F3F0AC900541A34 /* CombinedChartSampleUITests */,
@@ -201,6 +213,7 @@
 				2676F9F12F5D804A00C13C46 /* ChartViewState.swift */,
 				2676F9F32F5D804A00C13C46 /* ChartDragState.swift */,
 				2676F9F52F5D804A00C13C46 /* ChartDerivedState.swift */,
+				267944A82F61247800F40999 /* ChartRenderingLayout.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -227,6 +240,8 @@
 				26E3FCCA2F5D0B50004D2007 /* CombinedChartView+RendererOverlay.swift */,
 				26E3FCC82F5D0B20004D2007 /* CombinedChartView+RendererAxis.swift */,
 				2676F9EB2F5D7D9B00C13C46 /* CombinedChartView+RenderContext.swift */,
+				26A472A82F605B8700DBCB85 /* CombinedChartView+RendererCanvas.swift */,
+				26A472AA2F605DF700DBCB85 /* CombinedChartView+RendererCharts.swift */,
 			);
 			path = Rendering;
 			sourceTree = "<group>";
@@ -267,6 +282,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				26785B842F3F0AC900541A34 /* App */,
+				26A472952F60256900DBCB85 /* Docs */,
 			);
 			name = CombinedChartSample;
 			packageProductDependencies = (
@@ -476,6 +492,8 @@
 				2676F9F02F5D7FB500C13C46 /* CombinedChartView+Pager.swift in Sources */,
 				26E3FCD32F5D10F9004D2007 /* CombinedChartPreview.swift in Sources */,
 				2676F9F22F5D804A00C13C46 /* ChartViewState.swift in Sources */,
+				267944A92F61247800F40999 /* ChartRenderingLayout.swift in Sources */,
+				26A472AB2F605DF700DBCB85 /* CombinedChartView+RendererCharts.swift in Sources */,
 				26E3FCF52F5D1AEF004D2007 /* ChartInteractionReducer.swift in Sources */,
 				26E3FCC92F5D0B20004D2007 /* CombinedChartView+RendererAxis.swift in Sources */,
 				26E3FC552F5CE7CB004D2007 /* CombinedChartView.swift in Sources */,
@@ -487,6 +505,7 @@
 				26E3FCCF2F5D0E80004D2007 /* ChartInteractionCoordinator.swift in Sources */,
 				26E3FCCD2F5D0C48004D2007 /* CombinedChartView+Section.swift in Sources */,
 				26B2F9CF2F5EBE4F0049D0A5 /* CombinedChartView+UIKitScrollContainer.swift in Sources */,
+				26A472A92F605B8700DBCB85 /* CombinedChartView+RendererCanvas.swift in Sources */,
 				2676F9EA2F5D7D9B00C13C46 /* CombinedChartView+SectionContext.swift in Sources */,
 				2676F9EC2F5D7D9B00C13C46 /* CombinedChartView+RenderContext.swift in Sources */,
 				26E3FCD92F5D12C9004D2007 /* ChartDataModels.swift in Sources */,

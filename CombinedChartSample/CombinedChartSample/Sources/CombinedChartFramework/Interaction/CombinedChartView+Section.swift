@@ -18,33 +18,73 @@ extension CombinedChartView {
 
         var body: some View {
             GeometryReader { geometry in
-                let scrollState = makeScrollState(for: geometry)
+                let effectivePlotSyncState = effectivePlotSyncState(for: geometry.size)
+                let topInset = context.config.rendering.topInset
+                let contentHeight = max(geometry.size.height - topInset, 0)
+                let scrollState = makeScrollState(
+                    for: geometry,
+                    plotAreaHeight: effectivePlotSyncState.plotAreaHeight)
                 let isDragging = dragTranslationX != 0 || isDraggingScroll
                 let debugState = makeDebugState(
                     scrollState: scrollState,
                     isDragging: isDragging)
 
-                HStack(alignment: .top, spacing: 0) {
-                    HStack(alignment: .top, spacing: 8) {
-                        YAxisLabels(
-                            context: context.makeYAxisLabelsContext(
-                                plotSyncState: plotSyncState))
+                VStack(spacing: 0) {
+                    Color.clear
+                        .frame(height: topInset)
 
-                        if let plotAreaMinY = plotSyncState.plotAreaMinY, plotSyncState.plotAreaHeight > 0 {
-                            Rectangle()
-                                .fill(context.config.axis.dividerColor)
-                                .frame(width: 1, height: plotSyncState.plotAreaHeight)
-                                .offset(y: plotAreaMinY)
+                    HStack(alignment: .top, spacing: 0) {
+                        HStack(alignment: .top, spacing: 8) {
+                            let tickRange = effectivePlotSyncState.yTickPositions.values.min().flatMap { minY in
+                                effectivePlotSyncState.yTickPositions.values.max().map { maxY in (minY, maxY) }
+                            }
+                            let plotAreaTop = effectivePlotSyncState.plotAreaMinY ?? tickRange?.0 ?? 0
+                            let fallbackPlotAreaHeight = tickRange.map { max($0.1 - $0.0, 0) } ?? 320
+                            let plotAreaHeight = effectivePlotSyncState.plotAreaHeight > 0
+                                ? effectivePlotSyncState.plotAreaHeight
+                                : fallbackPlotAreaHeight
+                            let plotAreaBottom = plotAreaTop + plotAreaHeight
+                            let totalPlotHeight = max(plotAreaBottom, plotAreaTop)
+                            let yAxisWidth = context.config.axis.yAxisWidth
+                            let dividerX = yAxisWidth + 8
+                            let yAxisContainerWidth = dividerX + 1
+
+                            ZStack(alignment: .topLeading) {
+                                YAxisLabels(
+                                    context: context.makeYAxisLabelsContext(
+                                        plotSyncState: effectivePlotSyncState))
+
+                                if plotAreaHeight > 0 {
+                                    Rectangle()
+                                        .fill(context.config.axis.dividerColor)
+                                        .frame(width: 1, height: plotAreaHeight)
+                                        .offset(x: dividerX, y: plotAreaTop)
+                                }
+                            }
+                            .frame(width: yAxisContainerWidth, height: totalPlotHeight, alignment: .topLeading)
                         }
-                    }
 
-                    chartContainer(scrollState: scrollState, isDragging: isDragging)
+                        chartContainer(scrollState: scrollState, isDragging: isDragging)
+                    }
+                    .frame(height: contentHeight, alignment: .top)
                 }
                 .onAppear {
+                    logSectionYAxisDebug(
+                        phase: "appear",
+                        geometrySize: geometry.size,
+                        plotAreaTop: effectivePlotSyncState.plotAreaMinY ?? 0,
+                        plotAreaHeight: effectivePlotSyncState.plotAreaHeight > 0 ? effectivePlotSyncState
+                            .plotAreaHeight : 320)
                     syncViewport(scrollState: scrollState)
                     onDebugStateChange?(debugState)
                 }
                 .onChange(of: geometry.size) { _ in
+                    logSectionYAxisDebug(
+                        phase: "geometry.size changed",
+                        geometrySize: geometry.size,
+                        plotAreaTop: effectivePlotSyncState.plotAreaMinY ?? 0,
+                        plotAreaHeight: effectivePlotSyncState.plotAreaHeight > 0 ? effectivePlotSyncState
+                            .plotAreaHeight : 320)
                     syncViewport(scrollState: scrollState)
                 }
                 .onChange(of: debugState) { onDebugStateChange?($0) }
@@ -56,11 +96,13 @@ extension CombinedChartView {
 private extension CombinedChartView.Section {
     // MARK: - Scroll State
 
-    func makeScrollState(for geometry: GeometryProxy) -> CombinedChartView.ScrollState {
+    func makeScrollState(
+        for geometry: GeometryProxy,
+        plotAreaHeight: CGFloat) -> CombinedChartView.ScrollState {
         .init(
             context: context,
             viewportState: viewportState,
-            plotAreaHeight: plotSyncState.plotAreaHeight,
+            plotAreaHeight: plotAreaHeight,
             visibleSelection: visibleSelection,
             availableWidth: geometry.size.width,
             dragTranslationX: dragTranslationX,
@@ -70,12 +112,44 @@ private extension CombinedChartView.Section {
     // MARK: - Sync
 
     func syncPlotArea(_ plotRect: CGRect, isDragging: Bool) {
+        guard !usesImmediateCanvasLayout else { return }
         guard !isDragging else { return }
+        if context.config.debug.isLoggingEnabled {
+            logger.debug(
+                """
+                [Section YAxis] syncPlotArea \
+                incomingMinY=\(plotRect.minY, format: .fixed(precision: 2)) \
+                incomingHeight=\(plotRect.height, format: .fixed(precision: 2)) \
+                currentMinY=\(plotSyncState.plotAreaMinY ?? .zero, format: .fixed(precision: 2)) \
+                currentHeight=\(plotSyncState.plotAreaHeight, format: .fixed(precision: 2))
+                """)
+        }
         plotSyncState.updatePlotArea(with: plotRect)
     }
 
     func syncYAxisTickPositions(_ positions: [Double: CGFloat], isDragging: Bool) {
+        guard !usesImmediateCanvasLayout else { return }
         guard !isDragging else { return }
+        if context.config.debug.isLoggingEnabled {
+            let sortedTicks = positions.sorted { $0.key < $1.key }
+            let firstTick = sortedTicks.first
+            let lastTick = sortedTicks.last
+            let firstTickValue: Double = firstTick?.key ?? 0
+            let firstTickPosition: CGFloat = firstTick?.value ?? 0
+            let lastTickValue: Double = lastTick?.key ?? 0
+            let lastTickPosition: CGFloat = lastTick?.value ?? 0
+            logger.debug(
+                """
+                [Section YAxis] syncTickPositions \
+                count=\(sortedTicks.count) \
+                firstTick=\(firstTickValue, format: .fixed(precision: 2))@\(
+                    firstTickPosition,
+                    format: .fixed(precision: 2)) \
+                lastTick=\(lastTickValue, format: .fixed(precision: 2))@\(
+                    lastTickPosition,
+                    format: .fixed(precision: 2))
+                """)
+        }
         plotSyncState.updateYAxisTickPositions(positions)
     }
 
@@ -83,6 +157,38 @@ private extension CombinedChartView.Section {
         scrollState.syncViewport(
             layoutState: &_layoutState.wrappedValue,
             viewportState: &viewportState)
+    }
+
+    var usesImmediateCanvasLayout: Bool {
+        switch context.config.rendering.engine {
+        case .canvas:
+            true
+        case .charts:
+            false
+        case .automatic:
+            if #available(iOS 17, *) {
+                false
+            } else {
+                true
+            }
+        }
+    }
+
+    func effectivePlotSyncState(for size: CGSize) -> CombinedChartView.PlotSyncState {
+        guard usesImmediateCanvasLayout else {
+            return plotSyncState
+        }
+
+        let layout = CombinedChartView.RenderingLayout(rendering: context.config.rendering)
+        let plotAreaHeight = layout.plotAreaHeight(for: size.height)
+
+        return .init(
+            plotAreaMinY: 0,
+            plotAreaHeight: plotAreaHeight,
+            yTickPositions: layout.canvasTickPositions(
+                yAxisTickValues: context.yAxisTickValues,
+                yAxisDisplayDomain: context.yAxisDisplayDomain,
+                plotAreaHeight: plotAreaHeight))
     }
 
     func makeDebugState(
@@ -202,6 +308,45 @@ private extension CombinedChartView.Section {
         case .free:
             "Free"
         }
+    }
+
+    func logSectionYAxisDebug(
+        phase: String,
+        geometrySize: CGSize,
+        plotAreaTop: CGFloat,
+        plotAreaHeight: CGFloat) {
+        guard context.config.debug.isLoggingEnabled else { return }
+
+        let sortedTicks = plotSyncState.yTickPositions.sorted { $0.key < $1.key }
+        let firstTick = sortedTicks.first
+        let lastTick = sortedTicks.last
+        let firstTickValue: Double = firstTick?.key ?? 0
+        let firstTickPosition: CGFloat = firstTick?.value ?? 0
+        let lastTickValue: Double = lastTick?.key ?? 0
+        let lastTickPosition: CGFloat = lastTick?.value ?? 0
+        let yAxisWidth = context.config.axis.yAxisWidth
+        let dividerX = yAxisWidth + 8
+        let yAxisContainerWidth = dividerX + 1
+
+        logger.debug(
+            """
+            [Section YAxis] \(phase, privacy: .public) \
+            geometry=(\(geometrySize.width, format: .fixed(precision: 2)), \(
+                geometrySize.height,
+                format: .fixed(precision: 2))) \
+            yAxisWidth=\(yAxisWidth, format: .fixed(precision: 2)) \
+            dividerX=\(dividerX, format: .fixed(precision: 2)) \
+            containerWidth=\(yAxisContainerWidth, format: .fixed(precision: 2)) \
+            plotTop=\(plotAreaTop, format: .fixed(precision: 2)) \
+            plotHeight=\(plotAreaHeight, format: .fixed(precision: 2)) \
+            syncMinY=\(plotSyncState.plotAreaMinY ?? .zero, format: .fixed(precision: 2)) \
+            syncHeight=\(plotSyncState.plotAreaHeight, format: .fixed(precision: 2)) \
+            ticks=\(sortedTicks.count) \
+            firstTick=\(firstTickValue, format: .fixed(precision: 2))@\(
+                firstTickPosition,
+                format: .fixed(precision: 2)) \
+            lastTick=\(lastTickValue, format: .fixed(precision: 2))@\(lastTickPosition, format: .fixed(precision: 2))
+            """)
     }
 
     // MARK: - Gesture

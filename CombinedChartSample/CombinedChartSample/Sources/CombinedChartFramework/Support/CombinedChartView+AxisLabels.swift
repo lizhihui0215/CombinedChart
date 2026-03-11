@@ -6,6 +6,7 @@ extension CombinedChartView {
         let tickPositions: [Double: CGFloat]
         let plotAreaMinY: CGFloat?
         let plotAreaHeight: CGFloat
+        let labelWidth: CGFloat
         let labelText: (Double) -> String
         let labelFont: Font
         let labelColor: Color
@@ -15,27 +16,28 @@ extension CombinedChartView {
         let context: YAxisLabelsContext
 
         var body: some View {
-            let topPadding = context.plotAreaMinY ?? 12
-            let plotHeight = context.plotAreaHeight > 0 ? context.plotAreaHeight : 320
+            let tickRange = context.tickPositions.values.min().flatMap { minY in
+                context.tickPositions.values.max().map { maxY in (minY, maxY) }
+            }
+            let topPadding = context.plotAreaMinY ?? tickRange?.0 ?? 0
+            let fallbackPlotAreaHeight = tickRange.map { max($0.1 - $0.0, 0) } ?? 320
+            let plotAreaHeight = context.plotAreaHeight > 0 ? context.plotAreaHeight : fallbackPlotAreaHeight
+            let totalHeight = max(topPadding + plotAreaHeight, topPadding)
 
-            GeometryReader { _ in
-                let maxLabelWidth: CGFloat = 44
-                ZStack(alignment: .topLeading) {
-                    ForEach(context.yAxisTickValues, id: \.self) { value in
-                        if let yPos = context.tickPositions[value] {
-                            Text(context.labelText(value))
-                                .font(context.labelFont)
-                                .foregroundStyle(context.labelColor)
-                                .multilineTextAlignment(.trailing)
-                                .frame(width: maxLabelWidth, alignment: .trailing)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .position(x: 0, y: yPos)
-                        }
+            ZStack(alignment: .topLeading) {
+                ForEach(context.yAxisTickValues, id: \.self) { value in
+                    if let yPos = context.tickPositions[value] {
+                        Text(context.labelText(value))
+                            .font(context.labelFont)
+                            .foregroundStyle(context.labelColor)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: context.labelWidth, alignment: .trailing)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .position(x: context.labelWidth / 2, y: yPos)
                     }
                 }
             }
-            .frame(height: plotHeight)
-            .padding(.top, topPadding)
+            .frame(width: context.labelWidth, height: totalHeight, alignment: .topLeading)
         }
     }
 }

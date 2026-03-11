@@ -95,6 +95,8 @@ struct ContentView: View {
         }
     }
 
+    typealias RenderingEngineOption = ChartSampleData.RenderingEngineOption
+
     enum TrendBarColorOption: String, CaseIterable, Identifiable {
         case unified = "Unified"
         case series = "Series"
@@ -120,6 +122,7 @@ struct ContentView: View {
         let selectedTab: CombinedChartView.Tab
         let dragMode: DragModeOption
         let scrollImplementation: ScrollImplementationOption
+        let renderingEngine: RenderingEngineOption
         let showDebugOverlay: Bool
         let chartHeight: CGFloat
         let visibleStartThreshold: CGFloat
@@ -131,6 +134,7 @@ struct ContentView: View {
             let selectedTabID = Self.argumentValue(after: "-snapshot-selected-tab", in: arguments)
             let dragModeValue = Self.argumentValue(after: "-snapshot-drag-mode", in: arguments)
             let scrollImplementationValue = Self.argumentValue(after: "-snapshot-scroll-implementation", in: arguments)
+            let renderingEngineValue = Self.argumentValue(after: "-snapshot-rendering-engine", in: arguments)
             let chartHeightValue = Self.argumentValue(after: "-snapshot-chart-height", in: arguments)
             let visibleStartThresholdValue = Self.argumentValue(
                 after: "-snapshot-visible-start-threshold",
@@ -148,6 +152,11 @@ struct ContentView: View {
             dragMode = dragModeValue.flatMap { DragModeOption(launchArgumentValue: $0) } ?? .freeSnapping
             scrollImplementation = scrollImplementationValue
                 .flatMap { ScrollImplementationOption(launchArgumentValue: $0) } ?? .automatic
+            renderingEngine = renderingEngineValue
+                .flatMap { rawValue in
+                    RenderingEngineOption.allCases
+                        .first(where: { $0.rawValue.caseInsensitiveCompare(rawValue) == .orderedSame })
+                } ?? .automatic
             showDebugOverlay = arguments.contains("-snapshot-show-debug-overlay")
             chartHeight = chartHeightValue.flatMap { Double($0) }.map { CGFloat($0) } ?? 420
             visibleStartThreshold = visibleStartThresholdValue
@@ -174,7 +183,10 @@ struct ContentView: View {
         var arrowMode: ArrowModeOption
         var dragMode: DragModeOption
         var scrollImplementation: ScrollImplementationOption
+        var renderingEngine: RenderingEngineOption
         var chartHeight: CGFloat
+        var topInset: CGFloat
+        var xAxisHeight: CGFloat
         var visibleStartThreshold: CGFloat
         var barWidth: CGFloat
         var monthsPerPage: CGFloat
@@ -203,7 +215,10 @@ struct ContentView: View {
             arrowMode = .byPage
             dragMode = launchConfiguration.dragMode
             scrollImplementation = launchConfiguration.scrollImplementation
+            renderingEngine = launchConfiguration.renderingEngine
             chartHeight = launchConfiguration.chartHeight
+            topInset = 12
+            xAxisHeight = 28
             visibleStartThreshold = launchConfiguration.visibleStartThreshold
             barWidth = launchConfiguration.barWidth
             monthsPerPage = 4
@@ -263,7 +278,10 @@ struct ContentView: View {
             arrowScrollMode: controls.arrowMode.value,
             dragScrollMode: controls.dragMode.value,
             scrollImplementation: controls.scrollImplementation.value,
+            renderingEngine: controls.renderingEngine.value,
             chartHeight: controls.chartHeight,
+            topInset: controls.topInset,
+            xAxisHeight: controls.xAxisHeight,
             visibleStartThreshold: controls.visibleStartThreshold,
             barWidth: controls.barWidth,
             segmentGap: controls.segmentGap,
@@ -337,6 +355,7 @@ private extension ContentView {
                     compactPicker("Arrow Mode", selection: $controls.arrowMode)
                     compactPicker("Drag Mode", selection: $controls.dragMode)
                     compactPicker("Scroll Engine", selection: $controls.scrollImplementation)
+                    compactPicker("Renderer", selection: $controls.renderingEngine)
                     Toggle("Pager Visible", isOn: $controls.pagerVisible)
                         .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
                 }
@@ -353,6 +372,8 @@ private extension ContentView {
                         step: 10,
                         suffix: " pt",
                         identifier: "chart-height-slider")
+                    sliderRow("Top Inset", value: $controls.topInset, range: 0...40, step: 1, suffix: " pt")
+                    sliderRow("X Axis Height", value: $controls.xAxisHeight, range: 16...48, step: 1, suffix: " pt")
                     sliderRow(
                         "Bar Width",
                         value: $controls.barWidth,
@@ -434,6 +455,7 @@ private extension ContentView {
             summaryPill(title: "Viewport", value: controls.selectedTab.title)
             summaryPill(title: "Drag", value: controls.dragMode.rawValue)
             summaryPill(title: "Scroll", value: controls.scrollImplementation.rawValue)
+            summaryPill(title: "Renderer", value: controls.renderingEngine.rawValue)
         }
     }
 

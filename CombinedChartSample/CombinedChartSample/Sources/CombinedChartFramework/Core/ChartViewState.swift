@@ -39,6 +39,7 @@ extension CombinedChartView {
         func makeYAxisLabelsContext(
             yAxisTickValues: [Double],
             labelText: @escaping (Double) -> String,
+            labelWidth: CGFloat,
             labelFont: Font,
             labelColor: Color) -> YAxisLabelsContext {
             .init(
@@ -46,6 +47,7 @@ extension CombinedChartView {
                 tickPositions: yTickPositions,
                 plotAreaMinY: plotAreaMinY,
                 plotAreaHeight: plotAreaHeight,
+                labelWidth: labelWidth,
                 labelText: labelText,
                 labelFont: labelFont,
                 labelColor: labelColor)

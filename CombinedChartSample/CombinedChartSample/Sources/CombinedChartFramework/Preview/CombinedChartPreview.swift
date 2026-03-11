@@ -2,31 +2,60 @@ import SwiftUI
 
 private struct CombinedChartPreviewHost: View {
     private let groups = CombinedChartPreviewData.groups
-    private let config = CombinedChartPreviewData.config
+    private let config: CombinedChartView.Config
     private let tabs = CombinedChartView.Tab.defaults
+    private let title: String
     @State private var selectedTab: CombinedChartView.Tab = .totalTrend
     @State private var showDebugOverlay = false
 
+    init(
+        title: String,
+        renderingEngine: CombinedChartView.Config.Rendering.Engine,
+        showDebugOverlay: Bool = false) {
+        self.title = title
+        config = CombinedChartPreviewData.makeConfig(renderingEngine: renderingEngine)
+        _showDebugOverlay = State(initialValue: showDebugOverlay)
+    }
+
     var body: some View {
-        CombinedChartView(
-            config: config,
-            groups: groups,
-            tabs: tabs,
-            selectedTab: $selectedTab,
-            showDebugOverlay: $showDebugOverlay,
-            onPointTap: { context in
-                print(
-                    "Tapped point:",
-                    "groupID=\(context.point.id.groupID)",
-                    "xKey=\(context.point.xKey)",
-                    "index=\(context.index)")
-            })
-            .padding()
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.headline)
+
+            CombinedChartView(
+                config: config,
+                groups: groups,
+                tabs: tabs,
+                selectedTab: $selectedTab,
+                showDebugOverlay: $showDebugOverlay,
+                onPointTap: { context in
+                    print(
+                        "Tapped point:",
+                        "groupID=\(context.point.id.groupID)",
+                        "xKey=\(context.point.xKey)",
+                        "index=\(context.index)")
+                })
+        }
+        .padding()
     }
 }
 
 #Preview {
-    CombinedChartPreviewHost()
+    CombinedChartPreviewHost(
+        title: "Automatic Renderer",
+        renderingEngine: .automatic)
+}
+
+#Preview {
+    CombinedChartPreviewHost(
+        title: "Charts Renderer",
+        renderingEngine: .charts)
+}
+
+#Preview {
+    CombinedChartPreviewHost(
+        title: "Canvas Renderer",
+        renderingEngine: .canvas)
 }
 
 private enum CombinedChartPreviewData {
@@ -109,65 +138,72 @@ private enum CombinedChartPreviewData {
             ])
     ]
 
-    static let config = CombinedChartView.Config(
-        monthsPerPage: 4,
-        chartHeight: 420,
-        bar: .init(
-            series: [
-                .init(
-                    id: .liabilities,
-                    label: "Liabilities",
-                    color: Color(red: 0.82, green: 0.35, blue: 0.42),
-                    valuePolarity: .forcedSign(.negative),
-                    trendLineInclusion: .included),
-                .init(
-                    id: .saving,
-                    label: "Saving",
-                    color: Color(red: 0.20, green: 0.52, blue: 0.68),
-                    valuePolarity: .preserveSign,
-                    trendLineInclusion: .included),
-                .init(
-                    id: .investment,
-                    label: "Investment",
-                    color: Color(red: 0.86, green: 0.43, blue: 0.16),
-                    valuePolarity: .preserveSign,
-                    trendLineInclusion: .included),
-                .init(
-                    id: .otherLiquid,
-                    label: "Other Liquid",
-                    color: Color(red: 0.30, green: 0.67, blue: 0.14),
-                    valuePolarity: .preserveSign,
-                    trendLineInclusion: .included),
-                .init(
-                    id: .otherNonLiquid,
-                    label: "Other Non-Liquid",
-                    color: Color(red: 0.08, green: 0.28, blue: 0.34),
-                    valuePolarity: .preserveSign,
-                    trendLineInclusion: .included)
-            ],
-            trendBarColorStyle: .unified(Color.gray.opacity(0.45)),
-            segmentGap: 2,
-            segmentGapColor: Color(uiColor: .systemBackground),
-            barWidth: 40),
-        line: .init(
-            positiveLineColor: .red,
-            negativeLineColor: .yellow,
-            lineWidth: 1,
-            selection: .init(
-                pointSize: 20,
-                selectionLineColorStrategy: .fixedLine(.gray),
-                fillColor: Color.gray.opacity(0.12),
-                minimumSelectionWidth: 24)),
-        axis: .init(
-            xAxisLabel: { $0.point.xLabel },
-            yAxisLabel: { context in
-                let value = context.value
-                return value == 0 ? "0" : "\(Int(value / 1000))K"
-            },
-            zeroLineColor: .black,
-            zeroLineWidth: 1,
-            yAxisWidth: 40),
-        pager: .init(isVisible: true, dragScrollMode: .freeSnapping))
+    static func makeConfig(
+        renderingEngine: CombinedChartView.Config.Rendering.Engine) -> CombinedChartView.Config {
+        CombinedChartView.Config(
+            monthsPerPage: 4,
+            chartHeight: 420,
+            rendering: .init(
+                engine: renderingEngine,
+                topInset: 12,
+                xAxisHeight: 28),
+            bar: .init(
+                series: [
+                    .init(
+                        id: .liabilities,
+                        label: "Liabilities",
+                        color: Color(red: 0.82, green: 0.35, blue: 0.42),
+                        valuePolarity: .forcedSign(.negative),
+                        trendLineInclusion: .included),
+                    .init(
+                        id: .saving,
+                        label: "Saving",
+                        color: Color(red: 0.20, green: 0.52, blue: 0.68),
+                        valuePolarity: .preserveSign,
+                        trendLineInclusion: .included),
+                    .init(
+                        id: .investment,
+                        label: "Investment",
+                        color: Color(red: 0.86, green: 0.43, blue: 0.16),
+                        valuePolarity: .preserveSign,
+                        trendLineInclusion: .included),
+                    .init(
+                        id: .otherLiquid,
+                        label: "Other Liquid",
+                        color: Color(red: 0.30, green: 0.67, blue: 0.14),
+                        valuePolarity: .preserveSign,
+                        trendLineInclusion: .included),
+                    .init(
+                        id: .otherNonLiquid,
+                        label: "Other Non-Liquid",
+                        color: Color(red: 0.08, green: 0.28, blue: 0.34),
+                        valuePolarity: .preserveSign,
+                        trendLineInclusion: .included)
+                ],
+                trendBarColorStyle: .unified(Color.gray.opacity(0.45)),
+                segmentGap: 2,
+                segmentGapColor: Color(uiColor: .systemBackground),
+                barWidth: 40),
+            line: .init(
+                positiveLineColor: .red,
+                negativeLineColor: .yellow,
+                lineWidth: 1,
+                selection: .init(
+                    pointSize: 20,
+                    selectionLineColorStrategy: .fixedLine(.gray),
+                    fillColor: Color.gray.opacity(0.12),
+                    minimumSelectionWidth: 24)),
+            axis: .init(
+                xAxisLabel: { $0.point.xLabel },
+                yAxisLabel: { context in
+                    let value = context.value
+                    return value == 0 ? "0" : "\(Int(value / 1000))K"
+                },
+                zeroLineColor: .black,
+                zeroLineWidth: 1,
+                yAxisWidth: 40),
+            pager: .init(isVisible: true, dragScrollMode: .freeSnapping))
+    }
 
     private static func makePoint(
         groupID: String,

@@ -62,6 +62,27 @@ enum ChartSampleData {
         }
     }
 
+    enum RenderingEngineOption: String, CaseIterable, Identifiable {
+        case automatic = "Automatic"
+        case charts = "Charts"
+        case canvas = "Canvas"
+
+        var id: Self {
+            self
+        }
+
+        var value: CombinedChartView.Config.Rendering.Engine {
+            switch self {
+            case .automatic:
+                .automatic
+            case .charts:
+                .charts
+            case .canvas:
+                .canvas
+            }
+        }
+    }
+
     enum DatasetOption: String, CaseIterable, Identifiable {
         case current = "Current"
         case positiveYAxisDominant = "Positive Y Dominant"
@@ -160,7 +181,10 @@ enum ChartSampleData {
         arrowScrollMode: CombinedChartView.Config.Pager.ArrowScrollMode = .byPage,
         dragScrollMode: CombinedChartView.Config.Pager.DragScrollMode = .freeSnapping,
         scrollImplementation: CombinedChartView.Config.Pager.ScrollImplementation = .automatic,
+        renderingEngine: CombinedChartView.Config.Rendering.Engine = .automatic,
         chartHeight: CGFloat = 420,
+        topInset: CGFloat = 12,
+        xAxisHeight: CGFloat = 28,
         visibleStartThreshold: CGFloat = 2.0 / 3.0,
         barWidth: CGFloat = 40,
         segmentGap: CGFloat = 2,
@@ -179,6 +203,10 @@ enum ChartSampleData {
         CombinedChartView.Config(
             monthsPerPage: monthsPerPage,
             chartHeight: chartHeight,
+            rendering: .init(
+                engine: renderingEngine,
+                topInset: topInset,
+                xAxisHeight: xAxisHeight),
             bar: makeBarConfig(
                 barWidth: barWidth,
                 segmentGap: segmentGap,

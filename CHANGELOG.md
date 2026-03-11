@@ -47,6 +47,8 @@ The section below reflects the current unreleased state of the repository as of 
   - roadmap
   - iOS 16 known issues
   - crash notes
+- `ChartRenderingLayout` to centralize chart layout calculations for `topInset`, `xAxisHeight`, plot area height, and Canvas tick positioning.
+- focused layout regression tests covering rendering layout height clamping and Canvas tick edge mapping.
 
 ### Changed
 
@@ -60,6 +62,9 @@ The section below reflects the current unreleased state of the repository as of 
   - `PieChart`
   - `AreaChart`
   - `CandlestickChart`
+- chart layout configuration now exposes `rendering.topInset` and `rendering.xAxisHeight` through the sample app and preview entry points.
+- chart and Y-axis layout synchronization now treats Canvas chart content and the Y-axis column as a shared layout unit, reducing height-change drift and pager visibility alignment regressions.
+- sample playground controls now allow direct comparison of `Charts` and `Canvas` renderers with tunable layout parameters.
 
 ### Known Limitations
 

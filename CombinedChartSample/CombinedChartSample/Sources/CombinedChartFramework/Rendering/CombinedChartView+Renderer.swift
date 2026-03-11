@@ -1,4 +1,3 @@
-import Charts
 import SwiftUI
 
 extension CombinedChartView {
@@ -12,7 +11,7 @@ extension CombinedChartView {
         let marksContext: CombinedChartView.MarksContext
         let overlayContext: CombinedChartView.OverlayContext
         let usesTrendBarColor: Bool
-        private let barMarkItems: [BarMarkItem]
+        let barMarkItems: [BarMarkItem]
 
         init(
             context: RenderContext,
@@ -40,22 +39,17 @@ extension CombinedChartView {
         }
 
         var body: some View {
-            Chart {
-                barMarks()
-                sharedMarks
-            }
-            .chartXScale(domain: axisRenderContext.monthValues)
-            .chartXAxis { chartXAxis(axisContext: axisRenderContext) }
-            .chartYAxis { chartYAxis }
-            .chartYScale(domain: context.yAxisDisplayDomain)
-            .chartOverlay { proxy in
-                containerOverlay(proxy: proxy)
-            }
+            rendererBody
         }
     }
 }
 
-private extension CombinedChartView.Renderer {
+extension CombinedChartView.Renderer {
+    enum RenderingEngine {
+        case charts
+        case canvas
+    }
+
     struct BarMarkItem: Identifiable {
         enum Kind {
             case segment
@@ -72,6 +66,35 @@ private extension CombinedChartView.Renderer {
 
     func lineColor(for value: Double) -> Color {
         value >= 0 ? marksContext.config.line.positiveLineColor : marksContext.config.line.negativeLineColor
+    }
+
+    var xAxisHeight: CGFloat {
+        context.config.rendering.xAxisHeight
+    }
+
+    @ViewBuilder
+    var rendererBody: some View {
+        switch resolvedRenderingEngine {
+        case .charts:
+            chartsBody
+        case .canvas:
+            canvasBody
+        }
+    }
+
+    var resolvedRenderingEngine: RenderingEngine {
+        switch context.config.rendering.engine {
+        case .automatic:
+            if #available(iOS 17, *) {
+                .charts
+            } else {
+                .canvas
+            }
+        case .charts:
+            .charts
+        case .canvas:
+            .canvas
+        }
     }
 
     static func makeAxisRenderContext(
@@ -165,38 +188,6 @@ private extension CombinedChartView.Renderer {
 
                     return items
                 }
-        }
-    }
-
-    @ChartContentBuilder
-    func barMarks() -> some ChartContent {
-        ForEach(barMarkItems) { item in
-            BarMark(
-                x: .value("Month", item.xKey),
-                yStart: .value(item.kind == .gap ? "Gap" : "Value", item.start),
-                yEnd: .value(item.kind == .gap ? "Gap" : "Value", item.end),
-                width: .fixed(marksContext.config.bar.barWidth))
-                .cornerRadius(0)
-                .foregroundStyle(item.color)
-        }
-    }
-
-    @ChartContentBuilder
-    var sharedMarks: some ChartContent {
-        RuleMark(y: .value("Zero", 0))
-            .foregroundStyle(marksContext.config.axis.zeroLineColor)
-            .lineStyle(StrokeStyle(lineWidth: marksContext.config.axis.zeroLineWidth))
-
-        if marksContext.selectedTab.mode.showsSelectedPoint,
-           let visibleSelection = marksContext.visibleSelection,
-           marksContext.visibleData.indices.contains(visibleSelection.index) {
-            let value = marksContext.visibleData[visibleSelection.index]
-                .trendLineValue(using: marksContext.config)
-            PointMark(
-                x: .value("Selected Month", marksContext.visibleData[visibleSelection.index].xKey),
-                y: .value("Selected Value", value))
-                .foregroundStyle(lineColor(for: value))
-                .symbolSize(marksContext.config.line.selection.pointSize)
         }
     }
 }

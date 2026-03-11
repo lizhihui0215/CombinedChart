@@ -43,6 +43,7 @@ public enum ChartSeriesKey: String, CaseIterable, Hashable, Identifiable {
 public struct ChartConfig {
     public let monthsPerPage: Int
     public let chartHeight: CGFloat
+    public let rendering: Rendering
     public let bar: Bar
     public let line: Line
     public let axis: Axis
@@ -53,6 +54,7 @@ public struct ChartConfig {
     public static let `default` = ChartConfig(
         monthsPerPage: 4,
         chartHeight: 420,
+        rendering: .init(),
         bar: Bar(
             series: [
                 ChartConfig.Bar.SeriesStyle(
@@ -126,6 +128,7 @@ public struct ChartConfig {
     public init(
         monthsPerPage: Int,
         chartHeight: CGFloat,
+        rendering: Rendering = .init(),
         bar: Bar,
         line: Line,
         axis: Axis,
@@ -133,6 +136,7 @@ public struct ChartConfig {
         debug: Debug = .init()) {
         self.monthsPerPage = monthsPerPage
         self.chartHeight = chartHeight
+        self.rendering = rendering
         self.bar = bar
         self.line = line
         self.axis = axis
@@ -142,6 +146,27 @@ public struct ChartConfig {
 }
 
 public extension ChartConfig {
+    struct Rendering: Equatable {
+        public enum Engine: Equatable {
+            case automatic
+            case charts
+            case canvas
+        }
+
+        public let engine: Engine
+        public let topInset: CGFloat
+        public let xAxisHeight: CGFloat
+
+        public init(
+            engine: Engine = .automatic,
+            topInset: CGFloat = 12,
+            xAxisHeight: CGFloat = 28) {
+            self.engine = engine
+            self.topInset = max(topInset, 0)
+            self.xAxisHeight = max(xAxisHeight, 0)
+        }
+    }
+
     /// Configuration for bar rendering.
     struct Bar {
         /// Strategy used to color bars in modes that expose trend context.

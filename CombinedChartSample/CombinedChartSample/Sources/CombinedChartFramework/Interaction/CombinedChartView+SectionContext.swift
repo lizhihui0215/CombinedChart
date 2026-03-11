@@ -17,6 +17,7 @@ extension CombinedChartView {
             plotSyncState.makeYAxisLabelsContext(
                 yAxisTickValues: yAxisTickValues,
                 labelText: yAxisLabel,
+                labelWidth: config.axis.yAxisWidth,
                 labelFont: config.axis.yAxisLabelFont,
                 labelColor: config.axis.yAxisLabelColor)
         }

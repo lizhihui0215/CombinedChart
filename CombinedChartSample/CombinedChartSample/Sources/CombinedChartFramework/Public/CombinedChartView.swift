@@ -6,6 +6,7 @@ enum ChartLog {
 
     enum Category: String {
         case section = "Section"
+        case rendering = "Rendering"
         case interaction = "Interaction"
         case uiKitScroll = "UIKitScroll"
     }
@@ -162,12 +163,12 @@ public struct CombinedChartView: View {
                     slots.emptyState
                 }
             }
+            .frame(height: config.chartHeight)
 
             if hasData, config.pager.isVisible, let pagerContext {
                 pagerView(context: pagerContext)
             }
         }
-        .frame(height: config.chartHeight)
         .onChange(of: groups) { _ in
             preparedData = PreparedData.make(from: groups)
         }
