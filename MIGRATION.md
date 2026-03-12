@@ -80,7 +80,7 @@ That means:
 The current migration baseline has been verified with:
 
 - Xcode build for `CombinedChartSample`
-- `CombinedChartSampleTests`
+- `CombinedChartFrameworkTests`
 - UI regression for horizontal scrolling on the iOS 17+ `Charts` path
 
 ## Recommended Team Message

@@ -20,5 +20,5 @@ let package = Package(
         .testTarget(
             name: "CombinedChartFrameworkTests",
             dependencies: ["CombinedChartFramework"],
-            path: "CombinedChartSample/CombinedChartSample/Tests/CombinedChartFrameworkTests")
+            path: "CombinedChartSample/CombinedChartFramework/Tests/CombinedChartFrameworkTests")
     ])

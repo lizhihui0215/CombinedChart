@@ -20,8 +20,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "26785B8E2F3F0AC900541A34"
-               BuildableName = "CombinedChartSampleTests.xctest"
-               BlueprintName = "CombinedChartSampleTests"
+               BuildableName = "CombinedChartFrameworkTests.xctest"
+               BlueprintName = "CombinedChartFrameworkTests"
                ReferencedContainer = "container:CombinedChartSample.xcodeproj">
             </BuildableReference>
          </TestableReference>

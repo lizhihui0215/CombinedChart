@@ -18,14 +18,6 @@
   },
   "testTargets" : [
     {
-      "parallelizable" : false,
-      "target" : {
-        "containerPath" : "container:CombinedChartSample.xcodeproj",
-        "identifier" : "26785B8E2F3F0AC900541A34",
-        "name" : "CombinedChartSampleTests"
-      }
-    },
-    {
       "parallelizable" : true,
       "target" : {
         "containerPath" : "container:CombinedChartSample.xcodeproj",
