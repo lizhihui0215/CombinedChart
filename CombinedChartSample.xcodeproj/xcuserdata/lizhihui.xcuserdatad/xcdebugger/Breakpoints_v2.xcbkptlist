@@ -3,4 +3,22 @@
    uuid = "5D7B10FD-7C6F-44EA-BFA2-4F17D288A4CE"
    type = "1"
    version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "EE0D7BA9-3739-4F9A-A3CA-5A5D6CB3E9EF"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "CombinedChartSample/CombinedChartSample/Sources/CombinedChartFramework/Rendering/CombinedChartView+RendererCharts.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "7"
+            endingLineNumber = "7"
+            landmarkName = "chartsBarWidth"
+            landmarkType = "24">
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
 </Bucket>
