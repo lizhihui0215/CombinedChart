@@ -18,6 +18,8 @@ enum ChartLog {
 
 /// A reusable combined bar-and-line chart view.
 ///
+/// CombinedChartFramework currently supports iOS only; macOS is not supported.
+///
 /// Use ``CombinedChartView`` as the primary entry point to render grouped chart data,
 /// configure presentation, and provide custom slot content such as an empty state,
 /// selection overlay, or pager UI.
@@ -60,19 +62,20 @@ public struct CombinedChartView: View {
     ///   - showDebugOverlay: A binding that controls whether internal debug overlays are visible.
     ///   - slots: Optional custom content for empty state, selection overlay, and pager rendering.
     ///   - onPointTap: A callback invoked when the user selects a resolved chart point.
+    @MainActor
     public init(
-        config: Config = .default,
+        config: Config? = nil,
         groups: [DataGroup],
         tabs: [Tab] = Tab.defaults,
         selectedTab: Binding<Tab> = .constant(.totalTrend),
         showDebugOverlay: Binding<Bool> = .constant(false),
-        slots: Slots = .default,
+        slots: Slots? = nil,
         onPointTap: ((Selection) -> Void)? = nil,
         onDebugStateChange: ((DebugState) -> Void)? = nil) {
-        self.config = config
+        self.config = config ?? .default
         self.groups = groups
         self.tabs = tabs
-        self.slots = slots
+        self.slots = slots ?? .default
         self.onPointTap = onPointTap
         self.onDebugStateChange = onDebugStateChange
         _selectedTab = selectedTab
@@ -101,8 +104,9 @@ public struct CombinedChartView: View {
     ///   - viewSlots: Optional custom content for empty state, selection overlay, and pager rendering.
     ///   - onPointTap: A callback invoked when the user selects a resolved chart point.
     @available(*, deprecated, renamed: "init(config:groups:tabs:selectedTab:showDebugOverlay:slots:onPointTap:)")
+    @MainActor
     public init(
-        config: Config = .default,
+        config: Config? = nil,
         groups: [DataGroup],
         tabs: [Tab] = Tab.defaults,
         selectedTab: Binding<Tab> = .constant(.totalTrend),
@@ -169,8 +173,25 @@ public struct CombinedChartView: View {
                 pagerView(context: pagerContext)
             }
         }
-        .onChange(of: groups) { _ in
+        .chartOnChange(of: groups) {
             preparedData = PreparedData.make(from: groups)
+        }
+    }
+}
+
+extension View {
+    @ViewBuilder
+    func chartOnChange<Value: Equatable>(
+        of value: Value,
+        perform action: @escaping () -> Void) -> some View {
+        if #available(iOS 17, *) {
+            onChange(of: value, initial: false) { _, _ in
+                action()
+            }
+        } else {
+            onChange(of: value) { _ in
+                action()
+            }
         }
     }
 }

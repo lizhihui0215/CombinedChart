@@ -8,52 +8,108 @@ extension CombinedChartView.Renderer {
 
     var canvasBody: some View {
         GeometryReader { geometry in
-            let plotAreaFrameHeight = max(0, geometry.size.height - xAxisHeight)
-            let plotRect = canvasPlotRect(
-                in: CGSize(width: geometry.size.width, height: plotAreaFrameHeight),
+            let plotFrame = canvasPlotFrameDescriptor(
+                in: CGSize(width: geometry.size.width, height: max(0, geometry.size.height - xAxisHeight)),
                 xAxisHeight: 0)
-            let tickPositions = canvasTickPositions(in: plotRect)
-            let tickPositionMap = canvasTickPositionMap(in: plotRect)
-            let lineSegments = canvasLineSegments(in: plotRect)
+            let plotRect = plotFrame.plotRect
+            let xPositions = canvasXPositions(in: plotRect)
+            let tickPositions = axisPresentationContext.yGridPositions(in: plotFrame)
+            let overlayPresentation = makeOverlayPresentationDescriptor(
+                plotRect: plotRect,
+                xPositions: xPositions,
+                yPosition: { value in
+                    canvasYPosition(for: value, in: plotRect)
+                })
 
-            VStack(spacing: 0) {
-                Canvas { graphicsContext, _ in
-                    drawCanvasGrid(in: &graphicsContext, plotRect: plotRect, tickPositions: tickPositions)
-                    drawCanvasZeroLine(in: &graphicsContext, plotRect: plotRect)
-                    drawCanvasBars(in: &graphicsContext, plotRect: plotRect)
-                    if context.selectedTab.mode.showsTrendLine {
-                        drawCanvasTrendLine(in: &graphicsContext, lineSegments: lineSegments)
+            let canvasContent = VStack(spacing: 0) {
+                ZStack(alignment: .topLeading) {
+                    Canvas { graphicsContext, _ in
+                        drawCanvasGrid(in: &graphicsContext, plotRect: plotRect, tickPositions: tickPositions)
+                        drawCanvasZeroLine(in: &graphicsContext, plotRect: plotRect)
+                        drawCanvasBars(in: &graphicsContext, plotRect: plotRect)
+                        drawCanvasSelectedPointMark(in: &graphicsContext, plotRect: plotRect)
+                        drawCanvasTrendLine(
+                            in: &graphicsContext,
+                            overlayPresentation: overlayPresentation)
+                        drawCanvasSelection(
+                            in: &graphicsContext,
+                            plotRect: plotRect,
+                            overlayPresentation: overlayPresentation)
                     }
-                    drawCanvasSelection(in: &graphicsContext, plotRect: plotRect)
+                    canvasSelectionOverlayView(
+                        overlayPresentation: overlayPresentation,
+                        plotFrame: plotFrame)
+                    canvasDebugOverlayView(
+                        plotFrame: plotFrame,
+                        overlayPresentation: overlayPresentation)
                 }
-                .frame(height: plotAreaFrameHeight)
+                .frame(height: plotFrame.plotRect.height)
                 .background(Color.clear)
                 .contentShape(Rectangle())
                 .onAppear {
                     logCanvasYAxisDebug(
                         phase: "appear",
-                        size: CGSize(width: geometry.size.width, height: plotAreaFrameHeight),
+                        size: CGSize(width: geometry.size.width, height: plotFrame.plotRect.height),
                         xAxisHeight: xAxisHeight,
                         plotRect: plotRect,
-                        tickPositionMap: tickPositionMap)
-                    onPlotAreaChange(plotRect)
-                    onYAxisTickPositions(tickPositionMap)
+                        tickPositionMap: plotFrame.yAxisTickPositions)
+                    onPlotAreaChange(plotFrame.plotRect)
+                    onYAxisTickPositions(plotFrame.yAxisTickPositions)
                 }
-                .onChange(of: plotRect.size) { _ in
+                .chartOnChange(of: plotRect.size) {
                     logCanvasYAxisDebug(
                         phase: "plotRect.size changed",
-                        size: CGSize(width: geometry.size.width, height: plotAreaFrameHeight),
+                        size: CGSize(width: geometry.size.width, height: plotFrame.plotRect.height),
                         xAxisHeight: xAxisHeight,
                         plotRect: plotRect,
-                        tickPositionMap: tickPositionMap)
-                    onPlotAreaChange(plotRect)
-                    onYAxisTickPositions(tickPositionMap)
+                        tickPositionMap: plotFrame.yAxisTickPositions)
+                    onPlotAreaChange(plotFrame.plotRect)
+                    onYAxisTickPositions(plotFrame.yAxisTickPositions)
                 }
-                .gesture(canvasTapGesture(in: plotRect))
 
                 canvasXAxisLabels(in: plotRect)
                     .frame(height: xAxisHeight)
             }
+
+            if #available(iOS 16, *) {
+                canvasContent
+                    .gesture(
+                        SpatialTapGesture()
+                            .onEnded { gesture in
+                                handleCanvasTap(at: gesture.location, xPositions: xPositions)
+                            })
+            } else {
+                canvasContent
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onEnded { gesture in
+                                handleCanvasTap(at: gesture.location, xPositions: xPositions)
+                            })
+            }
+        }
+    }
+
+    @ViewBuilder
+    func canvasSelectionOverlayView(
+        overlayPresentation: CombinedChartView.OverlayPresentationDescriptor,
+        plotFrame: CombinedChartView.PlotFrameDescriptor) -> some View {
+        if overlayPresentation.selection.showsCustomOverlay {
+            selectionOverlayView(selection: overlayPresentation.selection)
+                .allowsHitTesting(false)
+                .mask(plotMask(for: plotFrame))
+        }
+    }
+
+    @ViewBuilder
+    func canvasDebugOverlayView(
+        plotFrame: CombinedChartView.PlotFrameDescriptor,
+        overlayPresentation: CombinedChartView.OverlayPresentationDescriptor) -> some View {
+        if overlayPresentation.showsDebugGuides {
+            debugGuides(
+                plotRect: plotFrame.plotRect,
+                guideMarks: overlayPresentation.guideMarks)
+                .allowsHitTesting(false)
+                .mask(plotMask(for: plotFrame))
         }
     }
 
@@ -65,15 +121,33 @@ extension CombinedChartView.Renderer {
             height: max(0, size.height - xAxisHeight))
     }
 
-    func canvasXPosition(for key: String, in plotRect: CGRect) -> CGFloat? {
-        guard let index = axisRenderContext.monthValues.firstIndex(of: key),
-              !axisRenderContext.monthValues.isEmpty
-        else {
+    func canvasPlotFrameDescriptor(
+        in size: CGSize,
+        xAxisHeight: CGFloat) -> CombinedChartView.PlotFrameDescriptor {
+        let plotRect = canvasPlotRect(in: size, xAxisHeight: xAxisHeight)
+        return .init(
+            plotRect: plotRect,
+            yAxisTickPositions: canvasTickPositionMap(in: plotRect))
+    }
+
+    func canvasXPosition(for index: Int, in plotRect: CGRect) -> CGFloat? {
+        guard axisPresentationContext.dataCount > 0 else {
+            return nil
+        }
+        guard (0..<axisPresentationContext.dataCount).contains(index) else {
             return nil
         }
 
-        let step = plotRect.width / CGFloat(axisRenderContext.monthValues.count)
+        let step = plotRect.width / CGFloat(axisPresentationContext.dataCount)
         return plotRect.minX + step * (CGFloat(index) + 0.5)
+    }
+
+    func canvasXPositions(in plotRect: CGRect) -> [CombinedChartView.XPositionDescriptor] {
+        CombinedChartView.XPositionResolver.descriptors(.init(
+            dataCount: axisPresentationContext.dataCount,
+            xPosition: { index in
+                canvasXPosition(for: index, in: plotRect)
+            }))
     }
 
     func canvasYPosition(for value: Double, in plotRect: CGRect) -> CGFloat? {
@@ -83,12 +157,6 @@ extension CombinedChartView.Renderer {
 
         let normalized = (value - domain.lowerBound) / range
         return plotRect.maxY - CGFloat(normalized) * plotRect.height
-    }
-
-    func canvasTickPositions(in plotRect: CGRect) -> [CGFloat] {
-        context.yAxisTickValues.compactMap { value in
-            canvasYPosition(for: value, in: plotRect)
-        }
     }
 
     func canvasTickPositionMap(in plotRect: CGRect) -> [Double: CGFloat] {
@@ -132,25 +200,6 @@ extension CombinedChartView.Renderer {
             """)
     }
 
-    func canvasLineSegments(in plotRect: CGRect) -> [CombinedChartView.LineSegmentPath] {
-        let points = context.visibleData.compactMap { point -> (CGPoint, Double)? in
-            let value = point.trendLineValue(using: overlayContext.config)
-            guard
-                let x = canvasXPosition(for: point.xKey, in: plotRect),
-                let y = canvasYPosition(for: value, in: plotRect)
-            else {
-                return nil
-            }
-
-            return (CGPoint(x: x, y: y), value)
-        }
-
-        return CombinedChartView.LineSegmentResolver.makeSegments(
-            points: points,
-            style: overlayContext.config.line.lineType,
-            color: overlayLineColor)
-    }
-
     func drawCanvasGrid(
         in graphicsContext: inout GraphicsContext,
         plotRect: CGRect,
@@ -167,10 +216,8 @@ extension CombinedChartView.Renderer {
     }
 
     func drawCanvasZeroLine(in graphicsContext: inout GraphicsContext, plotRect: CGRect) {
-        guard
-            context.yAxisDisplayDomain.lowerBound <= 0,
-            context.yAxisDisplayDomain.upperBound >= 0,
-            let y = canvasYPosition(for: 0, in: plotRect)
+        guard let zeroLine = marksPresentationContext.ruleMarks.first,
+              let y = canvasYPosition(for: zeroLine.value, in: plotRect)
         else {
             return
         }
@@ -180,19 +227,16 @@ extension CombinedChartView.Renderer {
         path.addLine(to: CGPoint(x: plotRect.maxX, y: y))
         graphicsContext.stroke(
             path,
-            with: .color(context.config.axis.gridLineColor.opacity(0.8)),
-            lineWidth: context.config.axis.zeroLineWidth)
+            with: .color(zeroLine.color),
+            lineWidth: zeroLine.lineWidth)
     }
 
     func drawCanvasBars(in graphicsContext: inout GraphicsContext, plotRect: CGRect) {
-        guard !barMarkItems.isEmpty else { return }
+        guard marksPresentationContext.showsBarMarks else { return }
 
-        let step = plotRect.width / CGFloat(max(axisRenderContext.monthValues.count, 1))
-        let barWidth = min(context.config.bar.barWidth, step)
-
-        for item in barMarkItems {
+        for item in marksPresentationContext.barMarks {
             guard
-                let x = canvasXPosition(for: item.xKey, in: plotRect),
+                let x = canvasXPosition(for: item.xIndex, in: plotRect),
                 let yStart = canvasYPosition(for: item.start, in: plotRect),
                 let yEnd = canvasYPosition(for: item.end, in: plotRect)
             else {
@@ -200,73 +244,72 @@ extension CombinedChartView.Renderer {
             }
 
             let rect = CGRect(
-                x: x - barWidth / 2,
+                x: x - item.width / 2,
                 y: min(yStart, yEnd),
-                width: barWidth,
+                width: item.width,
                 height: Swift.abs(yEnd - yStart))
 
             graphicsContext.fill(Path(rect), with: .color(item.color))
         }
     }
 
+    func drawCanvasSelectedPointMark(in graphicsContext: inout GraphicsContext, plotRect: CGRect) {
+        guard let pointMark = marksPresentationContext.pointMarks.first,
+              let x = canvasXPosition(for: pointMark.index, in: plotRect),
+              let y = canvasYPosition(for: pointMark.value, in: plotRect) else {
+            return
+        }
+
+        let rect = CGRect(
+            x: x - pointMark.pointSize / 2,
+            y: y - pointMark.pointSize / 2,
+            width: pointMark.pointSize,
+            height: pointMark.pointSize)
+        graphicsContext.fill(Path(ellipseIn: rect), with: .color(pointMark.color))
+    }
+
     func drawCanvasTrendLine(
         in graphicsContext: inout GraphicsContext,
-        lineSegments: [CombinedChartView.LineSegmentPath]) {
-        for segment in lineSegments {
-            graphicsContext.stroke(
-                segment.path,
-                with: .color(segment.color),
-                style: StrokeStyle(lineWidth: overlayContext.config.line.lineWidth))
+        overlayPresentation: CombinedChartView.OverlayPresentationDescriptor) {
+        for lineMark in overlayPresentation.lineMarks {
+            for segment in lineMark.segments {
+                graphicsContext.stroke(
+                    segment.path,
+                    with: .color(segment.color),
+                    style: StrokeStyle(lineWidth: lineMark.lineWidth))
+            }
         }
     }
 
-    func drawCanvasSelection(in graphicsContext: inout GraphicsContext, plotRect: CGRect) {
-        guard
-            let selection = context.visibleSelection,
-            context.visibleData.indices.contains(selection.index)
-        else {
-            return
-        }
+    func drawCanvasSelection(
+        in graphicsContext: inout GraphicsContext,
+        plotRect: CGRect,
+        overlayPresentation: CombinedChartView.OverlayPresentationDescriptor) {
+        let selection = overlayPresentation.selection
+        guard selection.showsDefaultOverlay else { return }
 
-        let point = context.visibleData[selection.index]
-        let value = point.trendLineValue(using: overlayContext.config)
-        guard
-            let x = canvasXPosition(for: point.xKey, in: plotRect),
-            let y = canvasYPosition(for: value, in: plotRect)
-        else {
-            return
-        }
-
-        let unitWidth = plotRect.width / CGFloat(max(axisRenderContext.monthValues.count, 1))
-        let lineColor = overlaySelectionLineColor(for: value)
-
-        switch context.selectedTab.mode.selectionIndicatorStyle {
-        case .band:
-            let width = max(unitWidth * 0.9, overlayContext.config.line.selection.minimumSelectionWidth)
-            let rect = CGRect(x: x - width / 2, y: plotRect.minY, width: width, height: plotRect.height)
-            graphicsContext.fill(Path(rect), with: .color(lineColor.opacity(0.08)))
-        case .line:
+        if let bandFrame = selection.bandIndicatorFrame,
+           let fillColor = selection.indicatorFillColor {
+            graphicsContext.fill(
+                Path(bandFrame),
+                with: .color(fillColor))
+        } else if let lineX = selection.lineIndicatorX,
+                  let lineColor = selection.indicatorLineColor {
             var path = Path()
-            path.move(to: CGPoint(x: x, y: plotRect.minY))
-            path.addLine(to: CGPoint(x: x, y: plotRect.maxY))
-            graphicsContext.stroke(path, with: .color(lineColor), lineWidth: 1)
-        }
-
-        if context.selectedTab.mode.showsSelectedPoint {
-            let pointSize = overlayContext.config.line.selection.pointSize
-            let rect = CGRect(x: x - pointSize / 2, y: y - pointSize / 2, width: pointSize, height: pointSize)
-            graphicsContext.fill(Path(ellipseIn: rect), with: .color(lineColor))
+            path.move(to: CGPoint(x: lineX, y: plotRect.minY))
+            path.addLine(to: CGPoint(x: lineX, y: plotRect.maxY))
+            graphicsContext.stroke(
+                path,
+                with: .color(lineColor),
+                style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
         }
     }
 
     func canvasXAxisLabels(in plotRect: CGRect) -> some View {
         ZStack(alignment: .topLeading) {
-            ForEach(axisRenderContext.pointInfos, id: \.xKey) { pointInfo in
-                if let x = canvasXPosition(for: pointInfo.xKey, in: plotRect) {
-                    Text(context.config.axis.xAxisLabel(xAxisLabelContext(
-                        for: pointInfo.xKey,
-                        axisPointByKey: axisRenderContext.pointInfoByKey,
-                        axisPointInfos: axisRenderContext.pointInfos)))
+            ForEach(axisPresentationContext.xLabels) { labelDescriptor in
+                if let x = canvasXPosition(for: labelDescriptor.index, in: plotRect) {
+                    Text(labelDescriptor.text)
                         .font(context.config.axis.xAxisLabelFont)
                         .foregroundStyle(context.config.axis.xAxisLabelColor)
                         .position(x: x, y: 10)
@@ -275,21 +318,19 @@ extension CombinedChartView.Renderer {
         }
     }
 
-    func canvasTapGesture(in plotRect: CGRect) -> some Gesture {
-        SpatialTapGesture()
-            .onEnded { gesture in
-                let candidates = context.visibleData.enumerated().compactMap { index, point -> (
-                    index: Int,
-                    xPosition: CGFloat)? in
-                    guard let x = canvasXPosition(for: point.xKey, in: plotRect) else { return nil }
-                    return (index: index, xPosition: x)
-                }
+    func handleCanvasTap(
+        at location: CGPoint,
+        xPositions: [CombinedChartView.XPositionDescriptor]) {
+        let nearestIndex = CombinedChartView.SelectionHitResolver.resolveIndex(
+            at: location,
+            request: .init(
+                dataCount: context.visibleData.count,
+                minimumHitWidth: context.config.line.selection.minimumSelectionWidth,
+                fallbackWidth: marksPresentationContext.fallbackBarWidth,
+                xPositions: xPositions))
 
-                if let index = CombinedChartView.SelectionResolver.nearestIndex(
-                    to: gesture.location,
-                    candidates: candidates) {
-                    onSelectIndex(index)
-                }
-            }
+        if let nearestIndex {
+            onSelectIndex(nearestIndex)
+        }
     }
 }

@@ -4,9 +4,9 @@ import PackageDescription
 
 let package = Package(
     name: "CombinedChart",
+    // CombinedChartFramework currently supports iOS only; macOS is not supported.
     platforms: [
-        .iOS(.v16),
-        .macOS(.v14)
+        .iOS(.v15)
     ],
     products: [
         .library(

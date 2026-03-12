@@ -6,7 +6,8 @@ This document records the main limitations, risks, and recommended configuration
 
 The key framing is important:
 
-- iOS 16 is currently a supported compatibility target
+- the framework now declares iOS 15.0 as its minimum supported version
+- iOS 16 remains a supported compatibility target
 - it is not yet the strongest execution target for the framework's architecture
 
 ## 1. Current Platform Behavior
@@ -14,7 +15,7 @@ The key framing is important:
 Under the current implementation, automatic behavior on iOS 16 is conservative:
 
 - `rendering.engine = .automatic` resolves to `canvas`
-- `pager.scrollImplementation = .automatic` resolves to `swiftUIGesture`
+- `pager.scrollEngine = .automatic` resolves to `swiftUIGesture`
 
 This means the default iOS 16 experience is effectively a compatibility-oriented path rather than the most system-native path.
 
@@ -82,7 +83,7 @@ That is a valid tradeoff, but it means debug visuals and labels may not always u
 For general usage, prefer:
 
 - `rendering.engine = .automatic`
-- `pager.scrollImplementation = .automatic`
+- `pager.scrollEngine = .automatic`
 
 This keeps the app aligned with the framework's default compatibility decisions.
 
@@ -90,7 +91,7 @@ This keeps the app aligned with the framework's default compatibility decisions.
 
 If accurate content offset behavior is especially important, evaluate:
 
-- `pager.scrollImplementation = .uiKitScrollView`
+- `pager.scrollEngine = .uiKitScrollView`
 
 on iOS 16, because UIKit scrolling is more suitable for offset-driven interaction diagnostics.
 
@@ -156,7 +157,7 @@ If iOS 16 is an important production platform for a downstream app:
 
 ## 9. Conclusion
 
-iOS 16 is currently supported, but it should be understood as:
+iOS 16 remains supported, but it should be understood as:
 
 - supported
 - regression-sensitive

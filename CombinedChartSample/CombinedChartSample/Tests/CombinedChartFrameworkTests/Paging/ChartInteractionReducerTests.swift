@@ -9,8 +9,8 @@ final class ChartInteractionReducerTests: XCTestCase {
             state: makeState(
                 startIndex: 8,
                 unitWidth: 100,
-                monthsPerPage: 4,
-                maxStartMonthIndex: 12,
+                visibleValueCount: 4,
+                maxStartIndex: 12,
                 arrowScrollMode: .byPage))
 
         XCTAssertEqual(result.mutations.count, 1)
@@ -18,7 +18,7 @@ final class ChartInteractionReducerTests: XCTestCase {
         guard case .viewportUpdate(let context) = result.mutations[0] else {
             return XCTFail("Expected viewportUpdate mutation")
         }
-        XCTAssertEqual(context.startMonthIndex, 4)
+        XCTAssertEqual(context.startIndex, 4)
         XCTAssertEqual(context.contentOffsetX, 400)
     }
 
@@ -28,23 +28,23 @@ final class ChartInteractionReducerTests: XCTestCase {
             state: makeState(
                 startIndex: 0,
                 unitWidth: 100,
-                monthsPerPage: 4,
-                maxStartMonthIndex: 12,
+                visibleValueCount: 4,
+                maxStartIndex: 12,
                 arrowScrollMode: .byEntry,
-                currentYearRangeIndex: 0,
-                yearPageRanges: [
+                currentPageRangeIndex: 0,
+                pageRanges: [
                     .init(
                         displayTitle: "2024",
                         groupOrder: 0,
-                        startMonthIndex: 0,
-                        endMonthIndex: 5,
+                        startIndex: 0,
+                        endIndex: 5,
                         startPage: 0,
                         endPage: 1),
                     .init(
                         displayTitle: "2025",
                         groupOrder: 1,
-                        startMonthIndex: 6,
-                        endMonthIndex: 11,
+                        startIndex: 6,
+                        endIndex: 11,
                         startPage: 1,
                         endPage: 2)
                 ]))
@@ -54,18 +54,18 @@ final class ChartInteractionReducerTests: XCTestCase {
         guard case .viewportUpdate(let context) = result.mutations[0] else {
             return XCTFail("Expected viewportUpdate mutation")
         }
-        XCTAssertEqual(context.startMonthIndex, 6)
+        XCTAssertEqual(context.startIndex, 6)
         XCTAssertEqual(context.contentOffsetX, 600)
     }
 
-    func testReducerClampsSelectMonthWindowMutation() {
+    func testReducerBuildsByPageNextMutationFromPartialPageStart() {
         let result = CombinedChartView.InteractionReducer.reduce(
-            action: .selectMonthWindow(startMonthIndex: 99),
+            action: .selectNextPage,
             state: makeState(
-                startIndex: 0,
+                startIndex: 2,
                 unitWidth: 100,
-                monthsPerPage: 4,
-                maxStartMonthIndex: 8,
+                visibleValueCount: 4,
+                maxStartIndex: 12,
                 arrowScrollMode: .byPage))
 
         XCTAssertEqual(result.mutations.count, 1)
@@ -73,18 +73,56 @@ final class ChartInteractionReducerTests: XCTestCase {
         guard case .viewportUpdate(let context) = result.mutations[0] else {
             return XCTFail("Expected viewportUpdate mutation")
         }
-        XCTAssertEqual(context.startMonthIndex, 8)
+        XCTAssertEqual(context.startIndex, 4)
+        XCTAssertEqual(context.contentOffsetX, 400)
+    }
+
+    func testReducerBuildsByPagePreviousMutationFromPartialPageStart() {
+        let result = CombinedChartView.InteractionReducer.reduce(
+            action: .selectPreviousPage,
+            state: makeState(
+                startIndex: 6,
+                unitWidth: 100,
+                visibleValueCount: 4,
+                maxStartIndex: 12,
+                arrowScrollMode: .byPage))
+
+        XCTAssertEqual(result.mutations.count, 1)
+        XCTAssertTrue(result.commands.isEmpty)
+        guard case .viewportUpdate(let context) = result.mutations[0] else {
+            return XCTFail("Expected viewportUpdate mutation")
+        }
+        XCTAssertEqual(context.startIndex, 0)
+        XCTAssertEqual(context.contentOffsetX, 0)
+    }
+
+    func testReducerClampsSelectWindowMutation() {
+        let result = CombinedChartView.InteractionReducer.reduce(
+            action: .selectWindow(startIndex: 99),
+            state: makeState(
+                startIndex: 0,
+                unitWidth: 100,
+                visibleValueCount: 4,
+                maxStartIndex: 8,
+                arrowScrollMode: .byPage))
+
+        XCTAssertEqual(result.mutations.count, 1)
+        XCTAssertTrue(result.commands.isEmpty)
+        guard case .viewportUpdate(let context) = result.mutations[0] else {
+            return XCTFail("Expected viewportUpdate mutation")
+        }
+        XCTAssertEqual(context.startIndex, 8)
         XCTAssertEqual(context.contentOffsetX, 800)
     }
 
     func testReducerPreservesFreeDragSettledOffset() {
         let result = CombinedChartView.InteractionReducer.reduce(
-            action: .settleDrag(.init(targetMonthIndex: 3, targetContentOffsetX: 365)),
+            action: .settleDrag(.init(targetIndex: 3, targetContentOffsetX: 365)),
             state: makeState(
                 startIndex: 0,
                 unitWidth: 100,
-                monthsPerPage: 4,
-                maxStartMonthIndex: 8,
+                visibleValueCount: 4,
+                maxStartIndex: 8,
                 arrowScrollMode: .byPage))
 
         XCTAssertEqual(result.mutations.count, 1)
@@ -92,18 +130,18 @@ final class ChartInteractionReducerTests: XCTestCase {
         guard case .viewportUpdate(let context) = result.mutations[0] else {
             return XCTFail("Expected viewportUpdate mutation")
         }
-        XCTAssertEqual(context.startMonthIndex, 3)
+        XCTAssertEqual(context.startIndex, 3)
         XCTAssertEqual(context.contentOffsetX, 365)
     }
 
     func testReducerClampsSettledDragOffsetToMaximumRange() {
         let result = CombinedChartView.InteractionReducer.reduce(
-            action: .settleDrag(.init(targetMonthIndex: 99, targetContentOffsetX: 9999)),
+            action: .settleDrag(.init(targetIndex: 99, targetContentOffsetX: 9999)),
             state: makeState(
                 startIndex: 0,
                 unitWidth: 100,
-                monthsPerPage: 4,
-                maxStartMonthIndex: 8,
+                visibleValueCount: 4,
+                maxStartIndex: 8,
                 arrowScrollMode: .byPage))
 
         XCTAssertEqual(result.mutations.count, 1)
@@ -111,7 +149,7 @@ final class ChartInteractionReducerTests: XCTestCase {
         guard case .viewportUpdate(let context) = result.mutations[0] else {
             return XCTFail("Expected viewportUpdate mutation")
         }
-        XCTAssertEqual(context.startMonthIndex, 8)
+        XCTAssertEqual(context.startIndex, 8)
         XCTAssertEqual(context.contentOffsetX, 800)
     }
 
@@ -121,8 +159,8 @@ final class ChartInteractionReducerTests: XCTestCase {
             state: makeState(
                 startIndex: 0,
                 unitWidth: 100,
-                monthsPerPage: 4,
-                maxStartMonthIndex: 8,
+                visibleValueCount: 4,
+                maxStartIndex: 8,
                 arrowScrollMode: .byPage,
                 visiblePointIDs: [
                     .init(groupID: "2024", xKey: "2024-01"),
@@ -147,8 +185,8 @@ final class ChartInteractionReducerTests: XCTestCase {
             state: makeState(
                 startIndex: 0,
                 unitWidth: 100,
-                monthsPerPage: 4,
-                maxStartMonthIndex: 8,
+                visibleValueCount: 4,
+                maxStartIndex: 8,
                 arrowScrollMode: .byPage,
                 visiblePointIDs: [
                     .init(groupID: "2024", xKey: "2024-01"),
@@ -162,12 +200,12 @@ final class ChartInteractionReducerTests: XCTestCase {
     private func makeState(
         startIndex: Int,
         unitWidth: CGFloat,
-        monthsPerPage: Int,
-        maxStartMonthIndex: Int,
+        visibleValueCount: Int,
+        maxStartIndex: Int,
         arrowScrollMode: ChartConfig.Pager.ArrowScrollMode,
         visiblePointIDs: [CombinedChartView.ChartPointID] = [],
-        currentYearRangeIndex: Int? = nil,
-        yearPageRanges: [CombinedChartView.YearPageRange] = []) -> CombinedChartView.InteractionState {
+        currentPageRangeIndex: Int? = nil,
+        pageRanges: [CombinedChartView.PageRange] = []) -> CombinedChartView.InteractionState {
         .init(
             visibleSelection: nil,
             visiblePointIDs: visiblePointIDs,
@@ -176,10 +214,10 @@ final class ChartInteractionReducerTests: XCTestCase {
                 contentOffsetX: CGFloat(startIndex) * unitWidth),
             unitWidth: unitWidth,
             pagingContext: .init(
-                monthsPerPage: monthsPerPage,
-                maxStartMonthIndex: maxStartMonthIndex,
+                visibleValueCount: visibleValueCount,
+                maxStartIndex: maxStartIndex,
                 arrowScrollMode: arrowScrollMode,
-                currentYearRangeIndex: currentYearRangeIndex,
-                yearPageRanges: yearPageRanges))
+                currentPageRangeIndex: currentPageRangeIndex,
+                pageRanges: pageRanges))
     }
 }

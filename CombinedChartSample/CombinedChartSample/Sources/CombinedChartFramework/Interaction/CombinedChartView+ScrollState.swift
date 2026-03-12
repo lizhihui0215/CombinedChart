@@ -5,6 +5,7 @@ extension CombinedChartView {
         let pagingContext: PagingContext
         let dragState: DragState
         let layoutMetrics: LayoutMetrics
+        let viewport: ViewportDescriptor
         let renderContext: RenderContext
 
         init(
@@ -18,25 +19,33 @@ extension CombinedChartView {
             let dragState = DragState(
                 contentOffsetX: viewportState.contentOffsetX,
                 startIndex: viewportState.startIndex,
-                monthsPerPage: context.pagingContext.monthsPerPage,
-                maxStartMonthIndex: context.pagingContext.maxStartMonthIndex,
-                dragScrollMode: context.config.pager.dragScrollMode)
+                visibleValueCount: context.pagingContext.visibleValueCount,
+                maxStartIndex: context.pagingContext.maxStartIndex,
+                dragScrollMode: context.config.pager.scrollTargetBehavior)
             let layoutMetrics = LayoutMetrics(
                 availableWidth: availableWidth,
                 axisWidth: context.config.axis.yAxisWidth,
-                monthsPerPage: context.pagingContext.monthsPerPage,
+                visibleValueCount: context.pagingContext.visibleValueCount,
                 dataCount: context.data.count,
                 dragState: dragState,
                 dragTranslationX: dragTranslationX,
                 settlingOffsetX: settlingOffsetX,
-                maxStartMonthIndex: context.pagingContext.maxStartMonthIndex)
+                maxStartIndex: context.pagingContext.maxStartIndex)
 
             pagingContext = context.pagingContext
             self.dragState = dragState
             self.layoutMetrics = layoutMetrics
+            let viewport = ViewportDescriptor(
+                dataCount: context.data.count,
+                visibleValueCount: context.pagingContext.visibleValueCount,
+                startIndex: viewportState.startIndex,
+                contentOffsetX: viewportState.contentOffsetX,
+                visibleStartThreshold: context.config.pager.visibleStartThreshold,
+                layoutMetrics: layoutMetrics)
+            self.viewport = viewport
             renderContext = context.makeRenderContext(
                 plotAreaHeight: plotAreaHeight,
-                unitWidth: layoutMetrics.unitWidth,
+                viewport: viewport,
                 visibleSelection: visibleSelection)
         }
 
@@ -46,12 +55,12 @@ extension CombinedChartView {
                 for: dragTranslationX,
                 computedUnitWidth: layoutMetrics.unitWidth,
                 computedViewportWidth: layoutMetrics.viewportWidth)
-            let targetMonthIndex = dragState.targetMonthIndex(
+            let targetIndex = dragState.targetIndex(
                 for: targetOffsetX,
                 computedUnitWidth: layoutMetrics.unitWidth)
 
             return .init(
-                targetMonthIndex: targetMonthIndex,
+                targetIndex: targetIndex,
                 targetContentOffsetX: targetOffsetX)
         }
 
@@ -74,27 +83,27 @@ extension CombinedChartView {
                 let delta = clampedProposedOffsetX - dragState.contentOffsetX
                 let threshold = layoutMetrics.viewportWidth * 0.2
                 let pageDelta: Int = if delta >= threshold {
-                    pagingContext.monthsPerPage
+                    pagingContext.visibleValueCount
                 } else if delta <= -threshold {
-                    -pagingContext.monthsPerPage
+                    -pagingContext.visibleValueCount
                 } else {
                     0
                 }
-                let targetMonthIndex = min(
+                let targetIndex = min(
                     max(dragState.startIndex + pageDelta, 0),
-                    pagingContext.maxStartMonthIndex)
-                targetOffsetX = CGFloat(targetMonthIndex) * layoutMetrics.unitWidth
+                    pagingContext.maxStartIndex)
+                targetOffsetX = CGFloat(targetIndex) * layoutMetrics.unitWidth
             case .freeSnapping:
-                let snappedMonthIndex = min(
+                let snappedIndex = min(
                     max(Int(round(clampedProposedOffsetX / layoutMetrics.unitWidth)), 0),
-                    pagingContext.maxStartMonthIndex)
-                targetOffsetX = CGFloat(snappedMonthIndex) * layoutMetrics.unitWidth
+                    pagingContext.maxStartIndex)
+                targetOffsetX = CGFloat(snappedIndex) * layoutMetrics.unitWidth
             case .free:
                 targetOffsetX = clampedProposedOffsetX
             }
 
             return .init(
-                targetMonthIndex: dragState.targetMonthIndex(
+                targetIndex: dragState.targetIndex(
                     for: targetOffsetX,
                     computedUnitWidth: layoutMetrics.unitWidth),
                 targetContentOffsetX: targetOffsetX)
@@ -104,9 +113,10 @@ extension CombinedChartView {
             layoutState: inout LayoutState,
             viewportState: inout ViewportState) {
             layoutState.update(
-                viewportWidth: layoutMetrics.viewportWidth,
-                unitWidth: layoutMetrics.unitWidth)
-            viewportState.contentOffsetX = CGFloat(viewportState.startIndex) * layoutMetrics.unitWidth
+                viewportWidth: viewport.viewportWidth,
+                unitWidth: viewport.unitWidth)
+            viewportState.contentOffsetX = viewport.contentOffsetX
+            viewportState.startIndex = viewport.startIndex
         }
     }
 }

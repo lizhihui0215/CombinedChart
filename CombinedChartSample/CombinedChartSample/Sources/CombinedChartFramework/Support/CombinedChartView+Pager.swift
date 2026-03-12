@@ -13,6 +13,7 @@ extension CombinedChartView {
                 Button(action: context.onSelectPreviousPage) {
                     Image(systemName: "chevron.left")
                 }
+                .accessibilityIdentifier("combined-chart-pager-previous")
                 .foregroundStyle(
                     context.canSelectPreviousPage
                         ? context.config.pager.activeControlColor
@@ -24,12 +25,14 @@ extension CombinedChartView {
                 Text(highlightedEntryTitle ?? "")
                     .font(context.config.pager.titleFont)
                     .foregroundStyle(context.config.pager.titleColor)
+                    .accessibilityIdentifier("combined-chart-pager-title")
 
                 Spacer()
 
                 Button(action: context.onSelectNextPage) {
                     Image(systemName: "chevron.right")
                 }
+                .accessibilityIdentifier("combined-chart-pager-next")
                 .foregroundStyle(
                     context.canSelectNextPage
                         ? context.config.pager.activeControlColor

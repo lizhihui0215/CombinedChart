@@ -190,7 +190,7 @@ CombinedChart/
 
 当前已知工程限制：
 
-- package 当前声明支持 `macOS(.v14)`，但交互实现的一部分仍然直接依赖 UIKit
+- 当前 framework 仅支持 iOS；不支持 macOS
 
 更多限制和平台差异可参考：
 

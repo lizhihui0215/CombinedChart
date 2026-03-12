@@ -11,17 +11,17 @@ extension CombinedChartView {
         init(
             availableWidth: CGFloat,
             axisWidth: CGFloat,
-            monthsPerPage: Int,
+            visibleValueCount: Int,
             dataCount: Int,
             dragState: DragState,
             dragTranslationX: CGFloat,
             settlingOffsetX: CGFloat,
-            maxStartMonthIndex: Int) {
-            let visibleCount = CGFloat(monthsPerPage)
+            maxStartIndex: Int) {
+            let visibleCount = CGFloat(visibleValueCount)
             viewportWidth = max(availableWidth - axisWidth, 1)
             unitWidth = viewportWidth / visibleCount
             chartWidth = max(viewportWidth, unitWidth * CGFloat(dataCount))
-            maxContentOffsetX = CGFloat(maxStartMonthIndex) * unitWidth
+            maxContentOffsetX = CGFloat(maxStartIndex) * unitWidth
             currentContentOffsetX = dragState.currentContentOffsetX(
                 dragTranslationX: dragTranslationX,
                 settlingOffsetX: settlingOffsetX,

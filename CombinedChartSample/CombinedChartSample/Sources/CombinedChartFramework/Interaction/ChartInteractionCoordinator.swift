@@ -63,7 +63,7 @@ extension CombinedChartView {
             canSelectNextPage: snapshot.canSelectNextPage,
             onSelectPreviousPage: { dispatch(.selectPreviousPage) },
             onSelectEntry: { entry in
-                dispatch(.selectMonthWindow(startMonthIndex: entry.startMonthIndex))
+                dispatch(.selectWindow(startIndex: entry.startIndex))
             },
             onSelectNextPage: { dispatch(.selectNextPage) })
     }

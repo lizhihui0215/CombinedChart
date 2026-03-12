@@ -83,15 +83,15 @@ extension CombinedChartView {
         }
     }
 
-    struct YearPageRange: Identifiable {
+    struct PageRange: Identifiable {
         var id: String {
             displayTitle
         }
 
         let displayTitle: String
         let groupOrder: Int
-        let startMonthIndex: Int
-        let endMonthIndex: Int
+        let startIndex: Int
+        let endIndex: Int
         let startPage: Int
         let endPage: Int
 

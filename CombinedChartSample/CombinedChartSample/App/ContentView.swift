@@ -27,7 +27,7 @@ struct ContentView: View {
         }
     }
 
-    enum DragModeOption: String, CaseIterable, Identifiable {
+    enum ScrollTargetBehaviorOption: String, CaseIterable, Identifiable {
         case byPage = "By Page"
         case freeSnapping = "Free Snapping"
         case free = "Free"
@@ -36,7 +36,7 @@ struct ContentView: View {
             self
         }
 
-        var value: CombinedChartView.Config.Pager.DragScrollMode {
+        var value: CombinedChartView.Config.Pager.ScrollTargetBehavior {
             switch self {
             case .byPage:
                 .byPage
@@ -61,7 +61,7 @@ struct ContentView: View {
         }
     }
 
-    enum ScrollImplementationOption: String, CaseIterable, Identifiable {
+    enum ScrollEngineOption: String, CaseIterable, Identifiable {
         case automatic = "Automatic"
         case swiftUI = "SwiftUI Gesture"
         case uiKit = "UIKit ScrollView"
@@ -70,7 +70,7 @@ struct ContentView: View {
             self
         }
 
-        var value: CombinedChartView.Config.Pager.ScrollImplementation {
+        var value: CombinedChartView.Config.Pager.ScrollEngine {
             switch self {
             case .automatic:
                 .automatic
@@ -120,10 +120,11 @@ struct ContentView: View {
     private struct UITestLaunchConfiguration {
         let dataset: ChartSampleData.DatasetOption
         let selectedTab: CombinedChartView.Tab
-        let dragMode: DragModeOption
-        let scrollImplementation: ScrollImplementationOption
+        let scrollTargetBehavior: ScrollTargetBehaviorOption
+        let scrollEngine: ScrollEngineOption
         let renderingEngine: RenderingEngineOption
         let showDebugOverlay: Bool
+        let showDebugLog: Bool
         let chartHeight: CGFloat
         let visibleStartThreshold: CGFloat
         let barWidth: CGFloat
@@ -132,8 +133,12 @@ struct ContentView: View {
             let arguments = processInfo.arguments
             let datasetValue = Self.argumentValue(after: "-snapshot-dataset", in: arguments)
             let selectedTabID = Self.argumentValue(after: "-snapshot-selected-tab", in: arguments)
-            let dragModeValue = Self.argumentValue(after: "-snapshot-drag-mode", in: arguments)
-            let scrollImplementationValue = Self.argumentValue(after: "-snapshot-scroll-implementation", in: arguments)
+            let scrollTargetBehaviorValue =
+                Self.argumentValue(after: "-snapshot-scroll-target-behavior", in: arguments) ??
+                Self.argumentValue(after: "-snapshot-drag-mode", in: arguments)
+            let scrollEngineValue =
+                Self.argumentValue(after: "-snapshot-scroll-engine", in: arguments) ??
+                Self.argumentValue(after: "-snapshot-scroll-implementation", in: arguments)
             let renderingEngineValue = Self.argumentValue(after: "-snapshot-rendering-engine", in: arguments)
             let chartHeightValue = Self.argumentValue(after: "-snapshot-chart-height", in: arguments)
             let visibleStartThresholdValue = Self.argumentValue(
@@ -149,15 +154,17 @@ struct ContentView: View {
                     })
                 } ?? .current
             selectedTab = CombinedChartView.Tab.defaults.first(where: { $0.id == selectedTabID }) ?? .totalTrend
-            dragMode = dragModeValue.flatMap { DragModeOption(launchArgumentValue: $0) } ?? .freeSnapping
-            scrollImplementation = scrollImplementationValue
-                .flatMap { ScrollImplementationOption(launchArgumentValue: $0) } ?? .automatic
+            scrollTargetBehavior = scrollTargetBehaviorValue
+                .flatMap { ScrollTargetBehaviorOption(launchArgumentValue: $0) } ?? .freeSnapping
+            scrollEngine = scrollEngineValue
+                .flatMap { ScrollEngineOption(launchArgumentValue: $0) } ?? .automatic
             renderingEngine = renderingEngineValue
                 .flatMap { rawValue in
                     RenderingEngineOption.allCases
                         .first(where: { $0.rawValue.caseInsensitiveCompare(rawValue) == .orderedSame })
                 } ?? .automatic
             showDebugOverlay = arguments.contains("-snapshot-show-debug-overlay")
+            showDebugLog = arguments.contains("-snapshot-show-debug-log")
             chartHeight = chartHeightValue.flatMap { Double($0) }.map { CGFloat($0) } ?? 420
             visibleStartThreshold = visibleStartThresholdValue
                 .flatMap { Double($0) }
@@ -181,15 +188,15 @@ struct ContentView: View {
         var selectedTab: CombinedChartView.Tab
         var showDebugOverlay: Bool
         var arrowMode: ArrowModeOption
-        var dragMode: DragModeOption
-        var scrollImplementation: ScrollImplementationOption
+        var scrollTargetBehavior: ScrollTargetBehaviorOption
+        var scrollEngine: ScrollEngineOption
         var renderingEngine: RenderingEngineOption
         var chartHeight: CGFloat
         var topInset: CGFloat
         var xAxisHeight: CGFloat
         var visibleStartThreshold: CGFloat
         var barWidth: CGFloat
-        var monthsPerPage: CGFloat
+        var visibleValueCount: CGFloat
         var segmentGap: CGFloat
         var lineWidth: CGFloat
         var lineType: LineTypeOption
@@ -213,15 +220,15 @@ struct ContentView: View {
             selectedTab = launchConfiguration.selectedTab
             showDebugOverlay = launchConfiguration.showDebugOverlay
             arrowMode = .byPage
-            dragMode = launchConfiguration.dragMode
-            scrollImplementation = launchConfiguration.scrollImplementation
+            scrollTargetBehavior = launchConfiguration.scrollTargetBehavior
+            scrollEngine = launchConfiguration.scrollEngine
             renderingEngine = launchConfiguration.renderingEngine
             chartHeight = launchConfiguration.chartHeight
             topInset = 12
             xAxisHeight = 28
             visibleStartThreshold = launchConfiguration.visibleStartThreshold
             barWidth = launchConfiguration.barWidth
-            monthsPerPage = 4
+            visibleValueCount = 4
             segmentGap = 2
             lineWidth = 1
             lineType = .linear
@@ -234,7 +241,7 @@ struct ContentView: View {
             pagerVisible = true
             trendBarColorOption = .unified
             selectionLineColorOption = .fixed
-            showDebugLog = false
+            showDebugLog = launchConfiguration.showDebugLog
             showDataControls = true
             showInteractionControls = false
             showLayoutControls = false
@@ -274,10 +281,10 @@ struct ContentView: View {
 
     private var config: CombinedChartView.Config {
         ChartSampleData.makeConfig(
-            monthsPerPage: Int(controls.monthsPerPage.rounded()),
+            visibleValueCount: Int(controls.visibleValueCount.rounded()),
             arrowScrollMode: controls.arrowMode.value,
-            dragScrollMode: controls.dragMode.value,
-            scrollImplementation: controls.scrollImplementation.value,
+            scrollTargetBehavior: controls.scrollTargetBehavior.value,
+            scrollEngine: controls.scrollEngine.value,
             renderingEngine: controls.renderingEngine.value,
             chartHeight: controls.chartHeight,
             topInset: controls.topInset,
@@ -299,7 +306,9 @@ struct ContentView: View {
     }
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: true) {
+        ScrollView(
+            .vertical,
+            showsIndicators: !ProcessInfo.processInfo.arguments.contains("-snapshot-disable-animations")) {
             VStack(spacing: 10) {
                 headerCard
                 configPanel
@@ -309,6 +318,7 @@ struct ContentView: View {
             .padding(12)
         }
         .accessibilityIdentifier("combined-chart-root")
+        .statusBarHidden(ProcessInfo.processInfo.arguments.contains("-snapshot-disable-animations"))
     }
 }
 
@@ -353,8 +363,8 @@ private extension ContentView {
             DisclosureGroup("Interaction", isExpanded: $controls.showInteractionControls) {
                 VStack(spacing: 10) {
                     compactPicker("Arrow Mode", selection: $controls.arrowMode)
-                    compactPicker("Drag Mode", selection: $controls.dragMode)
-                    compactPicker("Scroll Engine", selection: $controls.scrollImplementation)
+                    compactPicker("Scroll Target", selection: $controls.scrollTargetBehavior)
+                    compactPicker("Scroll Engine", selection: $controls.scrollEngine)
                     compactPicker("Renderer", selection: $controls.renderingEngine)
                     Toggle("Pager Visible", isOn: $controls.pagerVisible)
                         .font(ChartSampleData.SampleAppearance.Typography.bodyCaption)
@@ -364,7 +374,7 @@ private extension ContentView {
 
             DisclosureGroup("Layout", isExpanded: $controls.showLayoutControls) {
                 VStack(spacing: 10) {
-                    sliderRow("Months / Page", value: $controls.monthsPerPage, range: 1...12, step: 1)
+                    sliderRow("Visible Values", value: $controls.visibleValueCount, range: 1...12, step: 1)
                     sliderRow(
                         "Chart Height",
                         value: $controls.chartHeight,
@@ -453,8 +463,8 @@ private extension ContentView {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
             summaryPill(title: "Dataset", value: controls.dataset.rawValue)
             summaryPill(title: "Viewport", value: controls.selectedTab.title)
-            summaryPill(title: "Drag", value: controls.dragMode.rawValue)
-            summaryPill(title: "Scroll", value: controls.scrollImplementation.rawValue)
+            summaryPill(title: "Target", value: controls.scrollTargetBehavior.rawValue)
+            summaryPill(title: "Engine", value: controls.scrollEngine.rawValue)
             summaryPill(title: "Renderer", value: controls.renderingEngine.rawValue)
         }
     }
@@ -482,9 +492,12 @@ private extension ContentView {
                         "index=\(context.index)")
                 },
                 onDebugStateChange: { latestDebugState = $0 })
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier("combined-chart-surface")
         }
         .padding(12)
         .background(ChartSampleData.SampleAppearance.Colors.surface, in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityIdentifier("combined-chart-snapshot-card")
     }
 
     var debugNotes: some View {
@@ -492,23 +505,32 @@ private extension ContentView {
             Text("Debug Notes")
                 .font(ChartSampleData.SampleAppearance.Typography.sectionTitle)
             debugRow("Tab", value: latestDebugState?.selectedTabTitle ?? "-")
-            debugRow("Engine", value: latestDebugState?.scrollImplementationTitle ?? "-")
-            debugRow("Drag Mode", value: latestDebugState?.dragScrollModeTitle ?? "-")
+            debugRow("Engine", value: latestDebugState?.scrollEngineTitle ?? "-")
+            debugRow("Scroll Target", value: latestDebugState?.scrollTargetBehaviorTitle ?? "-")
             debugRow("Dragging", value: latestDebugState?.isDragging == true ? "Yes" : "No")
             debugRow("Decelerating", value: latestDebugState?.isDecelerating == true ? "Yes" : "No")
             debugRow("Start Index", value: "\(latestDebugState?.startIndex ?? 0)")
-            debugRow("Visible Start", value: latestDebugState?.visibleStartIndex.map(String.init) ?? "-")
+            debugRow(
+                "Visible Start",
+                value: latestDebugState?.visibleStartIndex.map(String.init) ?? "-",
+                identifier: "combined-chart-debug-visible-start")
             debugRow("Visible Label", value: latestDebugState?.visibleStartLabel ?? "-")
             debugRow(
                 "Threshold",
                 value: latestDebugState.map { String(format: "%.2f", $0.visibleStartThreshold) } ?? "-")
-            debugRow("Offset X", value: latestDebugState.map { String(format: "%.1f", $0.contentOffsetX) } ?? "-")
+            debugRow(
+                "Offset X",
+                value: latestDebugState.map { String(format: "%.1f", $0.contentOffsetX) } ?? "-",
+                identifier: "combined-chart-debug-offset-x")
             debugRow("Drag X", value: latestDebugState.map { String(format: "%.1f", $0.dragTranslationX) } ?? "-")
             debugRow(
                 "Target Offset",
                 value: latestDebugState.map { String(format: "%.1f", $0.targetContentOffsetX) } ?? "-")
-            debugRow("Target Index", value: "\(latestDebugState?.targetMonthIndex ?? 0)")
-            debugRow("Selected Index", value: latestDebugState?.selectedPointIndex.map(String.init) ?? "-")
+            debugRow("Target Index", value: "\(latestDebugState?.targetIndex ?? 0)")
+            debugRow(
+                "Selected Index",
+                value: latestDebugState?.selectedPointIndex.map(String.init) ?? "-",
+                identifier: "combined-chart-debug-selected-index")
             debugRow("Selected Group", value: latestDebugState?.selectedPointGroupID ?? "-")
             debugRow("Selected XKey", value: latestDebugState?.selectedPointXKey ?? "-")
             debugRow("Selected Label", value: latestDebugState?.selectedPointXLabel ?? "-")
@@ -525,13 +547,19 @@ private extension ContentView {
         .background(ChartSampleData.SampleAppearance.Colors.surface, in: RoundedRectangle(cornerRadius: 16))
     }
 
-    func debugRow(_ title: String, value: String) -> some View {
+    func debugRow(_ title: String, value: String, identifier: String? = nil) -> some View {
         HStack {
             Text(title)
                 .foregroundStyle(ChartSampleData.SampleAppearance.Colors.secondaryText)
             Spacer()
-            Text(value)
-                .font(ChartSampleData.SampleAppearance.Typography.valueCaption)
+            if let identifier {
+                Text(value)
+                    .font(ChartSampleData.SampleAppearance.Typography.valueCaption)
+                    .accessibilityIdentifier(identifier)
+            } else {
+                Text(value)
+                    .font(ChartSampleData.SampleAppearance.Typography.valueCaption)
+            }
         }
     }
 

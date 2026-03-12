@@ -1,93 +1,90 @@
 import SwiftUI
 
 extension CombinedChartView {
-    struct PagerState {
-        let entries: [PagerEntry]
-        let yearPageRanges: [YearPageRange]
-        let currentYearRange: YearPageRange?
-        let currentYearRangeIndex: Int?
-        let highlightedEntry: PagerEntry?
+    struct ViewportInfo: Equatable {
+        static let chartsScrollLeadingInset = 0.5
+
+        let startIndex: Int
+        let contentOffsetX: CGFloat
+        let scrollPosition: Double
         let visibleStartIndex: Int?
-        let visibleMonthRange: ClosedRange<Int>?
+        let visibleValueRange: ClosedRange<Int>?
+        let maxStartIndex: Int
 
         init(
-            sortedGroups: [ChartDataGroup],
             dataCount: Int,
-            monthsPerPage: Int,
+            visibleValueCount: Int,
             startIndex: Int,
             contentOffsetX: CGFloat,
             unitWidth: CGFloat,
             visibleStartThreshold: CGFloat) {
-            let yearPageRanges = Self.makeYearPageRanges(
-                from: sortedGroups,
-                monthsPerPage: monthsPerPage)
-            let entries = yearPageRanges.map {
-                PagerEntry(
-                    id: $0.id,
-                    displayTitle: $0.displayTitle,
-                    startMonthIndex: $0.startMonthIndex)
-            }
+            let maxStartIndex = Self.maxStartIndex(
+                dataCount: dataCount,
+                visibleValueCount: visibleValueCount)
+            let clampedStartIndex = min(max(startIndex, 0), maxStartIndex)
+            let resolvedContentOffsetX = Self.clampedContentOffsetX(
+                contentOffsetX,
+                unitWidth: unitWidth,
+                maxStartIndex: maxStartIndex)
             let visibleStartIndex = Self.makeVisibleStartIndex(
                 dataCount: dataCount,
-                contentOffsetX: contentOffsetX,
+                contentOffsetX: resolvedContentOffsetX,
                 unitWidth: unitWidth,
                 progressThreshold: visibleStartThreshold)
-            let currentYearRange = yearPageRanges.first {
-                $0.startMonthIndex <= (visibleStartIndex ?? startIndex) &&
-                    $0.endMonthIndex >= (visibleStartIndex ?? startIndex)
-            } ?? yearPageRanges.first
-            let currentYearRangeIndex = currentYearRange.flatMap { currentYearRange in
-                yearPageRanges.firstIndex { $0.id == currentYearRange.id }
-            }
-            let visibleMonthRange = Self.makeVisibleMonthRange(
-                dataCount: dataCount,
-                monthsPerPage: monthsPerPage,
-                contentOffsetX: contentOffsetX,
+
+            self.startIndex = visibleStartIndex ?? clampedStartIndex
+            self.contentOffsetX = resolvedContentOffsetX
+            scrollPosition = Self.makeScrollPosition(
+                contentOffsetX: resolvedContentOffsetX,
                 unitWidth: unitWidth,
-                visibleStartThreshold: visibleStartThreshold)
-            let highlightedRange = Self.fullyVisibleYearRange(
-                in: yearPageRanges,
-                visibleMonthRange: visibleMonthRange) ?? currentYearRange
-            let highlightedEntry = highlightedRange.flatMap { range in
-                entries.first { $0.id == range.id }
-            }
-
-            self.entries = entries
-            self.yearPageRanges = yearPageRanges
-            self.currentYearRange = currentYearRange
-            self.currentYearRangeIndex = currentYearRangeIndex
-            self.highlightedEntry = highlightedEntry
+                fallbackStartIndex: self.startIndex)
             self.visibleStartIndex = visibleStartIndex
-            self.visibleMonthRange = visibleMonthRange
+            visibleValueRange = Self.makeVisibleValueRange(
+                dataCount: dataCount,
+                visibleValueCount: visibleValueCount,
+                visibleStartIndex: visibleStartIndex)
+            self.maxStartIndex = maxStartIndex
         }
 
-        func range(at index: Int) -> YearPageRange? {
-            guard yearPageRanges.indices.contains(index) else { return nil }
-            return yearPageRanges[index]
+        var chartsScrollPosition: Double {
+            scrollPosition - Self.chartsScrollLeadingInset
         }
 
-        private static func makeYearPageRanges(
-            from groups: [ChartDataGroup],
-            monthsPerPage: Int) -> [YearPageRange] {
-            var ranges: [YearPageRange] = []
-            var cumulativeMonths = 0
-
-            for group in groups {
-                let endMonthIndex = cumulativeMonths + max(group.points.count - 1, 0)
-                let startPage = cumulativeMonths / monthsPerPage
-                let endPage = endMonthIndex / monthsPerPage
-                ranges.append(
-                    .init(
-                        displayTitle: group.displayTitle,
-                        groupOrder: group.groupOrder,
-                        startMonthIndex: cumulativeMonths,
-                        endMonthIndex: endMonthIndex,
-                        startPage: startPage,
-                        endPage: endPage))
-                cumulativeMonths += group.points.count
+        func visibleStartLabel(in data: [ChartDataPoint]) -> String? {
+            visibleStartIndex.flatMap { index in
+                data.indices.contains(index) ? data[index].xLabel : nil
             }
+        }
 
-            return ranges
+        static func maxStartIndex(
+            dataCount: Int,
+            visibleValueCount: Int) -> Int {
+            max(0, dataCount - max(visibleValueCount, 1))
+        }
+
+        static func contentOffsetX(
+            for startIndex: Int,
+            unitWidth: CGFloat) -> CGFloat {
+            CGFloat(max(startIndex, 0)) * max(unitWidth, 0)
+        }
+
+        static func contentOffsetX(
+            for scrollPosition: Double,
+            unitWidth: CGFloat,
+            maxStartIndex: Int) -> CGFloat {
+            guard unitWidth > 0 else { return 0 }
+            let clampedPosition = min(max(scrollPosition, 0), Double(maxStartIndex))
+            return CGFloat(clampedPosition) * unitWidth
+        }
+
+        static func contentOffsetX(
+            forChartsScrollPosition scrollPosition: Double,
+            unitWidth: CGFloat,
+            maxStartIndex: Int) -> CGFloat {
+            contentOffsetX(
+                for: scrollPosition + chartsScrollLeadingInset,
+                unitWidth: unitWidth,
+                maxStartIndex: maxStartIndex)
         }
 
         static func makeVisibleStartIndex(
@@ -111,13 +108,202 @@ extension CombinedChartView {
             return min(max(effectiveIndex, 0), dataCount - 1)
         }
 
-        private static func makeVisibleMonthRange(
+        private static func clampedContentOffsetX(
+            _ contentOffsetX: CGFloat,
+            unitWidth: CGFloat,
+            maxStartIndex: Int) -> CGFloat {
+            guard unitWidth > 0 else { return 0 }
+            let maxContentOffsetX = CGFloat(maxStartIndex) * unitWidth
+            return min(max(contentOffsetX, 0), maxContentOffsetX)
+        }
+
+        private static func makeScrollPosition(
+            contentOffsetX: CGFloat,
+            unitWidth: CGFloat,
+            fallbackStartIndex: Int) -> Double {
+            guard unitWidth > 0 else { return Double(fallbackStartIndex) }
+            return Double(max(contentOffsetX, 0) / unitWidth)
+        }
+
+        private static func makeVisibleValueRange(
             dataCount: Int,
-            monthsPerPage: Int,
+            visibleValueCount: Int,
+            visibleStartIndex: Int?) -> ClosedRange<Int>? {
+            guard let start = visibleStartIndex else { return nil }
+            let visibleCount = max(1, visibleValueCount)
+            let end = min(dataCount - 1, start + visibleCount - 1)
+            return start...end
+        }
+    }
+
+    struct ViewportDescriptor: Equatable {
+        let info: ViewportInfo
+        let viewportWidth: CGFloat
+        let unitWidth: CGFloat
+        let chartWidth: CGFloat
+        let maxContentOffsetX: CGFloat
+        let displayOffsetX: CGFloat
+
+        init(
+            dataCount: Int,
+            visibleValueCount: Int,
+            startIndex: Int,
+            contentOffsetX: CGFloat,
+            visibleStartThreshold: CGFloat,
+            layoutMetrics: LayoutMetrics) {
+            info = .init(
+                dataCount: dataCount,
+                visibleValueCount: visibleValueCount,
+                startIndex: startIndex,
+                contentOffsetX: contentOffsetX,
+                unitWidth: layoutMetrics.unitWidth,
+                visibleStartThreshold: visibleStartThreshold)
+            viewportWidth = layoutMetrics.viewportWidth
+            unitWidth = layoutMetrics.unitWidth
+            chartWidth = layoutMetrics.chartWidth
+            maxContentOffsetX = layoutMetrics.maxContentOffsetX
+            displayOffsetX = layoutMetrics.currentContentOffsetX
+        }
+
+        var startIndex: Int {
+            info.startIndex
+        }
+
+        var contentOffsetX: CGFloat {
+            info.contentOffsetX
+        }
+
+        var scrollPosition: Double {
+            info.scrollPosition
+        }
+
+        var chartsScrollPosition: Double {
+            info.chartsScrollPosition
+        }
+
+        var visibleStartIndex: Int? {
+            info.visibleStartIndex
+        }
+
+        var visibleValueRange: ClosedRange<Int>? {
+            info.visibleValueRange
+        }
+
+        var maxStartIndex: Int {
+            info.maxStartIndex
+        }
+
+        func visibleStartLabel(in data: [ChartDataPoint]) -> String? {
+            info.visibleStartLabel(in: data)
+        }
+    }
+
+    struct PagerState {
+        let entries: [PagerEntry]
+        let pageRanges: [PageRange]
+        let currentPageRange: PageRange?
+        let currentPageRangeIndex: Int?
+        let highlightedEntry: PagerEntry?
+        let visibleStartIndex: Int?
+        let visibleValueRange: ClosedRange<Int>?
+
+        init(
+            sortedGroups: [ChartDataGroup],
+            dataCount: Int,
+            visibleValueCount: Int,
+            startIndex: Int,
+            contentOffsetX: CGFloat,
+            unitWidth: CGFloat,
+            visibleStartThreshold: CGFloat) {
+            let pageRanges = Self.makePageRanges(
+                from: sortedGroups,
+                visibleValueCount: visibleValueCount)
+            let entries = pageRanges.map {
+                PagerEntry(
+                    id: $0.id,
+                    displayTitle: $0.displayTitle,
+                    startIndex: $0.startIndex)
+            }
+            let viewport = ViewportInfo(
+                dataCount: dataCount,
+                visibleValueCount: visibleValueCount,
+                startIndex: startIndex,
+                contentOffsetX: contentOffsetX,
+                unitWidth: unitWidth,
+                visibleStartThreshold: visibleStartThreshold)
+            let visibleStartIndex = viewport.visibleStartIndex
+            let currentPageRange = pageRanges.first {
+                $0.startIndex <= (visibleStartIndex ?? viewport.startIndex) &&
+                    $0.endIndex >= (visibleStartIndex ?? viewport.startIndex)
+            } ?? pageRanges.first
+            let currentPageRangeIndex = currentPageRange.flatMap { currentPageRange in
+                pageRanges.firstIndex { $0.id == currentPageRange.id }
+            }
+            let visibleValueRange = viewport.visibleValueRange
+            let highlightedRange = Self.fullyVisiblePageRange(
+                in: pageRanges,
+                visibleValueRange: visibleValueRange) ?? currentPageRange
+            let highlightedEntry = highlightedRange.flatMap { range in
+                entries.first { $0.id == range.id }
+            }
+
+            self.entries = entries
+            self.pageRanges = pageRanges
+            self.currentPageRange = currentPageRange
+            self.currentPageRangeIndex = currentPageRangeIndex
+            self.highlightedEntry = highlightedEntry
+            self.visibleStartIndex = visibleStartIndex
+            self.visibleValueRange = visibleValueRange
+        }
+
+        func range(at index: Int) -> PageRange? {
+            guard pageRanges.indices.contains(index) else { return nil }
+            return pageRanges[index]
+        }
+
+        private static func makePageRanges(
+            from groups: [ChartDataGroup],
+            visibleValueCount: Int) -> [PageRange] {
+            var ranges: [PageRange] = []
+            var cumulativeCount = 0
+
+            for group in groups {
+                let endIndex = cumulativeCount + max(group.points.count - 1, 0)
+                let startPage = cumulativeCount / visibleValueCount
+                let endPage = endIndex / visibleValueCount
+                ranges.append(
+                    .init(
+                        displayTitle: group.displayTitle,
+                        groupOrder: group.groupOrder,
+                        startIndex: cumulativeCount,
+                        endIndex: endIndex,
+                        startPage: startPage,
+                        endPage: endPage))
+                cumulativeCount += group.points.count
+            }
+
+            return ranges
+        }
+
+        static func makeVisibleStartIndex(
+            dataCount: Int,
+            contentOffsetX: CGFloat,
+            unitWidth: CGFloat,
+            progressThreshold: CGFloat = 2.0 / 3.0) -> Int? {
+            ViewportInfo.makeVisibleStartIndex(
+                dataCount: dataCount,
+                contentOffsetX: contentOffsetX,
+                unitWidth: unitWidth,
+                progressThreshold: progressThreshold)
+        }
+
+        private static func makeVisibleValueRange(
+            dataCount: Int,
+            visibleValueCount: Int,
             contentOffsetX: CGFloat,
             unitWidth: CGFloat,
             visibleStartThreshold: CGFloat) -> ClosedRange<Int>? {
-            guard let start = makeVisibleStartIndex(
+            guard let start = ViewportInfo.makeVisibleStartIndex(
                 dataCount: dataCount,
                 contentOffsetX: contentOffsetX,
                 unitWidth: unitWidth,
@@ -125,18 +311,18 @@ extension CombinedChartView {
             else {
                 return nil
             }
-            let visibleCount = max(1, monthsPerPage)
+            let visibleCount = max(1, visibleValueCount)
             let end = min(dataCount - 1, start + visibleCount - 1)
             return start...end
         }
 
-        private static func fullyVisibleYearRange(
-            in ranges: [YearPageRange],
-            visibleMonthRange: ClosedRange<Int>?) -> YearPageRange? {
-            guard let visibleMonthRange else { return nil }
+        private static func fullyVisiblePageRange(
+            in ranges: [PageRange],
+            visibleValueRange: ClosedRange<Int>?) -> PageRange? {
+            guard let visibleValueRange else { return nil }
             return ranges.first { range in
-                range.startMonthIndex <= visibleMonthRange.lowerBound &&
-                    range.endMonthIndex >= visibleMonthRange.upperBound
+                range.startIndex <= visibleValueRange.lowerBound &&
+                    range.endIndex >= visibleValueRange.upperBound
             }
         }
     }

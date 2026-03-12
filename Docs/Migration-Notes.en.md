@@ -4,6 +4,8 @@
 
 This document explains how the current repository should evolve from its earlier shape toward the current API and, eventually, toward the long-term `ChartKit` architecture described in `Arch.md`.
 
+This version reflects the repository state as of 2026-03-11, including the latest naming convergence and runtime-strategy convergence.
+
 ## 1. Migration Context
 
 The framework is currently in an intermediate phase:
@@ -39,6 +41,23 @@ with a package structure aligned to:
 
 ## 2. Current Migration Direction
 
+### 2.0 Immediate Migration Priority
+
+The highest-priority migration is no longer adding more API surface.  
+It is aligning downstream code with the new naming and the current runtime model.
+
+Recommended baseline:
+
+- primary iOS 17+ path: `Charts + Apple Charts scroll`
+- primary iOS 16 path: `Canvas + SwiftUI Gesture`
+- UIKit path: fallback / diagnostics only
+
+Also note:
+
+- the framework does not currently support macOS
+- legacy names still exist as deprecated wrappers
+- but new code, examples, docs, and automation should use the new names
+
 ### 2.1 API Convergence
 
 The clearest migration direction today is to converge on:
@@ -64,17 +83,37 @@ Legacy compatibility:
 
 All future local UI customization should converge toward the `slots` model rather than adding parallel extension APIs.
 
+### 2.3 Naming Convergence
+
+In addition to `slots:`, downstream code should migrate to the newer public names:
+
+- `monthsPerPage` -> `visibleValueCount`
+- `dragScrollMode` -> `scrollTargetBehavior`
+- `scrollImplementation` -> `scrollEngine`
+- `startMonthIndex` -> `startIndex`
+- `targetMonthIndex` -> `targetIndex`
+- `scrollImplementationTitle` -> `scrollEngineTitle`
+- `dragScrollModeTitle` -> `scrollTargetBehaviorTitle`
+
+The older names are still available, but they should now be treated purely as compatibility shims.
+
 ## 3. Recommended Migration Order
 
-### Step 1: Replace the Legacy Parameter Label
+### Step 1: Replace Legacy Labels and Primary Old Names
 
 Replace:
 
 - `viewSlots:`
+- `monthsPerPage`
+- `dragScrollMode`
+- `scrollImplementation`
 
 with:
 
 - `slots:`
+- `visibleValueCount`
+- `scrollTargetBehavior`
+- `scrollEngine`
 
 This is the safest and most direct source migration.
 
@@ -138,7 +177,41 @@ let config = CombinedChartView.Config.default
 let groups: [CombinedChartView.DataGroup] = []
 ```
 
-### 4.3 External Pager Logic to `slots.pager`
+### 4.3 Old Naming to Current Primary Naming
+
+Old:
+
+```swift
+let config = CombinedChartView.Config(
+    monthsPerPage: 4,
+    chartHeight: 320,
+    pager: .init(
+        dragScrollMode: .freeSnapping,
+        scrollImplementation: .automatic
+    ),
+    bar: bar,
+    line: line,
+    axis: axis
+)
+```
+
+New:
+
+```swift
+let config = CombinedChartView.Config(
+    visibleValueCount: 4,
+    chartHeight: 320,
+    pager: .init(
+        scrollTargetBehavior: .freeSnapping,
+        scrollEngine: .automatic
+    ),
+    bar: bar,
+    line: line,
+    axis: axis
+)
+```
+
+### 4.4 External Pager Logic to `slots.pager`
 
 If downstream code keeps a separate pager UI outside the chart and tries to synchronize page state manually, it should gradually migrate toward:
 
@@ -187,13 +260,28 @@ For example:
 - `BarChartConfiguration` / `BarChartStyle`
 - `PieChartConfiguration` / `PieChartStyle`
 
-### 6.3 Platform Declaration Migration
+### 6.3 Platform Support Migration
 
-The repository must eventually resolve the mismatch between declared package support and actual UIKit-dependent paths.
+The repository has now effectively converged on iOS-only support.  
+Downstream integration assumptions should stop treating it as a macOS-capable framework.
 
 ### 6.4 Renderer Strategy Migration
 
 Downstream code should not assume the current default renderer behavior is a permanent API guarantee.
+
+At the same time, the current default runtime model is now explicit:
+
+- iOS 17+: `Charts`
+- iOS 16: `Canvas`
+
+### 6.5 Sample / Automation Flag Migration
+
+If downstream scripts or snapshot tooling still use the older launch flags, migrate them to:
+
+- `-snapshot-scroll-implementation` -> `-snapshot-scroll-engine`
+- `-snapshot-drag-mode` -> `-snapshot-scroll-target-behavior`
+
+The sample still accepts the old flags for compatibility, but new tooling should stop emitting them.
 
 ## 7. Regression Risks During Migration
 
@@ -204,6 +292,7 @@ The most common migration risks are:
 - downstream code depending on `index` instead of stable IDs
 - use of debug state as business logic input
 - behavioral differences across renderer or interaction implementations
+- docs, scripts, or automation continuing to spread deprecated names
 
 ## 8. Recommended Migration Validation
 

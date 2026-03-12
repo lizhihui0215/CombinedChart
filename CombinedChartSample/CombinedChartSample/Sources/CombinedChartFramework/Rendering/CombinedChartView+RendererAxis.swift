@@ -1,19 +1,18 @@
 import Charts
 import SwiftUI
 
+@available(iOS 16, *)
 extension CombinedChartView.Renderer {
     @AxisContentBuilder
-    func chartXAxis(axisContext: CombinedChartView.AxisContext) -> some AxisContent {
-        AxisMarks(values: axisContext.monthValues) { value in
-            AxisValueLabel(centered: true) {
-                if let key = value.as(String.self) {
-                    Text(context.config.axis.xAxisLabel(
-                        xAxisLabelContext(
-                            for: key,
-                            axisPointByKey: axisContext.pointInfoByKey,
-                            axisPointInfos: axisContext.pointInfos)))
+    func chartXAxis(axisContext: CombinedChartView.AxisPresentationDescriptor) -> some AxisContent {
+        AxisMarks(values: axisContext.xValues) { value in
+            AxisValueLabel {
+                if let xValue = value.as(Double.self),
+                   let labelDescriptor = axisContext.xLabel(forXValue: xValue) {
+                    Text(labelDescriptor.text)
                         .font(context.config.axis.xAxisLabelFont)
                         .foregroundStyle(context.config.axis.xAxisLabelColor)
+                        .accessibilityIdentifier("combined-chart-x-axis-label-\(labelDescriptor.index)")
                 }
             }
         }
@@ -21,27 +20,9 @@ extension CombinedChartView.Renderer {
 
     @AxisContentBuilder
     var chartYAxis: some AxisContent {
-        AxisMarks(position: .leading, values: context.yAxisTickValues) { _ in
+        AxisMarks(position: .leading, values: axisPresentationContext.yGridValues) { _ in
             AxisGridLine(stroke: StrokeStyle(lineWidth: context.config.axis.gridLineWidth))
                 .foregroundStyle(context.config.axis.gridLineColor)
         }
-    }
-
-    func xAxisLabelContext(
-        for key: String,
-        axisPointByKey: [String: ChartConfig.Axis.PointInfo],
-        axisPointInfos: [ChartConfig.Axis.PointInfo]) -> ChartConfig.Axis.XLabelContext {
-        .init(
-            point: axisPointByKey[key] ?? fallbackAxisPointInfo(for: key),
-            visiblePoints: axisPointInfos)
-    }
-
-    func fallbackAxisPointInfo(for key: String) -> ChartConfig.Axis.PointInfo {
-        .init(
-            id: key,
-            index: 0,
-            xKey: key,
-            xLabel: key,
-            values: [:])
     }
 }

@@ -4,11 +4,11 @@ import XCTest
 
 final class DragViewportStateTests: XCTestCase {
     func testByPageDragUsesRealTranslationForPaging() {
-        let state = CombinedChartView.ChartDragState(
+        let state = CombinedChartView.DragState(
             contentOffsetX: 0,
             startIndex: 0,
-            monthsPerPage: 4,
-            maxStartMonthIndex: 8,
+            visibleValueCount: 4,
+            maxStartIndex: 8,
             dragScrollMode: .byPage)
 
         let targetOffsetX = state.targetOffsetX(
@@ -20,11 +20,11 @@ final class DragViewportStateTests: XCTestCase {
     }
 
     func testByPageDragBelowThresholdDoesNotPage() {
-        let state = CombinedChartView.ChartDragState(
+        let state = CombinedChartView.DragState(
             contentOffsetX: 0,
             startIndex: 0,
-            monthsPerPage: 4,
-            maxStartMonthIndex: 8,
+            visibleValueCount: 4,
+            maxStartIndex: 8,
             dragScrollMode: .byPage)
 
         let targetOffsetX = state.targetOffsetX(
@@ -35,12 +35,12 @@ final class DragViewportStateTests: XCTestCase {
         XCTAssertEqual(targetOffsetX, 0)
     }
 
-    func testFreeSnappingRoundsToNearestMonth() {
-        let state = CombinedChartView.ChartDragState(
+    func testFreeSnappingRoundsToNearestValue() {
+        let state = CombinedChartView.DragState(
             contentOffsetX: 130,
             startIndex: 1,
-            monthsPerPage: 4,
-            maxStartMonthIndex: 8,
+            visibleValueCount: 4,
+            maxStartIndex: 8,
             dragScrollMode: .freeSnapping)
 
         let targetOffsetX = state.targetOffsetX(
@@ -51,18 +51,18 @@ final class DragViewportStateTests: XCTestCase {
         XCTAssertEqual(targetOffsetX, 200)
     }
 
-    func testTargetMonthIndexClampsToValidRange() {
-        let state = CombinedChartView.ChartDragState(
+    func testTargetIndexClampsToValidRange() {
+        let state = CombinedChartView.DragState(
             contentOffsetX: 0,
             startIndex: 0,
-            monthsPerPage: 4,
-            maxStartMonthIndex: 8,
+            visibleValueCount: 4,
+            maxStartIndex: 8,
             dragScrollMode: .free)
 
-        let negativeIndex = state.targetMonthIndex(
+        let negativeIndex = state.targetIndex(
             for: -120,
             computedUnitWidth: 100)
-        let oversizedIndex = state.targetMonthIndex(
+        let oversizedIndex = state.targetIndex(
             for: 9999,
             computedUnitWidth: 100)
 

@@ -5,12 +5,12 @@ enum ChartTestBuilders {
         id: String,
         title: String,
         order: Int,
-        monthCount: Int) -> CombinedChartView.ChartDataGroup {
+        pointCount: Int) -> CombinedChartView.ChartDataGroup {
         makeGroup(
             id: id,
             title: title,
             order: order,
-            points: (0..<monthCount).map { index in
+            points: (0..<pointCount).map { index in
                 makeDataPoint(
                     groupID: id,
                     xKey: "\(id)-\(index)",

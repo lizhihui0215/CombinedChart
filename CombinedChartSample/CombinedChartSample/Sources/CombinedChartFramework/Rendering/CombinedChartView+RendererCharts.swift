@@ -1,23 +1,28 @@
 import Charts
 import SwiftUI
 
+@available(iOS 16, *)
 extension CombinedChartView.Renderer {
+    var chartsBarWidth: CGFloat {
+        marksPresentationContext.fallbackBarWidth
+    }
+
     @ViewBuilder
     var chartsBody: some View {
         let chart = Chart {
             barMarks()
             sharedMarks
         }
-        .chartXScale(domain: axisRenderContext.monthValues)
+        .chartXScale(domain: axisPresentationContext.xDomain)
         .chartYScale(domain: context.yAxisDisplayDomain)
         .chartYAxis {
             chartYAxis
         }
 
         if #available(iOS 17, *) {
-            chart
+            configureChartsBody(chart)
                 .chartXAxis {
-                    chartXAxis(axisContext: axisRenderContext)
+                    chartXAxis(axisContext: axisPresentationContext)
                 }
                 .chartOverlay { proxy in
                     containerOverlay(proxy: proxy)
@@ -29,35 +34,91 @@ extension CombinedChartView.Renderer {
 
     @ChartContentBuilder
     func barMarks() -> some ChartContent {
-        ForEach(barMarkItems) { item in
+        ForEach(marksPresentationContext.barMarks) { item in
             BarMark(
-                x: .value("Month", item.xKey),
+                x: .value("X Index", item.xValue),
                 yStart: .value("Start", item.start),
                 yEnd: .value("End", item.end),
-                width: .fixed(marksContext.config.bar.barWidth))
+                width: .fixed(item.width))
                 .foregroundStyle(item.color)
         }
     }
 
     @ChartContentBuilder
     var sharedMarks: some ChartContent {
-        if context.yAxisDisplayDomain.lowerBound <= 0,
-           context.yAxisDisplayDomain.upperBound >= 0 {
-            RuleMark(y: .value("Zero", 0))
-                .foregroundStyle(marksContext.config.axis.gridLineColor.opacity(0.8))
-                .lineStyle(StrokeStyle(lineWidth: marksContext.config.axis.zeroLineWidth))
+        ForEach(marksPresentationContext.ruleMarks) { ruleMark in
+            RuleMark(y: .value("Rule", ruleMark.value))
+                .foregroundStyle(ruleMark.color)
+                .lineStyle(StrokeStyle(lineWidth: ruleMark.lineWidth))
         }
 
-        if let selection = context.visibleSelection,
-           context.visibleData.indices.contains(selection.index),
-           context.selectedTab.mode.showsSelectedPoint {
-            let point = context.visibleData[selection.index]
-            let value = point.trendLineValue(using: marksContext.config)
+        ForEach(marksPresentationContext.pointMarks) { pointMark in
             PointMark(
-                x: .value("Month", point.xKey),
-                y: .value("Value", value))
-                .foregroundStyle(overlaySelectionLineColor(for: value))
-                .symbolSize(pow(marksContext.config.line.selection.pointSize, 2))
+                x: .value("X Index", pointMark.xValue),
+                y: .value("Value", pointMark.value))
+                .foregroundStyle(pointMark.color)
+                .symbolSize(pointMark.symbolSize)
         }
+    }
+
+    @available(iOS 17, *)
+    @ViewBuilder
+    private func configureChartsBody(_ chart: some View) -> some View {
+        let visibleDomainLength = Double(max(context.config.visibleValueCount, 1))
+
+        if let chartsScrollPosition,
+           axisPresentationContext.dataCount > max(context.config.visibleValueCount, 1) {
+            let scrollableChart = chart
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: visibleDomainLength)
+                .chartScrollPosition(x: chartsScrollPosition)
+                .chartGesture { proxy in
+                    chartsTapGesture(proxy: proxy)
+                }
+
+            switch context.config.pager.scrollTargetBehavior {
+            case .byPage:
+                scrollableChart.chartScrollTargetBehavior(
+                    .valueAligned(unit: 1.0, majorAlignment: .page))
+            case .freeSnapping:
+                scrollableChart.chartScrollTargetBehavior(
+                    .valueAligned(unit: 1.0))
+            case .free:
+                scrollableChart
+            }
+        } else {
+            chart
+                .chartGesture { proxy in
+                    chartsTapGesture(proxy: proxy)
+                }
+        }
+    }
+
+    @available(iOS 17, *)
+    private func chartsTapGesture(proxy: ChartProxy) -> some Gesture {
+        SpatialTapGesture()
+            .onEnded { value in
+                if let domainXValue = proxy.value(atX: value.location.x, as: Double.self),
+                   let resolvedIndex = CombinedChartView.SelectionResolver.resolvedIndex(
+                       forDomainXValue: domainXValue,
+                       dataCount: context.visibleData.count) {
+                    onSelectIndex(resolvedIndex)
+                    return
+                }
+
+                let xPositions = CombinedChartView.XPositionResolver.descriptors(.init(
+                    dataCount: context.visibleData.count,
+                    xPosition: { index in
+                        proxy.position(forX: Double(index))
+                    }))
+                let fallbackIndex = CombinedChartView.SelectionHitResolver.resolveIndex(
+                    at: value.location,
+                    request: .init(
+                        dataCount: context.visibleData.count,
+                        minimumHitWidth: context.config.line.selection.minimumSelectionWidth,
+                        fallbackWidth: chartsBarWidth,
+                        xPositions: xPositions))
+                onSelectIndex(fallbackIndex)
+            }
     }
 }

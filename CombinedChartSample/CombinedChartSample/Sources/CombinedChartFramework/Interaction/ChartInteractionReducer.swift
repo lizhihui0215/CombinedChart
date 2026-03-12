@@ -3,14 +3,14 @@ import SwiftUI
 extension CombinedChartView {
     enum ViewAction {
         case selectPoint(index: Int?, emitsPointTap: Bool = true)
-        case selectMonthWindow(startMonthIndex: Int)
+        case selectWindow(startIndex: Int)
         case settleDrag(DragSettleContext)
         case selectPreviousPage
         case selectNextPage
     }
 
     struct DragSettleContext: Equatable {
-        let targetMonthIndex: Int
+        let targetIndex: Int
         let targetContentOffsetX: CGFloat
     }
 
@@ -22,19 +22,14 @@ extension CombinedChartView {
     struct ViewportState: Equatable {
         var startIndex: Int
         var contentOffsetX: CGFloat
-
-        var visibleStartMonthIndex: Int {
-            get { startIndex }
-            set { startIndex = newValue }
-        }
     }
 
     struct PagingContext {
-        let monthsPerPage: Int
-        let maxStartMonthIndex: Int
+        let visibleValueCount: Int
+        let maxStartIndex: Int
         let arrowScrollMode: ChartConfig.Pager.ArrowScrollMode
-        let currentYearRangeIndex: Int?
-        let yearPageRanges: [YearPageRange]
+        let currentPageRangeIndex: Int?
+        let pageRanges: [PageRange]
     }
 
     struct InteractionState {
@@ -67,9 +62,9 @@ extension CombinedChartView {
                     for: index,
                     emitsPointTap: emitsPointTap,
                     state: state)
-            case .selectMonthWindow(let startMonthIndex):
+            case .selectWindow(let startIndex):
                 viewportUpdateResult(
-                    startIndex: startMonthIndex,
+                    startIndex: startIndex,
                     state: state)
             case .settleDrag(let context):
                 settledDragResult(
@@ -140,19 +135,29 @@ extension CombinedChartView {
             state: InteractionState) -> Int? {
             switch state.pagingContext.arrowScrollMode {
             case .byPage:
-                return state.viewport.startIndex + (direction * state.pagingContext.monthsPerPage)
+                let currentPageStartIndex = pageAlignedStartIndex(
+                    state.viewport.startIndex,
+                    visibleValueCount: state.pagingContext.visibleValueCount)
+                return currentPageStartIndex + (direction * state.pagingContext.visibleValueCount)
             case .byEntry:
-                guard let currentYearRangeIndex = state.pagingContext.currentYearRangeIndex else {
+                guard let currentPageRangeIndex = state.pagingContext.currentPageRangeIndex else {
                     return nil
                 }
                 let targetIndex = min(
-                    max(currentYearRangeIndex + direction, 0),
-                    max(state.pagingContext.yearPageRanges.count - 1, 0))
-                guard state.pagingContext.yearPageRanges.indices.contains(targetIndex) else {
+                    max(currentPageRangeIndex + direction, 0),
+                    max(state.pagingContext.pageRanges.count - 1, 0))
+                guard state.pagingContext.pageRanges.indices.contains(targetIndex) else {
                     return nil
                 }
-                return state.pagingContext.yearPageRanges[targetIndex].startMonthIndex
+                return state.pagingContext.pageRanges[targetIndex].startIndex
             }
+        }
+
+        private static func pageAlignedStartIndex(
+            _ startIndex: Int,
+            visibleValueCount: Int) -> Int {
+            let pageSize = max(visibleValueCount, 1)
+            return (max(startIndex, 0) / pageSize) * pageSize
         }
 
         // MARK: - Viewport
@@ -170,7 +175,7 @@ extension CombinedChartView {
             state: InteractionState) -> InteractionResult {
             .init(
                 mutations: [viewportUpdateMutation(
-                    startIndex: context.targetMonthIndex,
+                    startIndex: context.targetIndex,
                     contentOffsetX: context.targetContentOffsetX,
                     state: state)],
                 commands: [])
@@ -211,13 +216,13 @@ extension CombinedChartView {
         private static func clampedStartIndex(
             _ startIndex: Int,
             state: InteractionState) -> Int {
-            min(max(startIndex, 0), state.pagingContext.maxStartMonthIndex)
+            min(max(startIndex, 0), state.pagingContext.maxStartIndex)
         }
 
         private static func clampedContentOffsetX(
             _ contentOffsetX: CGFloat,
             state: InteractionState) -> CGFloat {
-            let maximumContentOffsetX = CGFloat(state.pagingContext.maxStartMonthIndex) * state.unitWidth
+            let maximumContentOffsetX = CGFloat(state.pagingContext.maxStartIndex) * state.unitWidth
             return min(max(contentOffsetX, 0), maximumContentOffsetX)
         }
     }

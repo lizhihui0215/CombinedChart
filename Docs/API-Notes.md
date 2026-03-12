@@ -187,6 +187,17 @@ CombinedChartView(
 - iOS 17 及以上优先 `Charts`
 - 更低版本默认 `Canvas`
 
+推荐验证方式：
+
+- 在 sample 页通过 `Renderer` 切换：
+  - `Automatic`
+  - `Charts`
+  - `Canvas`
+- 在 preview 中直接对比三套场景：
+  - `Automatic Renderer`
+  - `Charts Renderer`
+  - `Canvas Renderer`
+
 ### 5.2 `Bar`
 
 `Bar` 负责柱图的视觉与数据语义映射，重点包括：
@@ -245,8 +256,8 @@ CombinedChartView(
 关键配置包括：
 
 - `arrowScrollMode`
-- `dragScrollMode`
-- `scrollImplementation`
+- `scrollTargetBehavior`
+- `scrollEngine`
 - `visibleStartThreshold`
 - 字体和按钮颜色
 

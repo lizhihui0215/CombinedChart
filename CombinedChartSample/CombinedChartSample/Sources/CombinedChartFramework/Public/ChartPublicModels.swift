@@ -18,8 +18,8 @@ public extension CombinedChartView {
     /// Realtime debug state emitted by the chart while rendering and dragging.
     struct DebugState: Equatable {
         public let selectedTabTitle: String
-        public let scrollImplementationTitle: String
-        public let dragScrollModeTitle: String
+        public let scrollEngineTitle: String
+        public let scrollTargetBehaviorTitle: String
         public let isDragging: Bool
         public let isDecelerating: Bool
         public let startIndex: Int
@@ -29,7 +29,7 @@ public extension CombinedChartView {
         public let contentOffsetX: CGFloat
         public let dragTranslationX: CGFloat
         public let targetContentOffsetX: CGFloat
-        public let targetMonthIndex: Int
+        public let targetIndex: Int
         public let viewportWidth: CGFloat
         public let unitWidth: CGFloat
         public let chartWidth: CGFloat
@@ -39,6 +39,53 @@ public extension CombinedChartView {
         public let selectedPointXLabel: String?
         public let selectedPointValue: Double?
 
+        public init(
+            selectedTabTitle: String,
+            scrollEngineTitle: String,
+            scrollTargetBehaviorTitle: String,
+            isDragging: Bool,
+            isDecelerating: Bool,
+            startIndex: Int,
+            visibleStartIndex: Int?,
+            visibleStartLabel: String?,
+            visibleStartThreshold: CGFloat,
+            contentOffsetX: CGFloat,
+            dragTranslationX: CGFloat,
+            targetContentOffsetX: CGFloat,
+            targetIndex: Int,
+            viewportWidth: CGFloat,
+            unitWidth: CGFloat,
+            chartWidth: CGFloat,
+            selectedPointIndex: Int?,
+            selectedPointGroupID: String?,
+            selectedPointXKey: String?,
+            selectedPointXLabel: String?,
+            selectedPointValue: Double?) {
+            self.selectedTabTitle = selectedTabTitle
+            self.scrollEngineTitle = scrollEngineTitle
+            self.scrollTargetBehaviorTitle = scrollTargetBehaviorTitle
+            self.isDragging = isDragging
+            self.isDecelerating = isDecelerating
+            self.startIndex = startIndex
+            self.visibleStartIndex = visibleStartIndex
+            self.visibleStartLabel = visibleStartLabel
+            self.visibleStartThreshold = visibleStartThreshold
+            self.contentOffsetX = contentOffsetX
+            self.dragTranslationX = dragTranslationX
+            self.targetContentOffsetX = targetContentOffsetX
+            self.targetIndex = targetIndex
+            self.viewportWidth = viewportWidth
+            self.unitWidth = unitWidth
+            self.chartWidth = chartWidth
+            self.selectedPointIndex = selectedPointIndex
+            self.selectedPointGroupID = selectedPointGroupID
+            self.selectedPointXKey = selectedPointXKey
+            self.selectedPointXLabel = selectedPointXLabel
+            self.selectedPointValue = selectedPointValue
+        }
+
+        /// Legacy initializer that preserves the older month- and implementation-based labels.
+        @available(*, deprecated, renamed: "init(selectedTabTitle:scrollEngineTitle:scrollTargetBehaviorTitle:isDragging:isDecelerating:startIndex:visibleStartIndex:visibleStartLabel:visibleStartThreshold:contentOffsetX:dragTranslationX:targetContentOffsetX:targetIndex:viewportWidth:unitWidth:chartWidth:selectedPointIndex:selectedPointGroupID:selectedPointXKey:selectedPointXLabel:selectedPointValue:)")
         public init(
             selectedTabTitle: String,
             scrollImplementationTitle: String,
@@ -61,27 +108,46 @@ public extension CombinedChartView {
             selectedPointXKey: String?,
             selectedPointXLabel: String?,
             selectedPointValue: Double?) {
-            self.selectedTabTitle = selectedTabTitle
-            self.scrollImplementationTitle = scrollImplementationTitle
-            self.dragScrollModeTitle = dragScrollModeTitle
-            self.isDragging = isDragging
-            self.isDecelerating = isDecelerating
-            self.startIndex = startIndex
-            self.visibleStartIndex = visibleStartIndex
-            self.visibleStartLabel = visibleStartLabel
-            self.visibleStartThreshold = visibleStartThreshold
-            self.contentOffsetX = contentOffsetX
-            self.dragTranslationX = dragTranslationX
-            self.targetContentOffsetX = targetContentOffsetX
-            self.targetMonthIndex = targetMonthIndex
-            self.viewportWidth = viewportWidth
-            self.unitWidth = unitWidth
-            self.chartWidth = chartWidth
-            self.selectedPointIndex = selectedPointIndex
-            self.selectedPointGroupID = selectedPointGroupID
-            self.selectedPointXKey = selectedPointXKey
-            self.selectedPointXLabel = selectedPointXLabel
-            self.selectedPointValue = selectedPointValue
+            self.init(
+                selectedTabTitle: selectedTabTitle,
+                scrollEngineTitle: scrollImplementationTitle,
+                scrollTargetBehaviorTitle: dragScrollModeTitle,
+                isDragging: isDragging,
+                isDecelerating: isDecelerating,
+                startIndex: startIndex,
+                visibleStartIndex: visibleStartIndex,
+                visibleStartLabel: visibleStartLabel,
+                visibleStartThreshold: visibleStartThreshold,
+                contentOffsetX: contentOffsetX,
+                dragTranslationX: dragTranslationX,
+                targetContentOffsetX: targetContentOffsetX,
+                targetIndex: targetMonthIndex,
+                viewportWidth: viewportWidth,
+                unitWidth: unitWidth,
+                chartWidth: chartWidth,
+                selectedPointIndex: selectedPointIndex,
+                selectedPointGroupID: selectedPointGroupID,
+                selectedPointXKey: selectedPointXKey,
+                selectedPointXLabel: selectedPointXLabel,
+                selectedPointValue: selectedPointValue)
+        }
+
+        /// Legacy implementation-focused alias for `scrollEngineTitle`.
+        @available(*, deprecated, renamed: "scrollEngineTitle")
+        public var scrollImplementationTitle: String {
+            scrollEngineTitle
+        }
+
+        /// Legacy drag-mode alias for `scrollTargetBehaviorTitle`.
+        @available(*, deprecated, renamed: "scrollTargetBehaviorTitle")
+        public var dragScrollModeTitle: String {
+            scrollTargetBehaviorTitle
+        }
+
+        /// Legacy month-based alias for `targetIndex`.
+        @available(*, deprecated, renamed: "targetIndex")
+        public var targetMonthIndex: Int {
+            targetIndex
         }
     }
 
@@ -102,13 +168,28 @@ public extension CombinedChartView {
     struct PagerEntry: Identifiable, Hashable {
         public let id: String
         public let displayTitle: String
-        public let startMonthIndex: Int
+        public let startIndex: Int
 
-        /// Creates a pager item.
-        public init(id: String, displayTitle: String, startMonthIndex: Int) {
+        /// Creates a pager item using a generic start index label.
+        public init(id: String, displayTitle: String, startIndex: Int) {
             self.id = id
             self.displayTitle = displayTitle
-            self.startMonthIndex = startMonthIndex
+            self.startIndex = startIndex
+        }
+
+        /// Legacy initializer that preserves the older month-based label.
+        @available(*, deprecated, renamed: "init(id:displayTitle:startIndex:)")
+        public init(id: String, displayTitle: String, startMonthIndex: Int) {
+            self.init(
+                id: id,
+                displayTitle: displayTitle,
+                startIndex: startMonthIndex)
+        }
+
+        /// Legacy month-based alias for `startIndex`.
+        @available(*, deprecated, renamed: "startIndex")
+        public var startMonthIndex: Int {
+            startIndex
         }
     }
 
@@ -124,6 +205,7 @@ public extension CombinedChartView {
     ///     pager: { context in Text(context.highlightedEntry?.displayTitle ?? "-") }
     /// )
     /// ```
+    @MainActor
     struct ViewSlots {
         public let emptyState: AnyView
         public let selectionOverlay: ((SelectionOverlayContext) -> AnyView)?
@@ -136,10 +218,10 @@ public extension CombinedChartView {
 
         /// Creates slots using concrete `AnyView` instances.
         public init(
-            emptyState: AnyView = AnyView(DefaultEmptyStateView()),
+            emptyState: AnyView? = nil,
             selectionOverlay: ((SelectionOverlayContext) -> AnyView)? = nil,
             pager: ((PagerContext) -> AnyView)? = nil) {
-            self.emptyState = emptyState
+            self.emptyState = emptyState ?? AnyView(DefaultEmptyStateView())
             self.selectionOverlay = selectionOverlay
             self.pager = pager
         }
@@ -152,9 +234,19 @@ public extension CombinedChartView {
                 pager: nil)
         }
 
+        /// Creates slots with custom selection overlay and pager content.
+        public init(
+            @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View,
+            @ViewBuilder pager: @escaping (PagerContext) -> some View) {
+            self.init(
+                emptyState: nil,
+                selectionOverlay: { context in AnyView(selectionOverlay(context)) },
+                pager: { context in AnyView(pager(context)) })
+        }
+
         /// Creates slots with custom empty state, selection overlay, and pager content.
         public init(
-            @ViewBuilder emptyState: () -> some View = { DefaultEmptyStateView() },
+            @ViewBuilder emptyState: () -> some View,
             @ViewBuilder selectionOverlay: @escaping (SelectionOverlayContext) -> some View,
             @ViewBuilder pager: @escaping (PagerContext) -> some View) {
             self.init(

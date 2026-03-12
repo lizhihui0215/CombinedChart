@@ -1,10 +1,42 @@
-# CombinedChartFramework Migration Notes
+# CombinedChartFramework Release Migration Brief
 
-This file tracks the current preferred API surface after the recent framework cleanup.
+This file is the short team-facing migration brief for the current unreleased state as of 2026-03-11.
 
-## Preferred Entry Points
+For the full architectural and API background, see:
 
-Prefer these `CombinedChartView`-scoped names in app code:
+- `Docs/Migration-Notes.md`
+- `Docs/API-Notes.md`
+- `Docs/iOS16-Known-Issues.md`
+
+## What Changed
+
+The framework has now converged on a clearer runtime strategy and a clearer public naming direction.
+
+### Runtime Strategy
+
+- iOS 17 and later:
+  - `Charts + Apple Charts scroll`
+- iOS 16:
+  - `Canvas + SwiftUI Gesture`
+- UIKit scroll:
+  - fallback / diagnostics only
+
+The framework currently does not support macOS.
+
+### Preferred Public Names
+
+Use these names for all new code:
+
+- `slots:`
+- `visibleValueCount`
+- `scrollTargetBehavior`
+- `scrollEngine`
+- `startIndex`
+- `targetIndex`
+- `scrollEngineTitle`
+- `scrollTargetBehaviorTitle`
+
+Prefer these `CombinedChartView`-scoped types:
 
 - `CombinedChartView.Config`
 - `CombinedChartView.Tab`
@@ -13,55 +45,46 @@ Prefer these `CombinedChartView`-scoped names in app code:
 - `CombinedChartView.Slots`
 - `CombinedChartView.Selection`
 
-These aliases keep call sites centered on the primary view instead of exposing lower-level type names.
+## What Teams Should Change
 
-## Preferred Initializer
-
-Prefer:
-
-```swift
-CombinedChartView(
-    config: config,
-    groups: groups,
-    tabs: tabs,
-    selectedTab: $selectedTab,
-    showDebugOverlay: $showDebugOverlay,
-    slots: slots,
-    onPointTap: onPointTap
-)
-```
-
-## Compatibility Entry Points
-
-The following API remains available for migration compatibility:
-
-- `viewSlots:` on `CombinedChartView`
-
-Current status:
-
-- Still supported
-- Deprecated in favor of `slots:`
-- Safe to keep temporarily while downstream code migrates
-
-## Public Context Types
-
-These context types now have explicit public initializers and are safe to construct in tests or adapter code:
-
-- `CombinedChartView.Selection`
-- `CombinedChartView.SelectionOverlay`
-- `CombinedChartView.PagerContext`
-
-## Recommended Cleanup Order
-
-When moving downstream code to the new surface, use this order:
+Update downstream code in this order:
 
 1. Replace `viewSlots:` with `slots:`
-2. Prefer `CombinedChartView.Config` / `Tab` / `DataGroup` / `Point`
-3. Keep advanced aliases only where they improve readability
+2. Replace `monthsPerPage` with `visibleValueCount`
+3. Replace `dragScrollMode` with `scrollTargetBehavior`
+4. Replace `scrollImplementation` with `scrollEngine`
+5. Replace `startMonthIndex` with `startIndex`
+6. Replace `targetMonthIndex` with `targetIndex`
+7. Prefer `selection.point.id` over `selection.index` for persisted identity
 
-## Future Removal Candidates
+## Sample / Automation Flag Changes
 
-These should only be removed after downstream usage is migrated:
+If any local scripts, UI tests, or snapshot automation launch the sample app directly, migrate:
 
-- Deprecated `viewSlots:` initializer
-- Any aliases that remain unused outside framework internals and examples
+- `-snapshot-scroll-implementation` -> `-snapshot-scroll-engine`
+- `-snapshot-drag-mode` -> `-snapshot-scroll-target-behavior`
+
+The sample still accepts the older flags for compatibility, but new tooling should stop emitting them.
+
+## Compatibility Status
+
+The old names are still available as deprecated compatibility wrappers.
+
+That means:
+
+- current downstream integrations do not need to migrate in one step
+- but no new code should be added using the deprecated names
+
+## Validation Baseline
+
+The current migration baseline has been verified with:
+
+- Xcode build for `CombinedChartSample`
+- `CombinedChartSampleTests`
+- UI regression for horizontal scrolling on the iOS 17+ `Charts` path
+
+## Recommended Team Message
+
+Use this summary when communicating the change internally:
+
+> CombinedChart has converged on iOS 17+ `Charts` and iOS 16 `Canvas` as the primary runtime model. New code should use `visibleValueCount`, `scrollTargetBehavior`, `scrollEngine`, `startIndex`, and `targetIndex`. Older names still work for migration, but they are now compatibility-only.

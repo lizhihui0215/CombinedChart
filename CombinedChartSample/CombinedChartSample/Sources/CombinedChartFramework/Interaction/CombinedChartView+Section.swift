@@ -19,6 +19,7 @@ extension CombinedChartView {
         var body: some View {
             GeometryReader { geometry in
                 let effectivePlotSyncState = effectivePlotSyncState(for: geometry.size)
+                let yAxisDescriptor = context.makeYAxisDescriptor(plotSyncState: effectivePlotSyncState)
                 let topInset = context.config.rendering.topInset
                 let contentHeight = max(geometry.size.height - topInset, 0)
                 let scrollState = makeScrollState(
@@ -35,33 +36,27 @@ extension CombinedChartView {
 
                     HStack(alignment: .top, spacing: 0) {
                         HStack(alignment: .top, spacing: 8) {
-                            let tickRange = effectivePlotSyncState.yTickPositions.values.min().flatMap { minY in
-                                effectivePlotSyncState.yTickPositions.values.max().map { maxY in (minY, maxY) }
-                            }
-                            let plotAreaTop = effectivePlotSyncState.plotAreaMinY ?? tickRange?.0 ?? 0
-                            let fallbackPlotAreaHeight = tickRange.map { max($0.1 - $0.0, 0) } ?? 320
-                            let plotAreaHeight = effectivePlotSyncState.plotAreaHeight > 0
-                                ? effectivePlotSyncState.plotAreaHeight
-                                : fallbackPlotAreaHeight
-                            let plotAreaBottom = plotAreaTop + plotAreaHeight
-                            let totalPlotHeight = max(plotAreaBottom, plotAreaTop)
-                            let yAxisWidth = context.config.axis.yAxisWidth
-                            let dividerX = yAxisWidth + 8
-                            let yAxisContainerWidth = dividerX + 1
-
                             ZStack(alignment: .topLeading) {
                                 YAxisLabels(
                                     context: context.makeYAxisLabelsContext(
-                                        plotSyncState: effectivePlotSyncState))
+                                        plotSyncState: effectivePlotSyncState,
+                                        yAxisDescriptor: yAxisDescriptor))
 
-                                if plotAreaHeight > 0 {
+                                if yAxisDescriptor.plotAreaHeight > 0 {
                                     Rectangle()
                                         .fill(context.config.axis.dividerColor)
-                                        .frame(width: 1, height: plotAreaHeight)
-                                        .offset(x: dividerX, y: plotAreaTop)
+                                        .frame(
+                                            width: yAxisDescriptor.dividerFrame.width,
+                                            height: yAxisDescriptor.dividerFrame.height)
+                                        .offset(
+                                            x: yAxisDescriptor.dividerFrame.minX,
+                                            y: yAxisDescriptor.dividerFrame.minY)
                                 }
                             }
-                            .frame(width: yAxisContainerWidth, height: totalPlotHeight, alignment: .topLeading)
+                            .frame(
+                                width: yAxisDescriptor.containerWidth,
+                                height: yAxisDescriptor.totalHeight,
+                                alignment: .topLeading)
                         }
 
                         chartContainer(scrollState: scrollState, isDragging: isDragging)
@@ -72,28 +67,30 @@ extension CombinedChartView {
                     logSectionYAxisDebug(
                         phase: "appear",
                         geometrySize: geometry.size,
-                        plotAreaTop: effectivePlotSyncState.plotAreaMinY ?? 0,
-                        plotAreaHeight: effectivePlotSyncState.plotAreaHeight > 0 ? effectivePlotSyncState
-                            .plotAreaHeight : 320)
+                        yAxisDescriptor: yAxisDescriptor)
                     syncViewport(scrollState: scrollState)
                     onDebugStateChange?(debugState)
                 }
-                .onChange(of: geometry.size) { _ in
+                .chartOnChange(of: geometry.size) {
                     logSectionYAxisDebug(
                         phase: "geometry.size changed",
                         geometrySize: geometry.size,
-                        plotAreaTop: effectivePlotSyncState.plotAreaMinY ?? 0,
-                        plotAreaHeight: effectivePlotSyncState.plotAreaHeight > 0 ? effectivePlotSyncState
-                            .plotAreaHeight : 320)
+                        yAxisDescriptor: yAxisDescriptor)
                     syncViewport(scrollState: scrollState)
                 }
-                .onChange(of: debugState) { onDebugStateChange?($0) }
+                .chartOnChange(of: debugState) {
+                    onDebugStateChange?(debugState)
+                }
             }
         }
     }
 }
 
 private extension CombinedChartView.Section {
+    var implementation: CombinedChartView.Implementation {
+        .resolve(config: context.config)
+    }
+
     // MARK: - Scroll State
 
     func makeScrollState(
@@ -112,7 +109,7 @@ private extension CombinedChartView.Section {
     // MARK: - Sync
 
     func syncPlotArea(_ plotRect: CGRect, isDragging: Bool) {
-        guard !usesImmediateCanvasLayout else { return }
+        guard !implementation.usesImmediatePlotSync else { return }
         guard !isDragging else { return }
         if context.config.debug.isLoggingEnabled {
             logger.debug(
@@ -128,7 +125,7 @@ private extension CombinedChartView.Section {
     }
 
     func syncYAxisTickPositions(_ positions: [Double: CGFloat], isDragging: Bool) {
-        guard !usesImmediateCanvasLayout else { return }
+        guard !implementation.usesImmediatePlotSync else { return }
         guard !isDragging else { return }
         if context.config.debug.isLoggingEnabled {
             let sortedTicks = positions.sorted { $0.key < $1.key }
@@ -154,28 +151,22 @@ private extension CombinedChartView.Section {
     }
 
     func syncViewport(scrollState: CombinedChartView.ScrollState) {
+        if implementation == .charts {
+            layoutState.update(
+                viewportWidth: scrollState.viewport.viewportWidth,
+                unitWidth: scrollState.viewport.unitWidth)
+            viewportState.contentOffsetX = scrollState.viewport.contentOffsetX
+            viewportState.startIndex = scrollState.viewport.startIndex
+            return
+        }
+
         scrollState.syncViewport(
             layoutState: &_layoutState.wrappedValue,
             viewportState: &viewportState)
     }
 
-    var usesImmediateCanvasLayout: Bool {
-        switch context.config.rendering.engine {
-        case .canvas:
-            true
-        case .charts:
-            false
-        case .automatic:
-            if #available(iOS 17, *) {
-                false
-            } else {
-                true
-            }
-        }
-    }
-
     func effectivePlotSyncState(for size: CGSize) -> CombinedChartView.PlotSyncState {
-        guard usesImmediateCanvasLayout else {
+        guard implementation.usesImmediatePlotSync else {
             return plotSyncState
         }
 
@@ -194,16 +185,17 @@ private extension CombinedChartView.Section {
     func makeDebugState(
         scrollState: CombinedChartView.ScrollState,
         isDragging: Bool) -> CombinedChartView.DebugState {
-        let effectiveContentOffsetX = max(-scrollState.layoutMetrics.currentContentOffsetX, 0)
-        let targetSettleContext = scrollState.makeDragSettleContext(from: dragTranslationX)
-        let visibleStartIndex = CombinedChartView.PagerState.makeVisibleStartIndex(
+        let effectiveContentOffsetX = max(-scrollState.viewport.displayOffsetX, 0)
+        let viewportInfo = CombinedChartView.ViewportInfo(
             dataCount: context.data.count,
+            visibleValueCount: context.pagingContext.visibleValueCount,
+            startIndex: scrollState.viewport.startIndex,
             contentOffsetX: effectiveContentOffsetX,
-            unitWidth: scrollState.layoutMetrics.unitWidth,
-            progressThreshold: context.config.pager.visibleStartThreshold)
-        let visibleStartLabel = visibleStartIndex.flatMap {
-            context.data.indices.contains($0) ? context.data[$0].xLabel : nil
-        }
+            unitWidth: scrollState.viewport.unitWidth,
+            visibleStartThreshold: context.config.pager.visibleStartThreshold)
+        let targetSettleContext = scrollState.makeDragSettleContext(from: dragTranslationX)
+        let visibleStartIndex = viewportInfo.visibleStartIndex
+        let visibleStartLabel = viewportInfo.visibleStartLabel(in: context.data)
         let selectedPointIndex = visibleSelection?.index
         let selectedPoint = selectedPointIndex.flatMap {
             context.data.indices.contains($0) ? context.data[$0].source : nil
@@ -214,21 +206,21 @@ private extension CombinedChartView.Section {
 
         return .init(
             selectedTabTitle: context.selectedTab.title,
-            scrollImplementationTitle: scrollImplementationTitle,
-            dragScrollModeTitle: dragScrollModeTitle,
+            scrollEngineTitle: scrollImplementationTitle,
+            scrollTargetBehaviorTitle: dragScrollModeTitle,
             isDragging: isDragging,
             isDecelerating: isDeceleratingScroll,
             startIndex: viewportState.startIndex,
             visibleStartIndex: visibleStartIndex,
             visibleStartLabel: visibleStartLabel,
             visibleStartThreshold: context.config.pager.visibleStartThreshold,
-            contentOffsetX: effectiveContentOffsetX,
+            contentOffsetX: viewportInfo.contentOffsetX,
             dragTranslationX: dragTranslationX,
             targetContentOffsetX: targetSettleContext.targetContentOffsetX,
-            targetMonthIndex: targetSettleContext.targetMonthIndex,
-            viewportWidth: scrollState.layoutMetrics.viewportWidth,
-            unitWidth: scrollState.layoutMetrics.unitWidth,
-            chartWidth: scrollState.layoutMetrics.chartWidth,
+            targetIndex: targetSettleContext.targetIndex,
+            viewportWidth: scrollState.viewport.viewportWidth,
+            unitWidth: scrollState.viewport.unitWidth,
+            chartWidth: scrollState.viewport.chartWidth,
             selectedPointIndex: selectedPointIndex,
             selectedPointGroupID: selectedPoint?.id.groupID,
             selectedPointXKey: selectedPoint?.xKey,
@@ -240,10 +232,16 @@ private extension CombinedChartView.Section {
     func chartContainer(
         scrollState: CombinedChartView.ScrollState,
         isDragging: Bool) -> some View {
-        switch resolvedScrollImplementation {
-        case .uiKitScrollView:
+        switch implementation {
+        case .charts:
+            chartsChartContainer(scrollState: scrollState, isDragging: isDragging)
+        case .uiKit:
+            #if canImport(UIKit)
             uiKitChartContainer(scrollState: scrollState, isDragging: isDragging)
-        default:
+            #else
+            swiftUIGestureChartContainer(scrollState: scrollState, isDragging: isDragging)
+            #endif
+        case .canvas:
             swiftUIGestureChartContainer(scrollState: scrollState, isDragging: isDragging)
         }
     }
@@ -251,6 +249,7 @@ private extension CombinedChartView.Section {
     func chartContent(isDragging: Bool, scrollState: CombinedChartView.ScrollState) -> some View {
         CombinedChartView.Renderer(
             context: scrollState.renderContext,
+            chartsScrollPosition: chartsScrollPositionBinding(scrollState: scrollState),
             onSelectIndex: { onDispatchAction(.selectPoint(index: $0)) },
             onPlotAreaChange: { plotRect in
                 syncPlotArea(plotRect, isDragging: isDragging)
@@ -264,43 +263,61 @@ private extension CombinedChartView.Section {
         scrollState: CombinedChartView.ScrollState,
         isDragging: Bool) -> some View {
         chartContent(isDragging: isDragging, scrollState: scrollState)
-            .frame(width: scrollState.layoutMetrics.chartWidth)
+            .frame(width: scrollState.viewport.chartWidth)
             .frame(maxHeight: .infinity)
-            .offset(x: scrollState.layoutMetrics.currentContentOffsetX)
-            .frame(width: scrollState.layoutMetrics.viewportWidth, alignment: .leading)
+            .offset(x: scrollState.viewport.displayOffsetX)
+            .frame(width: scrollState.viewport.viewportWidth, alignment: .leading)
             .clipped()
             .contentShape(Rectangle())
             .gesture(dragGesture(scrollState: scrollState))
     }
 
-    var resolvedScrollImplementation: ChartConfig.Pager.ScrollImplementation {
-        switch context.config.pager.scrollImplementation {
-        case .automatic:
-            if #available(iOS 17, *) {
-                .uiKitScrollView
-            } else {
-                .swiftUIGesture
-            }
-        case .swiftUIGesture:
-            .swiftUIGesture
-        case .uiKitScrollView:
-            .uiKitScrollView
-        }
+    func chartsScrollPositionBinding(
+        scrollState: CombinedChartView.ScrollState) -> Binding<Double>? {
+        guard implementation == .charts else { return nil }
+        guard #available(iOS 17, *) else { return nil }
+
+        return Binding<Double>(
+            get: {
+                scrollState.viewport.chartsScrollPosition
+            },
+            set: { newValue in
+                let unitWidth = scrollState.viewport.unitWidth
+                let nextContentOffsetX = CombinedChartView.ViewportInfo.contentOffsetX(
+                    forChartsScrollPosition: newValue,
+                    unitWidth: unitWidth,
+                    maxStartIndex: context.pagingContext.maxStartIndex)
+                let viewportInfo = CombinedChartView.ViewportInfo(
+                    dataCount: context.data.count,
+                    visibleValueCount: context.pagingContext.visibleValueCount,
+                    startIndex: viewportState.startIndex,
+                    contentOffsetX: nextContentOffsetX,
+                    unitWidth: unitWidth,
+                    visibleStartThreshold: context.config.pager.visibleStartThreshold)
+
+                if context.config.debug.isLoggingEnabled {
+                    let previousStartIndex = viewportState.startIndex
+                    if viewportInfo.startIndex != previousStartIndex {
+                        logger.debug(
+                            """
+                            [Charts Scroll] incomingPosition=\(newValue, format: .fixed(precision: 2)) \
+                            resolvedOffsetX=\(viewportInfo.contentOffsetX, format: .fixed(precision: 2)) \
+                            resolvedStartIndex=\(viewportInfo.startIndex)
+                            """)
+                    }
+                }
+
+                viewportState.contentOffsetX = viewportInfo.contentOffsetX
+                viewportState.startIndex = viewportInfo.startIndex
+            })
     }
 
     var scrollImplementationTitle: String {
-        switch resolvedScrollImplementation {
-        case .automatic:
-            "Automatic"
-        case .swiftUIGesture:
-            "SwiftUI Gesture"
-        case .uiKitScrollView:
-            "UIKit ScrollView"
-        }
+        implementation.scrollImplementationTitle
     }
 
     var dragScrollModeTitle: String {
-        switch context.config.pager.dragScrollMode {
+        switch context.config.pager.scrollTargetBehavior {
         case .byPage:
             "By Page"
         case .freeSnapping:
@@ -313,20 +330,16 @@ private extension CombinedChartView.Section {
     func logSectionYAxisDebug(
         phase: String,
         geometrySize: CGSize,
-        plotAreaTop: CGFloat,
-        plotAreaHeight: CGFloat) {
+        yAxisDescriptor: CombinedChartView.YAxisDescriptor) {
         guard context.config.debug.isLoggingEnabled else { return }
 
-        let sortedTicks = plotSyncState.yTickPositions.sorted { $0.key < $1.key }
+        let sortedTicks = yAxisDescriptor.tickPositions.sorted { $0.key < $1.key }
         let firstTick = sortedTicks.first
         let lastTick = sortedTicks.last
         let firstTickValue: Double = firstTick?.key ?? 0
         let firstTickPosition: CGFloat = firstTick?.value ?? 0
         let lastTickValue: Double = lastTick?.key ?? 0
         let lastTickPosition: CGFloat = lastTick?.value ?? 0
-        let yAxisWidth = context.config.axis.yAxisWidth
-        let dividerX = yAxisWidth + 8
-        let yAxisContainerWidth = dividerX + 1
 
         logger.debug(
             """
@@ -334,11 +347,11 @@ private extension CombinedChartView.Section {
             geometry=(\(geometrySize.width, format: .fixed(precision: 2)), \(
                 geometrySize.height,
                 format: .fixed(precision: 2))) \
-            yAxisWidth=\(yAxisWidth, format: .fixed(precision: 2)) \
-            dividerX=\(dividerX, format: .fixed(precision: 2)) \
-            containerWidth=\(yAxisContainerWidth, format: .fixed(precision: 2)) \
-            plotTop=\(plotAreaTop, format: .fixed(precision: 2)) \
-            plotHeight=\(plotAreaHeight, format: .fixed(precision: 2)) \
+            yAxisWidth=\(yAxisDescriptor.labelWidth, format: .fixed(precision: 2)) \
+            dividerX=\(yAxisDescriptor.dividerX, format: .fixed(precision: 2)) \
+            containerWidth=\(yAxisDescriptor.containerWidth, format: .fixed(precision: 2)) \
+            plotTop=\(yAxisDescriptor.plotAreaTop, format: .fixed(precision: 2)) \
+            plotHeight=\(yAxisDescriptor.plotAreaHeight, format: .fixed(precision: 2)) \
             syncMinY=\(plotSyncState.plotAreaMinY ?? .zero, format: .fixed(precision: 2)) \
             syncHeight=\(plotSyncState.plotAreaHeight, format: .fixed(precision: 2)) \
             ticks=\(sortedTicks.count) \
@@ -373,6 +386,16 @@ private extension CombinedChartView.Section {
 }
 
 private extension CombinedChartView.Section {
+    func chartsChartContainer(
+        scrollState: CombinedChartView.ScrollState,
+        isDragging: Bool) -> some View {
+        chartContent(isDragging: isDragging, scrollState: scrollState)
+            .frame(width: scrollState.layoutMetrics.viewportWidth)
+            .frame(maxHeight: .infinity)
+            .clipped()
+    }
+
+    #if canImport(UIKit)
     func uiKitChartContainer(
         scrollState: CombinedChartView.ScrollState,
         isDragging: Bool) -> some View {
@@ -391,7 +414,7 @@ private extension CombinedChartView.Section {
                         UIKit settle requested. \
                         proposedOffsetX=\(proposedOffsetX, format: .fixed(precision: 2)) \
                         targetOffsetX=\(settleContext.targetContentOffsetX, format: .fixed(precision: 2)) \
-                        targetIndex=\(settleContext.targetMonthIndex)
+                        targetIndex=\(settleContext.targetIndex)
                         """)
                 }
                 onDispatchAction(.settleDrag(settleContext))
@@ -403,4 +426,5 @@ private extension CombinedChartView.Section {
             .frame(maxHeight: .infinity)
             .clipped()
     }
+    #endif
 }

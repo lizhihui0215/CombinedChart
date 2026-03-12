@@ -1,4 +1,21 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
+extension Color {
+    static var chartSystemBackground: Color {
+        #if canImport(UIKit)
+        Color(uiColor: .systemBackground)
+        #elseif canImport(AppKit)
+        Color(nsColor: .windowBackgroundColor)
+        #else
+        .white
+        #endif
+    }
+}
 
 /// Stable identifiers for series rendered by the chart.
 ///
@@ -32,16 +49,16 @@ public enum ChartSeriesKey: String, CaseIterable, Hashable, Identifiable {
 /// Example:
 /// ```swift
 /// let config = CombinedChartView.Config(
-///     monthsPerPage: 4,
+///     visibleValueCount: 4,
 ///     chartHeight: 420,
 ///     bar: .init(...),
 ///     line: .init(...),
 ///     axis: .init(...),
-///     pager: .init()
+///     pager: .init(scrollTargetBehavior: .freeSnapping)
 /// )
 /// ```
 public struct ChartConfig {
-    public let monthsPerPage: Int
+    public let visibleValueCount: Int
     public let chartHeight: CGFloat
     public let rendering: Rendering
     public let bar: Bar
@@ -51,8 +68,9 @@ public struct ChartConfig {
     public let debug: Debug
 
     /// A ready-to-use configuration tuned for the sample combined chart experience.
+    @MainActor
     public static let `default` = ChartConfig(
-        monthsPerPage: 4,
+        visibleValueCount: 4,
         chartHeight: 420,
         rendering: .init(),
         bar: Bar(
@@ -90,7 +108,7 @@ public struct ChartConfig {
             ],
             trendBarColorStyle: .seriesColor,
             segmentGap: 4,
-            segmentGapColor: Color(uiColor: .systemBackground),
+            segmentGapColor: .chartSystemBackground,
             barWidth: 40),
         line: Line(
             positiveLineColor: Color(red: 0.16, green: 0.30, blue: 0.38),
@@ -112,19 +130,20 @@ public struct ChartConfig {
             zeroLineColor: .black,
             zeroLineWidth: 1,
             yAxisWidth: 40),
-        pager: Pager(),
+        pager: Pager(scrollTargetBehavior: .freeSnapping),
         debug: Debug())
 
     /// Creates a chart configuration.
     ///
     /// - Parameters:
-    ///   - monthsPerPage: The number of x-axis points visible in one page-sized viewport.
+    ///   - monthsPerPage: Legacy month-based alias for `visibleValueCount`.
     ///   - chartHeight: The overall height of the composed chart view.
     ///   - bar: Configuration for the stacked or grouped bar marks.
     ///   - line: Configuration for the trend line and selection appearance.
     ///   - axis: Configuration for axis formatting and zero-line rendering.
     ///   - pager: Configuration for pager visibility and scrolling behavior.
     ///   - debug: Configuration for optional debug overlay colors and typography.
+    @available(*, deprecated, renamed: "init(visibleValueCount:chartHeight:rendering:bar:line:axis:pager:debug:)")
     public init(
         monthsPerPage: Int,
         chartHeight: CGFloat,
@@ -134,7 +153,7 @@ public struct ChartConfig {
         axis: Axis,
         pager: Pager,
         debug: Debug = .init()) {
-        self.monthsPerPage = monthsPerPage
+        self.visibleValueCount = monthsPerPage
         self.chartHeight = chartHeight
         self.rendering = rendering
         self.bar = bar
@@ -142,6 +161,34 @@ public struct ChartConfig {
         self.axis = axis
         self.pager = pager
         self.debug = debug
+    }
+
+    /// Creates a chart configuration using a value-count based viewport label.
+    ///
+    /// Prefer this initializer for new code when the visible x-domain is not month-specific.
+    public init(
+        visibleValueCount: Int,
+        chartHeight: CGFloat,
+        rendering: Rendering = .init(),
+        bar: Bar,
+        line: Line,
+        axis: Axis,
+        pager: Pager,
+        debug: Debug = .init()) {
+        self.visibleValueCount = visibleValueCount
+        self.chartHeight = chartHeight
+        self.rendering = rendering
+        self.bar = bar
+        self.line = line
+        self.axis = axis
+        self.pager = pager
+        self.debug = debug
+    }
+
+    /// Legacy month-based alias for `visibleValueCount`.
+    @available(*, deprecated, renamed: "visibleValueCount")
+    public var monthsPerPage: Int {
+        visibleValueCount
     }
 }
 
@@ -311,10 +358,16 @@ public extension ChartConfig {
             case uiKitScrollView
         }
 
+        /// Preferred alias that mirrors Apple Charts naming more closely.
+        public typealias ScrollTargetBehavior = DragScrollMode
+
+        /// Preferred generic alias for choosing the legacy scroll backend.
+        public typealias ScrollEngine = ScrollImplementation
+
         public let isVisible: Bool
         public let arrowScrollMode: ArrowScrollMode
-        public let dragScrollMode: DragScrollMode
-        public let scrollImplementation: ScrollImplementation
+        public let scrollTargetBehavior: ScrollTargetBehavior
+        public let scrollEngine: ScrollEngine
         public let titleFont: Font
         public let titleColor: Color
         public let activeControlColor: Color
@@ -335,14 +388,15 @@ public extension ChartConfig {
         /// - Parameters:
         ///   - isVisible: A Boolean value that determines whether the pager is shown.
         ///   - arrowScrollMode: The navigation behavior used for pager arrows.
-        ///   - dragScrollMode: The settling behavior used for drag gestures.
-        ///   - scrollImplementation: The scroll engine used to power horizontal chart interaction.
+        ///   - dragScrollMode: Legacy alias for `scrollTargetBehavior`.
+        ///   - scrollImplementation: Legacy alias for `scrollEngine`.
         ///   - titleFont: Font used to render the current pager title.
         ///   - titleColor: Color used to render the current pager title.
         ///   - activeControlColor: Color used for enabled pager controls.
         ///   - inactiveControlColor: Color used for disabled pager controls.
         ///   - visibleStartThreshold: The proportion of the leading x-axis unit that must be scrolled
         ///     past before the next unit becomes the visible start. Values are clamped to `0...1`.
+        @available(*, deprecated, renamed: "init(isVisible:arrowScrollMode:scrollTargetBehavior:scrollEngine:titleFont:titleColor:activeControlColor:inactiveControlColor:visibleStartThreshold:)")
         public init(
             isVisible: Bool = true,
             arrowScrollMode: ArrowScrollMode = .byPage,
@@ -355,13 +409,47 @@ public extension ChartConfig {
             visibleStartThreshold: CGFloat = 2.0 / 3.0) {
             self.isVisible = isVisible
             self.arrowScrollMode = arrowScrollMode
-            self.dragScrollMode = dragScrollMode
-            self.scrollImplementation = scrollImplementation
+            self.scrollTargetBehavior = dragScrollMode
+            self.scrollEngine = scrollImplementation
             self.titleFont = titleFont
             self.titleColor = titleColor
             self.activeControlColor = activeControlColor
             self.inactiveControlColor = inactiveControlColor
             self.visibleStartThreshold = min(max(visibleStartThreshold, 0), 1)
+        }
+
+        /// Creates pager configuration using Apple Charts-style naming.
+        public init(
+            isVisible: Bool = true,
+            arrowScrollMode: ArrowScrollMode = .byPage,
+            scrollTargetBehavior: ScrollTargetBehavior = .freeSnapping,
+            scrollEngine: ScrollEngine = .automatic,
+            titleFont: Font = .callout.weight(.semibold),
+            titleColor: Color = .primary,
+            activeControlColor: Color = .primary,
+            inactiveControlColor: Color = .secondary,
+            visibleStartThreshold: CGFloat = 2.0 / 3.0) {
+            self.isVisible = isVisible
+            self.arrowScrollMode = arrowScrollMode
+            self.scrollTargetBehavior = scrollTargetBehavior
+            self.scrollEngine = scrollEngine
+            self.titleFont = titleFont
+            self.titleColor = titleColor
+            self.activeControlColor = activeControlColor
+            self.inactiveControlColor = inactiveControlColor
+            self.visibleStartThreshold = min(max(visibleStartThreshold, 0), 1)
+        }
+
+        /// Backward-compatible alias for `scrollTargetBehavior`.
+        @available(*, deprecated, renamed: "scrollTargetBehavior")
+        public var dragScrollMode: DragScrollMode {
+            scrollTargetBehavior
+        }
+
+        /// Backward-compatible alias for `scrollEngine`.
+        @available(*, deprecated, renamed: "scrollEngine")
+        public var scrollImplementation: ScrollImplementation {
+            scrollEngine
         }
     }
 

@@ -5,6 +5,8 @@
 本文用于说明当前仓库从早期实现向当前 API 形态迁移时的原则、步骤和风险。  
 它关注的是“如何稳定演进”，而不是简单列出替换项。
 
+本文基于 2026-03-11 的仓库状态更新，覆盖了最近一轮 API 命名收敛与运行策略收敛结果。
+
 ## 1. 当前迁移背景
 
 从仓库现状看，框架正处于一个典型的中间阶段：
@@ -42,6 +44,22 @@
 
 ## 2. 当前迁移主线
 
+### 2.0 当前优先迁移目标
+
+当前最优先的迁移目标不是再扩展新能力，而是把下游调用统一到“新命名 + 新运行认知”上。
+
+推荐认知基线如下：
+
+- iOS 17 及以上主路径：`Charts + Apple Charts scroll`
+- iOS 16 主路径：`Canvas + SwiftUI Gesture`
+- UIKit 路径：只作为 fallback / 排障路径，不再视为主实现
+
+同时需要明确：
+
+- framework 当前不支持 macOS
+- 旧命名仍保留 deprecated 兼容层
+- 但新代码、示例代码、文档和自动化入口都应以新名字为主
+
 ### 2.1 API 收敛
 
 当前最明确的迁移方向是把调用方式收敛到以下表面：
@@ -77,19 +95,41 @@
 
 这是一次明确的扩展点规范化：未来所有局部 UI 替换都应优先通过 `slots` 模式接入，而不是增加新的平行参数。
 
+### 2.3 命名收敛
+
+除 `slots:` 之外，当前还应同步完成一轮更重要的公共命名迁移。
+
+推荐映射如下：
+
+- `monthsPerPage` -> `visibleValueCount`
+- `dragScrollMode` -> `scrollTargetBehavior`
+- `scrollImplementation` -> `scrollEngine`
+- `startMonthIndex` -> `startIndex`
+- `targetMonthIndex` -> `targetIndex`
+- `scrollImplementationTitle` -> `scrollEngineTitle`
+- `dragScrollModeTitle` -> `scrollTargetBehaviorTitle`
+
+这些旧名字目前仍可用，但都应被视为过渡层，而不是可继续扩散的主 API。
+
 ## 3. 推荐迁移顺序
 
 建议下游调用方按以下顺序迁移。
 
-### 第一步：先替换初始化参数名
+### 第一步：先替换初始化参数名与新主命名
 
 优先把：
 
 - `viewSlots:`
+- `monthsPerPage`
+- `dragScrollMode`
+- `scrollImplementation`
 
 替换为：
 
 - `slots:`
+- `visibleValueCount`
+- `scrollTargetBehavior`
+- `scrollEngine`
 
 原因：
 
@@ -170,7 +210,41 @@ let config = CombinedChartView.Config.default
 let groups: [CombinedChartView.DataGroup] = []
 ```
 
-### 4.3 从外围自定义 pager 迁移到 `slots.pager`
+### 4.3 从旧命名迁移到当前主命名
+
+旧写法：
+
+```swift
+let config = CombinedChartView.Config(
+    monthsPerPage: 4,
+    chartHeight: 320,
+    pager: .init(
+        dragScrollMode: .freeSnapping,
+        scrollImplementation: .automatic
+    ),
+    bar: bar,
+    line: line,
+    axis: axis
+)
+```
+
+新写法：
+
+```swift
+let config = CombinedChartView.Config(
+    visibleValueCount: 4,
+    chartHeight: 320,
+    pager: .init(
+        scrollTargetBehavior: .freeSnapping,
+        scrollEngine: .automatic
+    ),
+    bar: bar,
+    line: line,
+    axis: axis
+)
+```
+
+### 4.4 从外围自定义 pager 迁移到 `slots.pager`
 
 如果业务层当前是在图表外部维护独立 pager，并手动同步页码，建议逐步迁移到：
 
@@ -228,15 +302,10 @@ let groups: [CombinedChartView.DataGroup] = []
 
 因此下游应避免把当前单一 `ChartConfig` 形态视为永久不变的 API 契约。
 
-### 6.2 平台声明迁移
+### 6.2 平台支持迁移
 
-当前 `Package.swift` 声明支持 `macOS(.v14)`，但源码中存在 UIKit 直接依赖。  
-后续必须二选一：
-
-- 真的补齐跨平台兼容实现
-- 或收缩平台声明
-
-这会影响下游对平台支持矩阵的理解和集成方式。
+当前仓库已经明确收缩到 iOS 支持路径，不应再把它理解为 macOS 组件。  
+下游如果此前按跨平台组件接入，需要尽快修正文档和集成假设。
 
 ### 6.3 渲染策略迁移
 
@@ -247,7 +316,21 @@ let groups: [CombinedChartView.DataGroup] = []
 
 两条渲染路径。
 
-后续如果团队决定收敛主路径或重构渲染抽象，下游不应依赖任何具体引擎默认值作为业务行为前提。
+但当前默认策略已经明确为：
+
+- iOS 17+：优先 `Charts`
+- iOS 16：默认 `Canvas`
+
+后续如果团队继续重构渲染抽象，下游仍不应依赖任何具体引擎默认值作为业务行为前提。
+
+### 6.4 Sample / 自动化参数迁移
+
+如果下游脚本、UI 测试或快照命令仍在使用旧启动参数，建议同步迁移：
+
+- `-snapshot-scroll-implementation` -> `-snapshot-scroll-engine`
+- `-snapshot-drag-mode` -> `-snapshot-scroll-target-behavior`
+
+当前 sample 仍兼容旧参数，但新脚本不应继续生成旧名字。
 
 ## 7. 迁移过程中的回归风险
 
@@ -258,6 +341,7 @@ let groups: [CombinedChartView.DataGroup] = []
 - 依赖 `index` 而非 `point.id`
 - 将调试能力误用为业务状态来源
 - 在不同渲染/滚动引擎间产生视觉与交互差异
+- 文档、脚本或自动化继续传播 deprecated 名称
 
 因此建议每次迁移至少验证以下内容：
 

@@ -4,8 +4,8 @@ extension CombinedChartView {
     struct DragState {
         let contentOffsetX: CGFloat
         let startIndex: Int
-        let monthsPerPage: Int
-        let maxStartMonthIndex: Int
+        let visibleValueCount: Int
+        let maxStartIndex: Int
         let dragScrollMode: ChartConfig.Pager.DragScrollMode
 
         private func displayTranslationX(from dragTranslationX: CGFloat) -> CGFloat {
@@ -49,7 +49,7 @@ extension CombinedChartView {
             for rawTranslationX: CGFloat,
             computedUnitWidth: CGFloat,
             computedViewportWidth: CGFloat) -> CGFloat {
-            let maxContentOffsetX = CGFloat(maxStartMonthIndex) * computedUnitWidth
+            let maxContentOffsetX = CGFloat(maxStartIndex) * computedUnitWidth
             let clampedTranslationX = clampedDragTranslationX(
                 from: rawTranslationX,
                 maxContentOffsetX: maxContentOffsetX)
@@ -61,32 +61,32 @@ extension CombinedChartView {
             case .byPage:
                 let threshold = computedViewportWidth * 0.2
                 let pageDelta: Int = if clampedTranslationX <= -threshold {
-                    monthsPerPage
+                    visibleValueCount
                 } else if clampedTranslationX >= threshold {
-                    -monthsPerPage
+                    -visibleValueCount
                 } else {
                     0
                 }
-                let targetMonthIndex = min(
+                let targetIndex = min(
                     max(startIndex + pageDelta, 0),
-                    maxStartMonthIndex)
-                return CGFloat(targetMonthIndex) * computedUnitWidth
+                    maxStartIndex)
+                return CGFloat(targetIndex) * computedUnitWidth
             case .freeSnapping:
-                let snappedMonthIndex = min(
+                let snappedIndex = min(
                     max(Int(round(proposedContentOffsetX / computedUnitWidth)), 0),
-                    maxStartMonthIndex)
-                return CGFloat(snappedMonthIndex) * computedUnitWidth
+                    maxStartIndex)
+                return CGFloat(snappedIndex) * computedUnitWidth
             case .free:
                 return proposedContentOffsetX
             }
         }
 
-        func targetMonthIndex(
+        func targetIndex(
             for targetContentOffsetX: CGFloat,
             computedUnitWidth: CGFloat) -> Int {
             min(
                 max(Int(floor(targetContentOffsetX / computedUnitWidth)), 0),
-                maxStartMonthIndex)
+                maxStartIndex)
         }
     }
 }

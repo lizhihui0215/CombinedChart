@@ -1,7 +1,10 @@
 import OSLog
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
+#if canImport(UIKit)
 extension CombinedChartView {
     struct UIKitScrollContainer<Content: View>: UIViewRepresentable {
         let viewportWidth: CGFloat
@@ -144,3 +147,4 @@ extension CombinedChartView {
         }
     }
 }
+#endif

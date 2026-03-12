@@ -58,6 +58,7 @@ private struct CombinedChartPreviewHost: View {
         renderingEngine: .canvas)
 }
 
+@MainActor
 private enum CombinedChartPreviewData {
     static let groups: [CombinedChartView.DataGroup] = [
         .init(
@@ -141,7 +142,7 @@ private enum CombinedChartPreviewData {
     static func makeConfig(
         renderingEngine: CombinedChartView.Config.Rendering.Engine) -> CombinedChartView.Config {
         CombinedChartView.Config(
-            monthsPerPage: 4,
+            visibleValueCount: 4,
             chartHeight: 420,
             rendering: .init(
                 engine: renderingEngine,
@@ -182,7 +183,7 @@ private enum CombinedChartPreviewData {
                 ],
                 trendBarColorStyle: .unified(Color.gray.opacity(0.45)),
                 segmentGap: 2,
-                segmentGapColor: Color(uiColor: .systemBackground),
+                segmentGapColor: .chartSystemBackground,
                 barWidth: 40),
             line: .init(
                 positiveLineColor: .red,
@@ -202,7 +203,7 @@ private enum CombinedChartPreviewData {
                 zeroLineColor: .black,
                 zeroLineWidth: 1,
                 yAxisWidth: 40),
-            pager: .init(isVisible: true, dragScrollMode: .freeSnapping))
+            pager: .init(isVisible: true, scrollTargetBehavior: .freeSnapping))
     }
 
     private static func makePoint(

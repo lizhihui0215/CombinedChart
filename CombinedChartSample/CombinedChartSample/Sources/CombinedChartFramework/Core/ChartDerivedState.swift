@@ -48,18 +48,22 @@ extension CombinedChartView {
             let pagerState = PagerState(
                 sortedGroups: sortedGroups,
                 dataCount: data.count,
-                monthsPerPage: config.monthsPerPage,
+                visibleValueCount: config.visibleValueCount,
                 startIndex: startIndex,
                 contentOffsetX: contentOffsetX,
                 unitWidth: unitWidth,
                 visibleStartThreshold: config.pager.visibleStartThreshold)
-            let visibleStartIndex = pagerState.visibleStartIndex
+            let viewportInfo = CombinedChartView.ViewportInfo(
+                dataCount: data.count,
+                visibleValueCount: config.visibleValueCount,
+                startIndex: startIndex,
+                contentOffsetX: contentOffsetX,
+                unitWidth: unitWidth,
+                visibleStartThreshold: config.pager.visibleStartThreshold)
 
             viewport = .init(
-                visibleStartIndex: visibleStartIndex,
-                visibleStartLabel: visibleStartIndex.flatMap { index in
-                    data.indices.contains(index) ? data[index].xLabel : nil
-                },
+                visibleStartIndex: viewportInfo.visibleStartIndex,
+                visibleStartLabel: viewportInfo.visibleStartLabel(in: data),
                 pagerState: pagerState)
         }
     }

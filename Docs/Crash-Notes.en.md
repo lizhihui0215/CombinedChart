@@ -162,8 +162,8 @@ If reproducible, capture `DebugState`, especially:
 - `visibleStartIndex`
 - `contentOffsetX`
 - `targetContentOffsetX`
-- `scrollImplementationTitle`
-- `dragScrollModeTitle`
+- `scrollEngineTitle`
+- `scrollTargetBehaviorTitle`
 - `selectedPointXKey`
 
 ## 8. Recommended Stability Priorities

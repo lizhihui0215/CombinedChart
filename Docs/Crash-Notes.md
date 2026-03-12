@@ -168,8 +168,8 @@
 - iOS 版本
 - 设备型号
 - `rendering.engine`
-- `pager.scrollImplementation`
-- `pager.dragScrollMode`
+- `pager.scrollEngine`
+- `pager.scrollTargetBehavior`
 - `selectedTab`
 - 数据集规模
 
@@ -188,8 +188,8 @@
 - `visibleStartIndex`
 - `contentOffsetX`
 - `targetContentOffsetX`
-- `scrollImplementationTitle`
-- `dragScrollModeTitle`
+- `scrollEngineTitle`
+- `scrollTargetBehaviorTitle`
 - `selectedPointXKey`
 
 这会显著提高定位效率。

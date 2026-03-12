@@ -90,11 +90,11 @@ extension CombinedChartView {
             let derivedState = derivedState
             let pagerState = derivedState.viewport.pagerState
             let pagingContext = PagingContext(
-                monthsPerPage: config.monthsPerPage,
-                maxStartMonthIndex: max(0, data.count - config.monthsPerPage),
+                visibleValueCount: config.visibleValueCount,
+                maxStartIndex: max(0, data.count - config.visibleValueCount),
                 arrowScrollMode: config.pager.arrowScrollMode,
-                currentYearRangeIndex: pagerState.currentYearRangeIndex,
-                yearPageRanges: pagerState.yearPageRanges)
+                currentPageRangeIndex: pagerState.currentPageRangeIndex,
+                pageRanges: pagerState.pageRanges)
 
             return .init(
                 data: data,
@@ -102,7 +102,7 @@ extension CombinedChartView {
                 derivedState: derivedState,
                 pagingContext: pagingContext,
                 canSelectPreviousPage: viewportState.startIndex > 0,
-                canSelectNextPage: viewportState.startIndex < pagingContext.maxStartMonthIndex)
+                canSelectNextPage: viewportState.startIndex < pagingContext.maxStartIndex)
         }
     }
 }

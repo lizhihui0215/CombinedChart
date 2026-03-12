@@ -177,10 +177,10 @@ enum ChartSampleData {
     }
 
     static func makeConfig(
-        monthsPerPage: Int = 4,
+        visibleValueCount: Int = 4,
         arrowScrollMode: CombinedChartView.Config.Pager.ArrowScrollMode = .byPage,
-        dragScrollMode: CombinedChartView.Config.Pager.DragScrollMode = .freeSnapping,
-        scrollImplementation: CombinedChartView.Config.Pager.ScrollImplementation = .automatic,
+        scrollTargetBehavior: CombinedChartView.Config.Pager.ScrollTargetBehavior = .freeSnapping,
+        scrollEngine: CombinedChartView.Config.Pager.ScrollEngine = .automatic,
         renderingEngine: CombinedChartView.Config.Rendering.Engine = .automatic,
         chartHeight: CGFloat = 420,
         topInset: CGFloat = 12,
@@ -201,7 +201,7 @@ enum ChartSampleData {
             .LineColorStrategy = .fixedLine(Palette.selectionLine),
         debugLoggingEnabled: Bool = false) -> CombinedChartView.Config {
         CombinedChartView.Config(
-            monthsPerPage: monthsPerPage,
+            visibleValueCount: visibleValueCount,
             chartHeight: chartHeight,
             rendering: .init(
                 engine: renderingEngine,
@@ -236,8 +236,8 @@ enum ChartSampleData {
             pager: .init(
                 isVisible: isPagerVisible,
                 arrowScrollMode: arrowScrollMode,
-                dragScrollMode: dragScrollMode,
-                scrollImplementation: scrollImplementation,
+                scrollTargetBehavior: scrollTargetBehavior,
+                scrollEngine: scrollEngine,
                 visibleStartThreshold: visibleStartThreshold),
             debug: .init(isLoggingEnabled: debugLoggingEnabled))
     }

@@ -190,7 +190,7 @@ Useful validation paths today:
 
 Current known engineering caveat:
 
-- the package currently declares `macOS(.v14)` support while part of the interaction path imports UIKit directly
+- the framework currently supports iOS only; macOS is not supported
 
 See `Docs/Crash-Notes.md` and `Docs/iOS16-Known-Issues.md` for current limitations and platform-specific behavior.
 
