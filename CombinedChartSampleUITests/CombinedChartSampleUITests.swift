@@ -12,14 +12,19 @@ private enum SnapshotScenario {
     case totalTrendDefault
     case breakdownByPage
     case totalTrendCharts
+    case totalTrendChartsPagedPhonePortrait
     case totalTrendChartsAxisAlignment
     case totalTrendChartsDebugRootPhonePortrait
     case totalTrendChartsScrolledPhonePortrait
     case totalTrendChartsScrolledSelectedPhonePortrait
     case breakdownChartsSelectedPhonePortrait
+    case breakdownChartsPagedSelectedPhonePortrait
     case totalTrendCanvasSwiftUI
+    case totalTrendCanvasSwiftUIPagedPhonePortrait
     case totalTrendCanvasSwiftUIScrolledSelectedPhonePortrait
+    case breakdownCanvasSwiftUISelectedPhonePortrait
     case totalTrendCanvasUIKit
+    case totalTrendCanvasUIKitPagedPhonePortrait
 
     var snapshotName: String {
         switch self {
@@ -29,6 +34,8 @@ private enum SnapshotScenario {
             "combined-chart.breakdown.by-page"
         case .totalTrendCharts:
             "combined-chart.total-trend.charts"
+        case .totalTrendChartsPagedPhonePortrait:
+            "combined-chart.total-trend.charts.paged.iphone-portrait"
         case .totalTrendChartsAxisAlignment:
             "combined-chart.total-trend.charts-axis-alignment"
         case .totalTrendChartsDebugRootPhonePortrait:
@@ -39,12 +46,20 @@ private enum SnapshotScenario {
             "combined-chart.total-trend.charts.scrolled-selected.iphone-portrait"
         case .breakdownChartsSelectedPhonePortrait:
             "combined-chart.breakdown.charts.selected.iphone-portrait"
+        case .breakdownChartsPagedSelectedPhonePortrait:
+            "combined-chart.breakdown.charts.paged-selected.iphone-portrait"
         case .totalTrendCanvasSwiftUI:
             "combined-chart.total-trend.canvas.swiftui"
+        case .totalTrendCanvasSwiftUIPagedPhonePortrait:
+            "combined-chart.total-trend.canvas.swiftui.paged.iphone-portrait"
         case .totalTrendCanvasSwiftUIScrolledSelectedPhonePortrait:
             "combined-chart.total-trend.canvas.swiftui.scrolled-selected.iphone-portrait"
+        case .breakdownCanvasSwiftUISelectedPhonePortrait:
+            "combined-chart.breakdown.canvas.swiftui.selected.iphone-portrait"
         case .totalTrendCanvasUIKit:
             "combined-chart.total-trend.canvas.uikit"
+        case .totalTrendCanvasUIKitPagedPhonePortrait:
+            "combined-chart.total-trend.canvas.uikit.paged.iphone-portrait"
         }
     }
 
@@ -58,6 +73,10 @@ private enum SnapshotScenario {
                 "-snapshot-scroll-target-behavior", "byPage"
             ]
         case .totalTrendCharts:
+            [
+                "-snapshot-rendering-engine", "charts"
+            ]
+        case .totalTrendChartsPagedPhonePortrait:
             [
                 "-snapshot-rendering-engine", "charts"
             ]
@@ -91,7 +110,18 @@ private enum SnapshotScenario {
                 "-snapshot-selected-tab", "breakdown",
                 "-snapshot-show-debug-overlay"
             ]
+        case .breakdownChartsPagedSelectedPhonePortrait:
+            [
+                "-snapshot-rendering-engine", "charts",
+                "-snapshot-selected-tab", "breakdown",
+                "-snapshot-show-debug-overlay"
+            ]
         case .totalTrendCanvasSwiftUI:
+            [
+                "-snapshot-rendering-engine", "canvas",
+                "-snapshot-scroll-engine", "swiftUI"
+            ]
+        case .totalTrendCanvasSwiftUIPagedPhonePortrait:
             [
                 "-snapshot-rendering-engine", "canvas",
                 "-snapshot-scroll-engine", "swiftUI"
@@ -104,7 +134,19 @@ private enum SnapshotScenario {
                 "-snapshot-scroll-target-behavior", "free",
                 "-snapshot-visible-start-threshold", "0"
             ]
+        case .breakdownCanvasSwiftUISelectedPhonePortrait:
+            [
+                "-snapshot-rendering-engine", "canvas",
+                "-snapshot-scroll-engine", "swiftUI",
+                "-snapshot-selected-tab", "breakdown",
+                "-snapshot-show-debug-overlay"
+            ]
         case .totalTrendCanvasUIKit:
+            [
+                "-snapshot-rendering-engine", "canvas",
+                "-snapshot-scroll-engine", "uiKit"
+            ]
+        case .totalTrendCanvasUIKitPagedPhonePortrait:
             [
                 "-snapshot-rendering-engine", "canvas",
                 "-snapshot-scroll-engine", "uiKit"
@@ -117,14 +159,19 @@ private enum SnapshotScenario {
         case .totalTrendDefault, .breakdownByPage:
             "combined-chart-root"
         case .totalTrendCharts,
+             .totalTrendChartsPagedPhonePortrait,
              .totalTrendChartsAxisAlignment,
              .totalTrendChartsDebugRootPhonePortrait,
              .totalTrendChartsScrolledPhonePortrait,
              .totalTrendChartsScrolledSelectedPhonePortrait,
              .breakdownChartsSelectedPhonePortrait,
+             .breakdownChartsPagedSelectedPhonePortrait,
              .totalTrendCanvasSwiftUI,
+             .totalTrendCanvasSwiftUIPagedPhonePortrait,
              .totalTrendCanvasSwiftUIScrolledSelectedPhonePortrait,
-             .totalTrendCanvasUIKit:
+             .breakdownCanvasSwiftUISelectedPhonePortrait,
+             .totalTrendCanvasUIKit,
+             .totalTrendCanvasUIKitPagedPhonePortrait:
             "combined-chart-snapshot-card"
         }
     }
@@ -175,6 +222,13 @@ final class CombinedChartSnapshotUITests: CombinedChartUITestCase {
     }
 
     @MainActor
+    func testCombinedChartChartsPagedPhonePortraitSnapshot() throws {
+        try assertScenarioSnapshot(for: .totalTrendChartsPagedPhonePortrait) { app in
+            try self.preparePagedSnapshot(app)
+        }
+    }
+
+    @MainActor
     func testCombinedChartChartsAxisAlignmentSnapshot() throws {
         try assertScenarioSnapshot(for: .totalTrendChartsAxisAlignment)
     }
@@ -206,8 +260,22 @@ final class CombinedChartSnapshotUITests: CombinedChartUITestCase {
     }
 
     @MainActor
+    func testCombinedChartBreakdownChartsPagedSelectedPhonePortraitSnapshot() throws {
+        try assertScenarioSnapshot(for: .breakdownChartsPagedSelectedPhonePortrait) { app in
+            try self.preparePagedAndSelectedSnapshot(app)
+        }
+    }
+
+    @MainActor
     func testCombinedChartCanvasSwiftUISnapshot() throws {
         try assertScenarioSnapshot(for: .totalTrendCanvasSwiftUI)
+    }
+
+    @MainActor
+    func testCombinedChartCanvasSwiftUIPagedPhonePortraitSnapshot() throws {
+        try assertScenarioSnapshot(for: .totalTrendCanvasSwiftUIPagedPhonePortrait) { app in
+            try self.preparePagedSnapshot(app)
+        }
     }
 
     @MainActor
@@ -218,8 +286,22 @@ final class CombinedChartSnapshotUITests: CombinedChartUITestCase {
     }
 
     @MainActor
+    func testCombinedChartBreakdownCanvasSwiftUISelectedPhonePortraitSnapshot() throws {
+        try assertScenarioSnapshot(for: .breakdownCanvasSwiftUISelectedPhonePortrait) { app in
+            try self.prepareBreakdownSelectionSnapshot(app)
+        }
+    }
+
+    @MainActor
     func testCombinedChartCanvasUIKitSnapshot() throws {
         try assertScenarioSnapshot(for: .totalTrendCanvasUIKit)
+    }
+
+    @MainActor
+    func testCombinedChartCanvasUIKitPagedPhonePortraitSnapshot() throws {
+        try assertScenarioSnapshot(for: .totalTrendCanvasUIKitPagedPhonePortrait) { app in
+            try self.preparePagedSnapshot(app)
+        }
     }
 }
 
@@ -724,8 +806,19 @@ fileprivate extension CombinedChartUITestCase {
     }
 
     @MainActor
+    func preparePagedSnapshot(_ app: XCUIApplication) throws {
+        try advanceToNextPage(app)
+    }
+
+    @MainActor
     func prepareScrolledAndSelectedSnapshot(_ app: XCUIApplication) throws {
         try prepareScrolledSnapshot(app)
+        try ensureSelectionExists(in: app)
+    }
+
+    @MainActor
+    func preparePagedAndSelectedSnapshot(_ app: XCUIApplication) throws {
+        try preparePagedSnapshot(app)
         try ensureSelectionExists(in: app)
     }
 
@@ -748,10 +841,9 @@ fileprivate extension CombinedChartUITestCase {
 
     @MainActor
     func ensureSelectionExists(in app: XCUIApplication) throws {
-        let surface = element(in: app, identifier: "combined-chart-surface")
+        let selectionTarget = try selectionTargetElement(in: app)
         let selectedIndexValue = element(in: app, identifier: "combined-chart-debug-selected-index")
         let indicator = element(in: app, identifier: "combined-chart-selection-indicator")
-        XCTAssertTrue(surface.waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertTrue(selectedIndexValue.waitForExistence(timeout: 10), app.debugDescription)
 
         if indicator.exists || selectedIndexValue.label != "-" {
@@ -760,17 +852,40 @@ fileprivate extension CombinedChartUITestCase {
 
         let initialSelection = selectedIndexValue.label
         let didSelect = tapUntilSelectionChanges(
-            on: surface,
+            on: selectionTarget,
             selectedIndexValue: selectedIndexValue,
             initialSelection: initialSelection,
-            candidates: [
-                (0.62, 0.45),
-                (0.55, 0.45),
-                (0.68, 0.45),
-                (0.62, 0.32),
-                (0.62, 0.58)
-            ])
+            candidates: selectionCandidates())
 
         XCTAssertTrue(didSelect, app.debugDescription)
+    }
+
+    @MainActor
+    func selectionTargetElement(in app: XCUIApplication) throws -> XCUIElement {
+        let surface = snapshotElement(in: app, identifier: "combined-chart-surface")
+        if surface.waitForExistence(timeout: 3) {
+            return surface
+        }
+
+        let snapshotCard = snapshotElement(in: app, identifier: "combined-chart-snapshot-card")
+        XCTAssertTrue(snapshotCard.waitForExistence(timeout: 10), app.debugDescription)
+        return snapshotCard
+    }
+
+    func selectionCandidates() -> [(CGFloat, CGFloat)] {
+        [
+            (0.24, 0.34),
+            (0.24, 0.45),
+            (0.24, 0.56),
+            (0.38, 0.34),
+            (0.38, 0.45),
+            (0.38, 0.56),
+            (0.52, 0.34),
+            (0.52, 0.45),
+            (0.52, 0.56),
+            (0.66, 0.34),
+            (0.66, 0.45),
+            (0.66, 0.56)
+        ]
     }
 }
